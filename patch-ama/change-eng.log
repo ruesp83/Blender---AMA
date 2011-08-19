@@ -1,0 +1,63 @@
+Advanced Modifier Array v0.4 new features and fixed bug (from v0.3) 17\08\2011:
+
+	1.	FIX: Failure to deallocate the last clone.
+	2.	FIX: The Dupli Group maintains the "Noise Offset" even if the Advanced Noise
+			   is disabled.
+	3.	FIX: Elimination from the undo of the button "Refresh For. Offsets". So the undo of 
+			   the clones work well.
+	4.	FIX: The functions for the "Offset Noise" now use the functions in "BLI_rand.h".
+	5.	FIX: "final_offset" was calculated with a clone more.
+	6.	ADD: Each clone can now be associated with a random element of the "Dupli Group".
+	7.	ADD: The "Dupli Group" respects the "Restrict Mode" of the modifiers.
+	8.	ADD: Updating the "Count" when you change the "Fit Type" except for "Fit Length".
+	9.	ADD: New UI
+	10.	ADD: The "Noise Offset" for Loc-Rot-Scale now has no limits.
+	11. ADD: The "Offset Noise" now has 5 decimal digits.
+	12. DEL: Elimination of the "noise factor".
+	
+Advanced Modifier Array v0.3 5\03\2011:
+
+	1.	ADD: Random variation of the position, with the choice of direction.
+	2.	ADD: Noise Factor: multiplicative offset value
+	3.	ADD: Lock offset
+	4.	ADD: Saving and reading the offset locked
+	5.	ADD: Offset for scaling and rotation. (The rotation is based on the center of 
+			   the main subject)
+	6.	ADD: Distributes the elements in a circle on an axis to choose.
+	7.	ADD: Material random to each cloned
+	8.	ADD: Ability to tie a group array.
+	9.	ADD: Cloning between two points. 
+			  Feature inspired by Mode 501: http://www.youtube.com/watch?v=mInaC4t8Vcc
+	10. ADD: New UI
+	11. ADD: The noise offset is now updated only when pressing "Refresh Ad. Offset", 
+			   inherent to the style of Blender.
+
+
+TODO:
+
+	- Add offset to the rotation on its axis.
+	- Choose the direction of the offset for the X-Y-Z
+	- To activate the "Dupli Group" even when you press the button "Apply" of the modifier.
+	- Assign a color ramp to the modifier array for color gradient.
+	- Assign the material of the clone to "Dupli Group" inherent.
+	- - Material at random also the "Dupli Group."
+	- Insert an object at the center as the beginning and end.
+	- - Allow to merge to the clones.
+	- - Determine the number of clones Mid object.
+	- Associating a curve to the array.
+	- Create a form to aspirale with clones.
+
+
+Video 5\03\2011:
+1)http://vimeo.com/15561032
+2)http://vimeo.com/16762503
+3 NEW)http://vimeo.com/20675851
+
+
+Builds 12\11\2010: (old)
+32: Blender-AMA-32.rar
+64: Blender-AMA-64.rar
+
+
+Patch 12\11\2010: (old)
+- AMA.patch

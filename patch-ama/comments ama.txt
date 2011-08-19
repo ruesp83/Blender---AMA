@@ -1,0 +1,58 @@
+###### BLENDER NATION ######
+
+salvis:
+    - Nice modification to array modifier! I still wish there was a way to do “color offsets” 
+	  R,G, & B) with materials so you could have an array of objects with colors gradually 
+	  changing depending on their index number.
+	
+	- Bel cambiamento del Array modifier!! Mi piacerebbe che ci fosse un modo per fare un 
+	  "color offset" (R, G, B) con i materiali così si potrebbe avere un array di oggetti con un
+	  cambiamento di colore graduale, dipendente dal numero di indice
+	
+Ignatz:
+    - The new noise function in the Array modifier is very interesting but is not stable.
+      This issue demonstrates itself in a number of ways.
+      1) Reloading a saved file where the array modifier has been used with noise always presents a 
+	     different random result. One would assume that saving a file with this feature enabled would
+	     bring one back to the same (model) position and form.
+      2) Using the APPLY button on the array modifier when noise is used will not present you with 
+	     the mesh in the form it was last in. It appears that the noise “reshuffles” itself just before
+	     the apply actually happens. In other words, you don’t get what you expect.
+      3) If you use UNDO with this function then, again, you never return to the last postion
+	     which you expected, but rather some other random noise position.
+      [ Note: I realize that this patch is a work in progress, but the observations are valid,
+	          nevertheless. ]
+      :::::::::::::::::::::::::::::::::::::::::
+      Blender version: 2.56 r35391
+      Windows XP Pro 32-bit SP3
+      Intel Q9450 4gig RAM
+      NVidia GeForce 9600GT (driver 6.14.12.5721)
+
+	- La funzione per il disturbo dell'array è molto interessante ma poco stabile!!
+	  Questo problema si dimostra in vari modi!!
+	  1)Rileggendo un file salvato dove il modifier array è stato usato con il noise, 
+	    presenta sempre un differente risultato random.
+	    Suppongo, che un salvataggio del file con questa feature abilitata porterebbe
+	    la stessa posizione e forma.
+	  2)Utilizzando il tasto "Applica" il noise viene ricalcolato poco prima di essere applicato.
+	    In altre parole non si ottiene quello che vi aspettate!!
+	  3)Se si utilizza "UNDO" con questa funzione, ancora una volta, non ritorna all'ultima 
+	    posizione che vi aspettate, ma qualche altra posizione casuale.
+	  [Nota: Mi rendo conto che questa patch è un work in progress, ma tuttavia le osservazioni 
+	         sono valide!!]
+			 
+
+###### VIMEO ######
+
+Peter:
+	- fantastic! could you please develop it further, to use it for animation? 
+	  (like noise speed, random mat. change speed, etc...)
+	  Fantastic what you're doing, keep it up!
+	  
+MoolahNasreddin:
+	- Fabio, thanks for your addon!
+	  It's really useful!
+	  I just want to note that Noise in options always picks different values. I created two Arrays with noises and then moved first after second, noted elements positions, then made swapping again and few times. It's always different. And I find that this noise isn't connected to the object but it's connected to Global. So when you move object - noise is "waving" all the way.
+	  Please make the "seed" option. I think that it's already present in Blender (in Particles at least). Sometimes it's necessary to get the same results every time you're loading your file.
+	  P.S. Also please make 5 digits after "." if it's up to you.
+
