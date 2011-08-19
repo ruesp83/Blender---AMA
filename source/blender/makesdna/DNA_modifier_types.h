@@ -173,11 +173,24 @@ typedef struct MaskModifierData {
 /* Mask Modifier -> flag */
 #define MOD_MASK_INV			(1<<0)
 
+
+typedef struct ArrayChangeObject {
+	float location[4][4];
+	/*0 not modified
+	  1 modified
+	*/
+	int transform;
+	int id_mat;
+	int rand_group_obj;
+} ArrayChangeObject;
+
 typedef struct ArrayModifierData {
 	ModifierData modifier;
 
 	/* the object with which to cap the start of the array  */
 	struct Object *start_cap;
+	/* the object with which to cap the mid of the array  */
+	struct Object *mid_cap;
 	/* the object with which to cap the end of the array  */
 	struct Object *end_cap;
 	/* the curve object to use for MOD_ARR_FITCURVE */
@@ -192,6 +205,7 @@ typedef struct ArrayModifierData {
 	   1 means the duplicates are 1 object-width apart
 	*/
 	float scale[3];
+	float delta[4][4];
 	/* the length over which to distribute the duplicates */
 	float length;
 	/* the limit below which to merge vertices in adjacent duplicates */
@@ -215,6 +229,26 @@ typedef struct ArrayModifierData {
 	int flags;
 	/* the number of duplicates to generate for MOD_ARR_FIXEDCOUNT */
 	int count;
+	/*Normal Mode-Advanced Mode*/
+	int mode;
+	/*Direction Offset*/
+	int sign;
+	/* min and max limit */	
+	//float limit[2];			
+	float loc_offset[3];
+	float rot_offset[3];
+	float scale_offset[3];
+	//Lock the noise offset
+	int lock;
+	struct ArrayChangeObject *Mem_Ob;
+	
+	int proportion;
+	int rays;
+	int rays_dir;
+	int rnd_mat;
+	struct Group *arr_group;
+	int rand_group;
+	int distribution;
 } ArrayModifierData;
 
 /* ArrayModifierData->fit_type */
@@ -226,10 +260,41 @@ typedef struct ArrayModifierData {
 #define MOD_ARR_OFF_CONST    (1<<0)
 #define MOD_ARR_OFF_RELATIVE (1<<1)
 #define MOD_ARR_OFF_OBJ      (1<<2)
+#define MOD_ARR_OFF_BETW     (1<<3)
 
 /* ArrayModifierData->flags */
-#define MOD_ARR_MERGE      (1<<0)
-#define MOD_ARR_MERGEFINAL (1<<1)
+#define MOD_ARR_MERGE      	(1<<0)
+#define MOD_ARR_MERGEFINAL 	(1<<1)
+
+/* ArrayModifierData->mode */
+#define MOD_ARR_MOD_ADV			(1<<0)
+#define MOD_ARR_MOD_ADV_MAT		(1<<1)
+#define MOD_ARR_MOD_ADV_CURVE	(1<<2)
+
+/* ArrayModifierData->sign */
+#define MOD_ARR_SIGN_P		(1<<0)
+#define MOD_ARR_SIGN_L		(1<<1)
+
+/* ArrayModifierData->mode */
+#define MOD_ARR_LOCK		(1<<0)
+
+/* ArrayModifierData->proportion */
+#define MOD_ARR_PROP		(1<<0)
+
+/* ArrayModifierData->rnd_mat */
+#define MOD_ARR_MAT			(1<<0)
+
+/* ArrayModifierData->rays_dir */
+#define MOD_ARR_RAYS_X 0
+#define MOD_ARR_RAYS_Y 1
+#define MOD_ARR_RAYS_Z 2
+
+/* ArrayModifierData->rand_group */
+#define MOD_ARR_RAND_GROUP    (1<<0)
+
+/* ArrayModifierData->distribution */
+#define MOD_ARR_DIST_EVENLY    (1<<0)
+#define MOD_ARR_DIST_SEGMENT   (1<<1)
 
 typedef struct MirrorModifierData {
 	ModifierData modifier;

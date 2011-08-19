@@ -285,9 +285,10 @@ typedef struct DupliObject {
 	struct DupliObject *next, *prev;
 	struct Object *ob;
 	unsigned int origlay;
-	int index, no_draw, type, animated;
+	int index, no_draw, no_render, type, animated;
 	float mat[4][4], omat[4][4];
 	float orco[3], uv[2];
+	int pad;
 } DupliObject;
 
 /* **************** OBJECT ********************* */
@@ -328,7 +329,7 @@ typedef struct DupliObject {
 /*#define OB_OFFS_LOCAL		1*/ /*UNUSED*/
 /* #define OB_QUAT				2 */ /* never used, free flag */
 #define OB_NEG_SCALE		4
-#define OB_DUPLI			(8+16+256+512+2048)
+#define OB_DUPLI			(8+16+256+512+2048+4096)
 #define OB_DUPLIFRAMES		8
 #define OB_DUPLIVERTS		16
 #define OB_DUPLIROT			32
@@ -338,8 +339,9 @@ typedef struct DupliObject {
 #define OB_DUPLIFACES		512
 #define OB_DUPLIFACES_SCALE	1024
 #define OB_DUPLIPARTS		2048
-#define OB_RENDER_DUPLI		4096
-#define OB_NO_CONSTRAINTS	8192 /* runtime constraints disable */
+#define OB_DUPLIARRAY		4096
+#define OB_RENDER_DUPLI		8192
+#define OB_NO_CONSTRAINTS	16384
 
 /* (short) ipoflag */
 	// XXX depreceated - old animation system crap

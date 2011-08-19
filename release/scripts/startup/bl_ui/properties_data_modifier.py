@@ -81,10 +81,10 @@ class DATA_PT_modifiers(ModifierButtonsPanel, Panel):
             layout.prop(md, "curve")
 
         layout.separator()
-
         split = layout.split()
 
         col = split.column()
+        col.prop(md,"rays")
         col.prop(md, "use_constant_offset")
         sub = col.column()
         sub.active = md.use_constant_offset
@@ -99,6 +99,7 @@ class DATA_PT_modifiers(ModifierButtonsPanel, Panel):
         sub.prop(md, "merge_threshold", text="Distance")
 
         col = split.column()
+        col.prop(md,"rays_dir")
         col.prop(md, "use_relative_offset")
         sub = col.column()
         sub.active = md.use_relative_offset
@@ -110,11 +111,77 @@ class DATA_PT_modifiers(ModifierButtonsPanel, Panel):
         sub = col.column()
         sub.active = md.use_object_offset
         sub.prop(md, "offset_object", text="")
-
+        sub.prop(md, "use_between_offset")
         layout.separator()
 
         layout.prop(md, "start_cap")
+        layout.prop(md, "mid_cap")
         layout.prop(md, "end_cap")
+        layout.separator()
+
+        if md.fit_type == 'FIT_CURVE':
+            col = layout.column()
+            row = col.box().row()
+            if md.use_advanced_curve:
+                row.prop(md, "use_advanced_curve",
+                    icon="DOWNARROW_HLT", text="", emboss=False)
+            else:
+                row.prop(md, "use_advanced_curve",
+                    icon="RIGHTARROW", text="", emboss=False)
+            row.label("Advanced Curve")
+            if (md.use_advanced_curve):
+                col = col.box().column()
+                sub_split = col.split()
+                col = sub_split.column()
+                col.prop(md, "all_curve")
+                col = sub_split.column()
+                col.prop(md, "for_segment")
+
+        col = layout.column()
+        row = col.box().row()
+        if md.use_advanced_material:
+            row.prop(md, "use_advanced_material",
+                icon="DOWNARROW_HLT", text="", emboss=False)
+        else:
+            row.prop(md, "use_advanced_material",
+                icon="RIGHTARROW", text="", emboss=False)
+        row.label("Advanced Material")
+        if (md.use_advanced_material):
+            col = col.box().column()
+            row = col.row()
+            row.prop(md, "material", icon='MATERIAL')
+
+        col = layout.column()
+        row = col.box().row()
+        row.prop(md, "use_advanced", text="")
+        row.label("Advanced Noise")
+        if (md.use_advanced):
+            col = col.box().column()
+            row = col.row()
+            row.label(text="Sign Offset:")
+            row.prop(md, "sign_p")
+            row.prop(md, "sign_l")
+            off_box = col.row()
+            off_box.column().prop(md, "location_offset", text="Location")
+            off_box.column().prop(md, "rotation_offset", text="Rotation")
+            off_box2 = off_box.split().column()
+            off_box2.column().prop(md, "proportion", text="Scale")
+            if (md.proportion):
+                off_box2.column().prop(md, "scale", text="")
+            else:
+                off_box2.column().prop(md, "scale_offset", text="")
+            col.separator()
+            row = col.row()
+            row.prop(md, "array_group")
+            act = row.row()
+            if md.array_group is None :
+                act.active = False
+            else:
+                act.active = True
+            act.prop(md, "rand_group")
+            col = col.column()
+            col.separator()
+            col.operator("object.array_rand", text="Refresh Ad. Offset")
 
     def BEVEL(self, layout, ob, md):
         split = layout.split()

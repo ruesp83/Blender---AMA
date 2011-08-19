@@ -3886,6 +3886,15 @@ static void lib_link_object(FileData *fd, Main *main)
 				}
 			}
 
+			{
+				ArrayModifierData *amd = (ArrayModifierData *)modifiers_findByType(ob, eModifierType_Array);
+				
+				if(amd) 
+				{
+					amd->arr_group = newlibadr(fd, ob->id.lib, amd->arr_group);
+				}
+			}
+			
 			/* texture field */
 			if(ob->pd)
 				lib_link_partdeflect(fd, &ob->id, ob->pd);
@@ -4156,6 +4165,11 @@ static void direct_link_modifiers(FileData *fd, ListBase *lb)
 			tmd->curfalloff= newdataadr(fd, tmd->curfalloff);
 			if(tmd->curfalloff)
 				direct_link_curvemapping(fd, tmd->curfalloff);
+		}
+		else if (md->type==eModifierType_Array) {
+			ArrayModifierData *amd = (ArrayModifierData*) md;
+
+			amd->Mem_Ob = newdataadr(fd, amd->Mem_Ob);
 		}
 	}
 }

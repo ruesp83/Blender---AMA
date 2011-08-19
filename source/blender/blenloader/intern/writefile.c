@@ -1306,6 +1306,11 @@ static void write_modifiers(WriteData *wd, ListBase *modbase)
 				write_curvemapping(wd, tmd->curfalloff);
 			}
 		}
+		else if (md->type==eModifierType_Array) {
+			ArrayModifierData *amd = (ArrayModifierData*) md;
+			
+			writestruct(wd, DATA, "ArrayChangeObject", amd->count, amd->Mem_Ob);
+		}
 	}
 }
 

@@ -35,6 +35,7 @@
 
 
 #include <stdio.h>
+#include <time.h>
 #include <math.h>
 #include <string.h>
 
@@ -51,6 +52,7 @@
 #include "DNA_group_types.h"
 #include "DNA_key_types.h"
 #include "DNA_meshdata_types.h"
+#include "DNA_modifier_types.h"
 #include "DNA_scene_types.h"
 #include "DNA_vfont_types.h"
 
@@ -746,6 +748,137 @@ static void group_duplilist(ListBase *lb, Scene *scene, Object *ob, int level, i
 				copy_m4_m4(dob->ob->obmat, dob->mat);
 				object_duplilist_recursive(&group->id, scene, go->ob, lb, ob->obmat, level+1, animated);
 				copy_m4_m4(dob->ob->obmat, dob->omat);
+			}
+		}
+	}
+}
+
+static void group_arrayduplilist(ListBase *lb, Scene *scene, Object *ob, int level, int animated)
+{
+	DupliObject *dob;
+	Group *group;
+	GroupObject *go;
+	float mat[4][4], tmat[4][4], offset[4][4], rot[4][4];
+	ModifierData *md;
+	int i, cont_rnd;
+	float d_alp, alpha;
+	
+	if(ob->dup_group==NULL) return;
+		group= ob->dup_group;
+	
+	/* simple preventing of too deep nested groups */
+	if(level>MAX_DUPLI_RECUR) return;
+	
+	/* handles animated groups, and */
+	/* we need to check update for objects that are not in scene... */
+	group_handle_recalc_and_update(scene, ob, group);
+	animated= animated || group_is_animated(ob, group);
+
+	for(md=ob->modifiers.first; md; md=md->next) {
+		if(md->type == eModifierType_Array) {
+			if (md->mode&eModifierMode_Realtime || md->mode&eModifierMode_Render){
+				ArrayModifierData *amd = (ArrayModifierData*) md;
+
+				d_alp=0;
+				if (amd->rays > 1)
+					alpha = (float)6.2831 / amd->rays;
+				copy_m4_m4(offset, amd->delta);
+					
+				for (i = 0; i < amd->count-1; i++)
+				{
+					cont_rnd = 0;
+					for(go= group->gobject.first; go; go= go->next) 
+					{
+						cont_rnd++;
+						/* note, if you check on layer here, render goes wrong... it still deforms verts and uses parent imat */
+						if(go->ob!=ob)
+						{
+							if (amd->rand_group & MOD_ARR_RAND_GROUP)
+							{
+								if ((amd->Mem_Ob[i].rand_group_obj != 0) && (amd->Mem_Ob[i].rand_group_obj != cont_rnd))
+									continue;
+							}
+							/* Group Dupli Offset, should apply after everything else */
+							if (group->dupli_ofs[0] || group->dupli_ofs[1] || group->dupli_ofs[2]) {
+								copy_m4_m4(tmat, go->ob->obmat);
+								sub_v3_v3v3(tmat[3], tmat[3], group->dupli_ofs);
+								mul_m4_m4m4(mat, tmat, ob->obmat);
+							} else {
+								mul_m4_m4m4(mat, go->ob->obmat, ob->obmat);
+							}
+						
+							copy_m4_m4(tmat, mat);
+							if (amd->rays>1)
+							{
+								unit_m4(rot);
+								if (amd->rays_dir == MOD_ARR_RAYS_X)
+									rotate_m4(rot,'X',d_alp);
+								else if (amd->rays_dir == MOD_ARR_RAYS_Y)
+									rotate_m4(rot,'Y',d_alp);
+								else
+									rotate_m4(rot,'Z',d_alp);
+								if (d_alp == 0){
+									mul_m4_m4m4(mat, offset, tmat);
+
+									copy_m4_m4(tmat, mat);
+									mul_m4_m4m4(mat, rot, tmat);
+								}
+								else{
+									mul_m4_m4m4(mat, offset, tmat);
+
+									copy_m4_m4(tmat, mat);
+									mul_m4_m4m4(mat, rot, tmat);
+								}
+							}
+							else
+							{
+								mul_m4_m4m4(mat, offset, tmat);
+							}
+							//Noise
+							if (amd->mode & MOD_ARR_MOD_ADV)
+							{
+								if (amd->Mem_Ob[i].transform == 1)
+								{
+									copy_m4_m4(tmat, mat);
+									mul_m4_m4m4(mat, amd->Mem_Ob[i].location, tmat);
+								}
+							}
+						
+							dob = new_dupli_object(lb, go->ob, mat, ob->lay, 0, OB_DUPLIARRAY, animated);
+								
+							if (!(md->mode&eModifierMode_Render))
+								dob->no_render = 1;
+							else 
+								dob->no_render = 0;
+							/* check the group instance and object layers match, also that the object visible flags are ok. */
+							if(((dob->origlay & group->layer)==0 ||
+								(G.rendering==0 && dob->ob->restrictflag & OB_RESTRICT_VIEW) ||
+								(G.rendering && dob->ob->restrictflag & OB_RESTRICT_RENDER)) || 
+								!(md->mode&eModifierMode_Realtime) || (!(md->mode&eModifierMode_Editmode) && (ob->mode == OB_MODE_EDIT)))
+							{
+								dob->no_draw= 1;
+							}
+							else {
+								dob->no_draw= 0;
+							}
+							if(go->ob->transflag & OB_DUPLI) {
+								copy_m4_m4(dob->ob->obmat, dob->mat);
+								object_duplilist_recursive(&group->id, scene, go->ob, lb, ob->obmat, level+1, animated);
+								copy_m4_m4(dob->ob->obmat, dob->omat);
+							}
+						}
+					}
+					//Increment for rays
+					if (amd->rays>1)
+					{
+						d_alp = d_alp + alpha;
+						if (d_alp>6.2831)
+							d_alp=0;
+					}
+					//Offset for clone group
+					if (d_alp == 0)
+						mul_m4_m4m4(offset, offset, amd->delta);
+				}
 			}
 		}
 	}
@@ -1593,6 +1726,15 @@ static void object_duplilist_recursive(ID *id, Scene *scene, Object *ob, ListBas
 		if (level==0) {
 			for(dob= duplilist->first; dob; dob= dob->next)
 				if(dob->type == OB_DUPLIGROUP)
+					copy_m4_m4(dob->ob->obmat, dob->mat);
+		}
+	} else if(ob->transflag & OB_DUPLIARRAY) {
+		DupliObject *dob;
+
+		group_arrayduplilist(duplilist, scene, ob, level+1, animated);
+		if (level==0) {
+			for(dob= duplilist->first; dob; dob= dob->next)
+				if(dob->type == OB_DUPLIARRAY)
 					copy_m4_m4(dob->ob->obmat, dob->mat);
 		}
 	}
