@@ -1,5 +1,5 @@
 /*
- * $Id: sequencer_edit.c 39533 2011-08-18 19:07:37Z campbellbarton $
+ * $Id: sequencer_edit.c 39564 2011-08-19 20:25:25Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -1202,7 +1202,7 @@ void SEQUENCER_OT_reload(struct wmOperatorType *ot)
 	ot->poll= sequencer_edit_poll;
 	
 	/* flags */
-	ot->flag= OPTYPE_REGISTER|OPTYPE_UNDO;
+	ot->flag= OPTYPE_REGISTER; /* no undo, the data changed is stored outside 'main' */
 }
 
 /* reload operator */
@@ -2522,7 +2522,7 @@ void SEQUENCER_OT_copy(wmOperatorType *ot)
 	ot->poll= sequencer_edit_poll;
 
 	/* flags */
-	ot->flag= OPTYPE_REGISTER|OPTYPE_UNDO;
+	ot->flag= OPTYPE_REGISTER;
 
 	/* properties */
 }
