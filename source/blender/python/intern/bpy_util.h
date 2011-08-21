@@ -1,5 +1,5 @@
 /*
- * $Id: bpy_util.h 35496 2011-03-12 15:18:08Z campbellbarton $
+ * $Id: bpy_util.h 39567 2011-08-20 13:29:42Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -51,6 +51,7 @@ short BPy_errors_to_report(struct ReportList *reports);
 struct bContext *BPy_GetContext(void);
 void BPy_SetContext(struct bContext *C);
 
+extern void bpy_context_update(struct bContext *C);
 extern void bpy_context_set(struct bContext *C, PyGILState_STATE *gilstate);
 extern void bpy_context_clear(struct bContext *C, PyGILState_STATE *gilstate);
 #endif

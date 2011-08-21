@@ -1,5 +1,5 @@
 # -*- mode: cmake; indent-tabs-mode: t; -*-
-# $Id: CMakeLists.txt 39145 2011-08-07 15:06:35Z campbellbarton $
+# $Id: CMakeLists.txt 39581 2011-08-21 11:06:49Z campbellbarton $
 # ***** BEGIN GPL LICENSE BLOCK *****
 #
 # This program is free software; you can redistribute it and/or
@@ -498,6 +498,9 @@ if(UNIX AND NOT APPLE)
 
 	# GNU Compiler
 	if(CMAKE_COMPILER_IS_GNUCC)
+		set(PLATFORM_CFLAGS "-pipe -fPIC -funsigned-char -fno-strict-aliasing")
+	# CLang is the same as GCC for now.
+	elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 		set(PLATFORM_CFLAGS "-pipe -fPIC -funsigned-char -fno-strict-aliasing")
 	# Intel C++ Compiler
 	elseif(CMAKE_C_COMPILER_ID MATCHES "Intel")

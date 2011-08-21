@@ -1,5 +1,5 @@
 /*
- * $Id: readfile.c 39084 2011-08-05 20:45:26Z blendix $
+ * $Id: readfile.c 39570 2011-08-20 17:39:13Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -11684,8 +11684,8 @@ static void do_versions(FileData *fd, Library *lib, Main *main)
 			Tex *tex;
 			for(tex= main->tex.first; tex; tex= tex->id.next) {
 				if(tex->pd) {
-					if (tex->pd->falloff_speed_scale == 0.0)
-						tex->pd->falloff_speed_scale = 100.0;
+					if (tex->pd->falloff_speed_scale == 0.0f)
+						tex->pd->falloff_speed_scale = 100.0f;
 
 					if (!tex->pd->falloff_curve) {
 						tex->pd->falloff_curve = curvemapping_add(1, 0, 0, 1, 1);

@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# $Id: SConstruct 39307 2011-08-11 15:59:19Z nazgul $
+# $Id: SConstruct 39584 2011-08-21 13:31:46Z nazgul $
 # ***** BEGIN GPL LICENSE BLOCK *****
 #
 # This program is free software; you can redistribute it and/or
@@ -165,6 +165,13 @@ if sys.platform=='win32':
         platform = 'win32-mingw'
 
 env.SConscriptChdir(0)
+
+# Remove major kernel version from linux platform.
+# After Linus switched kernel to new version model this major version
+# shouldn't take much sense for building rules.
+
+if re.match('linux[0-9]+', platform):
+    platform = 'linux'
 
 crossbuild = B.arguments.get('BF_CROSS', None)
 if crossbuild and platform not in ('win32-vc', 'win64-vc'):
@@ -551,7 +558,7 @@ if  env['OURPLATFORM']!='darwin':
                     scriptinstall.append(env.Install(dir=dir,source=source))
 
 #-- icons
-if env['OURPLATFORM']=='linux2':
+if env['OURPLATFORM']=='linux':
     iconlist = []
     icontargetlist = []
 
@@ -630,7 +637,7 @@ textinstall = env.Install(dir=env['BF_INSTALLDIR'], source=textlist)
 
 if  env['OURPLATFORM']=='darwin':
         allinstall = [blenderinstall, plugininstall, textinstall]
-elif env['OURPLATFORM']=='linux2':
+elif env['OURPLATFORM']=='linux':
         allinstall = [blenderinstall, dotblenderinstall, scriptinstall, plugininstall, textinstall, iconinstall]
 else:
         allinstall = [blenderinstall, dotblenderinstall, scriptinstall, plugininstall, textinstall]
