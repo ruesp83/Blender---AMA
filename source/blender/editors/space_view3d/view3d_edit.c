@@ -1,5 +1,5 @@
 /*
- * $Id: view3d_edit.c 39558 2011-08-19 16:21:29Z campbellbarton $
+ * $Id: view3d_edit.c 39694 2011-08-25 15:49:52Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -372,12 +372,12 @@ static void calctrackballvec(rcti *rect, int mx, int my, float *vec)
 	y/= (float)((rect->ymax - rect->ymin)/2);
 
 	d = sqrt(x*x + y*y);
-	if (d < radius * (float)M_SQRT1_2)  	/* Inside sphere */
-		z = sqrt(radius*radius - d*d);
-	else
-	{ 			/* On hyperbola */
-		t = radius / (float)M_SQRT2;
-		z = t*t / d;
+	if (d < radius * (float)M_SQRT1_2) { /* Inside sphere */
+		z= sqrt(radius*radius - d*d);
+	}
+	else { /* On hyperbola */
+		t= radius / (float)M_SQRT2;
+		z= t*t / d;
 	}
 
 	vec[0]= x;
@@ -1620,8 +1620,7 @@ static int viewzoom_invoke(bContext *C, wmOperator *op, wmEvent *event)
 	vod= op->customdata;
 
 	/* if one or the other zoom position aren't set, set from event */
-	if (!RNA_property_is_set(op->ptr, "mx") || !RNA_property_is_set(op->ptr, "my"))
-	{
+	if (!RNA_property_is_set(op->ptr, "mx") || !RNA_property_is_set(op->ptr, "my")) {
 		RNA_int_set(op->ptr, "mx", event->x);
 		RNA_int_set(op->ptr, "my", event->y);
 	}
@@ -1834,8 +1833,7 @@ static int viewdolly_invoke(bContext *C, wmOperator *op, wmEvent *event)
 	vod= op->customdata;
 
 	/* if one or the other zoom position aren't set, set from event */
-	if (!RNA_property_is_set(op->ptr, "mx") || !RNA_property_is_set(op->ptr, "my"))
-	{
+	if (!RNA_property_is_set(op->ptr, "mx") || !RNA_property_is_set(op->ptr, "my")) {
 		RNA_int_set(op->ptr, "mx", event->x);
 		RNA_int_set(op->ptr, "my", event->y);
 	}

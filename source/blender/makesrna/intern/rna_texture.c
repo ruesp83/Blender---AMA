@@ -1,5 +1,5 @@
 /*
- * $Id: rna_texture.c 37447 2011-06-13 12:03:05Z ton $
+ * $Id: rna_texture.c 39636 2011-08-22 19:57:54Z mmikkelsen $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -1146,6 +1146,12 @@ static void rna_def_texture_image(BlenderRNA *brna)
 	prop= RNA_def_property(srna, "use_normal_map", PROP_BOOLEAN, PROP_NONE);
 	RNA_def_property_boolean_sdna(prop, NULL, "imaflag", TEX_NORMALMAP);
 	RNA_def_property_ui_text(prop, "Normal Map", "Uses image RGB values for normal mapping");
+	RNA_def_property_update(prop, 0, "rna_Texture_update");
+
+	/* Derivative Map */
+	prop= RNA_def_property(srna, "use_derivative_map", PROP_BOOLEAN, PROP_NONE);
+	RNA_def_property_boolean_sdna(prop, NULL, "imaflag", TEX_DERIVATIVEMAP);
+	RNA_def_property_ui_text(prop, "Derivative Map", "Uses red and green as derivative values");
 	RNA_def_property_update(prop, 0, "rna_Texture_update");
 }
 

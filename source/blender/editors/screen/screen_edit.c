@@ -1,5 +1,5 @@
 /*
- * $Id: screen_edit.c 37986 2011-06-30 15:02:03Z ton $
+ * $Id: screen_edit.c 39694 2011-08-25 15:49:52Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -533,8 +533,7 @@ int screen_area_join(bContext *C, bScreen* scr, ScrArea *sa1, ScrArea *sa2)
 	dir = area_getorientation(sa1, sa2);
 	/*printf("dir is : %i \n", dir);*/
 	
-	if (dir < 0)
-	{
+	if (dir < 0) {
 		if (sa1 ) sa1->flag &= ~AREA_FLAG_DRAWJOINFROM;
 		if (sa2 ) sa2->flag &= ~AREA_FLAG_DRAWJOINTO;
 		return 0;

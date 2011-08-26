@@ -1,5 +1,5 @@
 /*
- * $Id: space_console.c 36271 2011-04-21 13:11:51Z campbellbarton $
+ * $Id: space_console.c 39655 2011-08-23 15:08:54Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -165,8 +165,11 @@ static void id_drop_copy(wmDrag *drag, wmDropBox *drop)
 {
 	char text[64];
 	ID *id= drag->poin;
+	char id_esc[(sizeof(id->name) - 2) * 2];
 
-	snprintf(text, sizeof(text), "bpy.data.%s['%s']", BKE_idcode_to_name_plural(GS(id->name)), id->name+2);	
+	BLI_strescape(id_esc, id->name+2, sizeof(id_esc));
+
+	snprintf(text, sizeof(text), "bpy.data.%s[\"%s\"]", BKE_idcode_to_name_plural(GS(id->name)), id_esc);
 
 	/* copy drag path to properties */
 	RNA_string_set(drop->ptr, "text", text);

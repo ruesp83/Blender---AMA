@@ -31,10 +31,12 @@
  *  \ingroup bke
  */
 
+#include "MEM_guardedalloc.h"
 #include "BLI_math.h"
 #include "BLI_utildefines.h"
 #include "BLI_rand.h"
 #include "BLI_listbase.h"
+#include "BLI_edgehash.h"
 #include "DNA_group_types.h"
 #include "DNA_object_types.h"
 #include "DNA_curve_types.h"
@@ -45,6 +47,78 @@
 #include "BKE_displist.h"
 #include "BKE_ama.h"
 #include "BKE_anim.h"
+#include "BKE_cdderivedmesh.h"
+#include "BKE_mesh.h"
+
+
+float vertarray_size(MVert *mvert, int numVerts, int axis)
+{
+	int i;
+	float min_co, max_co;
+
+	/* if there are no vertices, width is 0 */
+	if(numVerts == 0) return 0;
+
+	/* find the minimum and maximum coordinates on the desired axis */
+	min_co = max_co = mvert->co[axis];
+	++mvert;
+	for(i = 1; i < numVerts; ++i, ++mvert) {
+		if(mvert->co[axis] < min_co) min_co = mvert->co[axis];
+		if(mvert->co[axis] > max_co) max_co = mvert->co[axis];
+	}
+
+	return max_co - min_co;
+}
+
+
+/* XXX This function fixes bad merging code, in some cases removing vertices creates indices > maxvert */
+int test_index_face_maxvert(MFace *mface, CustomData *fdata, int mfindex, int nr, int maxvert)
+{
+	if(mface->v1 >= maxvert) {
+		// printf("bad index in array\n");
+		mface->v1= maxvert - 1;
+	}
+	if(mface->v2 >= maxvert) {
+		// printf("bad index in array\n");
+		mface->v2= maxvert - 1;
+	}
+	if(mface->v3 >= maxvert) {
+		// printf("bad index in array\n");
+		mface->v3= maxvert - 1;
+	}
+	if(mface->v4 >= maxvert) {
+		// printf("bad index in array\n");
+		mface->v4= maxvert - 1;
+	}
+	
+	return test_index_face(mface, fdata, mfindex, nr);
+}
+
+
+/* indexMap - an array of IndexMap entries
+ * oldIndex - the old index to map
+ * copyNum - the copy number to map to (original = 0, first copy = 1, etc.)
+ */
+int calc_mapping(IndexMapEntry *indexMap, int oldIndex, int copyNum)
+{
+	if(indexMap[oldIndex].merge < 0) {
+		/* vert wasn't merged, so use copy of this vert */
+		return indexMap[oldIndex].new + copyNum;
+	} else if(indexMap[oldIndex].merge == oldIndex) {
+		/* vert was merged with itself */
+		return indexMap[oldIndex].new;
+	} else {
+		/* vert was merged with another vert */
+		/* follow the chain of merges to the end, or until we've passed
+		* a number of vertices equal to the copy number
+		*/
+		if(copyNum <= 0)
+			return indexMap[oldIndex].new;
+		else
+			return calc_mapping(indexMap, indexMap[oldIndex].merge,
+						copyNum - 1);
+	}
+}
 
 
 float length_fitcurve(ArrayModifierData *amd, struct Scene *scene)
@@ -69,6 +143,7 @@ float length_fitcurve(ArrayModifierData *amd, struct Scene *scene)
 	return length;
 }
 
+
 int length_to_count(float length, const float offset[3])
 {
 	int count = 0;
@@ -84,6 +159,7 @@ int length_to_count(float length, const float offset[3])
 		count = 1;
 	return count;
 }
+
 
 float count_to_length(int count, const float offset[3])
 {
@@ -101,11 +177,13 @@ float count_to_length(int count, const float offset[3])
 	return length;
 }
 
+
 //generates a psuedo-random float between 0.0 and max
 float f_rand_max(float max)
 {
 	return BLI_frand()*max;
 }
+
 
 void array_scale_offset(const float max_off[3], float rit[3],int prop)
 {
@@ -129,6 +207,7 @@ void array_scale_offset(const float max_off[3], float rit[3],int prop)
 		rit[2] = rit[0];
 	}
 }
+
 
 void array_offset(const float max_off[3], float rit[3],int sign)
 {	
@@ -174,6 +253,7 @@ void array_offset(const float max_off[3], float rit[3],int sign)
 	}
 }
 
+
 void init_offset(const int start, const int end, ArrayModifierData *ar)
 {
 	int i;
@@ -181,11 +261,12 @@ void init_offset(const int start, const int end, ArrayModifierData *ar)
 	for (i=start; i< end; i++)
 	{
 		unit_m4(ar->Mem_Ob[i].location);
-		ar->Mem_Ob[i].id_mat = 1;
+		ar->Mem_Ob[i].id_mat = 0;
 		ar->Mem_Ob[i].transform = 0;
 		ar->Mem_Ob[i].rand_group_obj = 0;
 	}
 }
+
 
 void create_offset(const int n, const int totmat, ArrayModifierData *ar, Object *ob)
 {
@@ -193,7 +274,8 @@ void create_offset(const int n, const int totmat, ArrayModifierData *ar, Object 
 	float rot[3];
 	float rotAxis[3];
 	float scale[3];
-	int i;
+	int i, act_mat = 0;
+	int cont_mat = ar->cont_mat-1;
 	Group *group;
 
 	if(ob->dup_group!=NULL)
@@ -203,45 +285,57 @@ void create_offset(const int n, const int totmat, ArrayModifierData *ar, Object 
 
 	for (i=0; i < n-1; i++)
 	{
-		if ((ar->rot_offset[0]!=0) || (ar->rot_offset[1]!=0) || (ar->rot_offset[2]!=0))
+		if (ar->mode & MOD_ARR_MOD_ADV)
 		{
-			array_offset(ar->rot_offset, rot, ar->sign);
-			ar->Mem_Ob[i].transform=1;
+			if ((ar->rot_offset[0]!=0) || (ar->rot_offset[1]!=0) || (ar->rot_offset[2]!=0))
+			{
+				array_offset(ar->rot_offset, rot, ar->sign);
+				ar->Mem_Ob[i].transform=1;
+			}
+			if ((ar->scale_offset[0]!=0) || (ar->scale_offset[1]!=0) || (ar->scale_offset[2]!=0))
+			{
+				array_scale_offset(ar->scale_offset, scale, ar->proportion);
+				ar->Mem_Ob[i].transform=1;
+			}
+			if ((ar->loc_offset[0]!=0) || (ar->loc_offset[1]!=0) || (ar->loc_offset[2]!=0))
+			{
+				array_offset(ar->loc_offset, loc, ar->sign);
+				ar->Mem_Ob[i].transform=1;
+			}
+			if (ar->Mem_Ob[i].transform)
+			{
+				loc_eul_size_to_mat4(ar->Mem_Ob[i].location, loc, rot, scale);
+			}
+			if (ar->rand_group & MOD_ARR_RAND_GROUP)
+			{
+				ar->Mem_Ob[i].rand_group_obj = BLI_rand() % BLI_countlist(&group->gobject);
+				ar->Mem_Ob[i].rand_group_obj++;
+			}
 		}
-		if ((ar->scale_offset[0]!=0) || (ar->scale_offset[1]!=0) || (ar->scale_offset[2]!=0))
+		if (ar->mode & MOD_ARR_MOD_ADV_MAT)
 		{
-			array_scale_offset(ar->scale_offset, scale, ar->proportion);
-			ar->Mem_Ob[i].transform=1;
+			if (totmat>1)
+			{
+				if (ar->rand_mat & MOD_ARR_MAT) {
+					ar->Mem_Ob[i].id_mat = BLI_rand() % totmat;
+				}
+				else {
+					if (cont_mat == 0 ){
+						cont_mat = ar->cont_mat;
+						if (act_mat + 1 < totmat)
+							act_mat++;
+						else
+							act_mat = 0;
+					}
+					ar->Mem_Ob[i].id_mat = act_mat;
+					cont_mat--;
+				}
+			}
 		}
-		if ((ar->loc_offset[0]!=0) || (ar->loc_offset[1]!=0) || (ar->loc_offset[2]!=0))
-		{
-			array_offset(ar->loc_offset, loc, ar->sign);
-			ar->Mem_Ob[i].transform=1;
-		}
-		if (ar->Mem_Ob[i].transform)
-		{
-			loc_eul_size_to_mat4(ar->Mem_Ob[i].location, loc, rot, scale);
-		}
-		if (ar->rnd_mat && (totmat>1))
-		{
-			ar->Mem_Ob[i].id_mat = BLI_rand() % totmat;
-		}
-		if (ar->rand_group & MOD_ARR_RAND_GROUP)
-		{
-			ar->Mem_Ob[i].rand_group_obj = BLI_rand() % BLI_countlist(&group->gobject);
-			ar->Mem_Ob[i].rand_group_obj++;
-		}
+		
 	}
 }
 
-/* calculations is in local space of deformed object
-	   so we store in latmat transform from path coord inside object 
-	 */
-typedef struct {
-	float dmin[3], dmax[3], dsize, dloc[3];
-	float curvespace[4][4], objectspace[4][4], objectspace3[3][3];
-	int no_rot_axis;
-} CurveDeform;
 
 static void init_curve_deform(Object *par, Object *ob, CurveDeform *cd, int dloc)
 {
@@ -261,6 +355,7 @@ static void init_curve_deform(Object *par, Object *ob, CurveDeform *cd, int dloc
 
 	cd->no_rot_axis= 0;
 }
+
 
 /* this makes sure we can extend for non-cyclic. *vec needs 4 items! */
 static int where_on_path_deform(Object *ob, float ctime, float *vec, float *dir, float *quat, float *radius)	/* returns OK */
@@ -307,6 +402,7 @@ static int where_on_path_deform(Object *ob, float ctime, float *vec, float *dir,
 	}
 	return 0;
 }
+
 
 	/* for each point, rotate & translate to curve */
 	/* use path, since it has constant distances */
@@ -385,6 +481,7 @@ static int calc_curve_deform(Scene *scene, Object *par, float *co, CurveDeform *
 	return 0;
 }
 
+
 void array_to_curve(Scene *scene, Object *cuOb, Object *target, float (*vertexCos)[3], int numVerts)
 {
 	Curve *cu;
@@ -411,3 +508,118 @@ void array_to_curve(Scene *scene, Object *cuOb, Object *target, float (*vertexCo
 	}
 	cu->flag = flag;
 }
+
+
+/*DerivedMesh *insert_start_cap(ArrayModifierData *amd, DerivedMesh *dm, DerivedMesh *result, DerivedMesh *start_cap, IndexMapEntry *indexMap, 
+	EdgeHash *edges, int numVerts, int numEdges, int numFaces, float offset[4][4])
+{
+/* add start and end caps */
+/*	if(start_cap) {
+		float startoffset[4][4];
+		MVert *cap_mvert, *mvert, *src_mvert;
+		MEdge *cap_medge, *medge;
+		MFace *cap_mface, *mface;
+		int *origindex;
+		int *vert_map;
+		int capVerts, capEdges, capFaces;
+		int maxVerts, i;
+
+		maxVerts = dm->getNumVerts(dm);
+		mvert = CDDM_get_verts(result);
+		medge = CDDM_get_edges(result);
+		mface = CDDM_get_faces(result);
+		src_mvert = dm->getVertArray(dm);
+
+		capVerts = start_cap->getNumVerts(start_cap);
+		capEdges = start_cap->getNumEdges(start_cap);
+		capFaces = start_cap->getNumFaces(start_cap);
+		cap_mvert = start_cap->getVertArray(start_cap);
+		cap_medge = start_cap->getEdgeArray(start_cap);
+		cap_mface = start_cap->getFaceArray(start_cap);
+
+		invert_m4_m4(startoffset, offset);
+
+		vert_map = MEM_callocN(sizeof(*vert_map) * capVerts,
+		"arrayModifier_doArray vert_map");
+
+		origindex = result->getVertDataArray(result, CD_ORIGINDEX);
+		for(i = 0; i < capVerts; i++) {
+			MVert *mv = &cap_mvert[i];
+			short merged = 0;
+
+			if(amd->flags & MOD_ARR_MERGE) {
+				float tmp_co[3];
+				MVert *in_mv;
+				int j;
+
+				copy_v3_v3(tmp_co, mv->co);
+				mul_m4_v3(startoffset, tmp_co);
+
+				for(j = 0; j < maxVerts; j++) {
+					in_mv = &src_mvert[j];
+					/* if this vert is within merge limit, merge */
+/*					if(compare_len_v3v3(tmp_co, in_mv->co, amd->merge_dist)) {
+						vert_map[i] = calc_mapping(indexMap, j, 0);
+						merged = 1;
+						break;
+					}
+				}
+			}
+
+			if(!merged) {
+				DM_copy_vert_data(start_cap, result, i, numVerts, 1);
+				mvert[numVerts] = *mv;
+				mul_m4_v3(startoffset, mvert[numVerts].co);
+				origindex[numVerts] = ORIGINDEX_NONE;
+
+				vert_map[i] = numVerts;
+
+				numVerts++;
+			}
+		}
+		origindex = result->getEdgeDataArray(result, CD_ORIGINDEX);
+		for(i = 0; i < capEdges; i++) {
+			int v1, v2;
+
+			v1 = vert_map[cap_medge[i].v1];
+			v2 = vert_map[cap_medge[i].v2];
+
+			if(!BLI_edgehash_haskey(edges, v1, v2)) {
+				DM_copy_edge_data(start_cap, result, i, numEdges, 1);
+				medge[numEdges] = cap_medge[i];
+				medge[numEdges].v1 = v1;
+				medge[numEdges].v2 = v2;
+				origindex[numEdges] = ORIGINDEX_NONE;
+
+				numEdges++;
+			}
+		}
+		origindex = result->getFaceDataArray(result, CD_ORIGINDEX);
+		for(i = 0; i < capFaces; i++) {
+			DM_copy_face_data(start_cap, result, i, numFaces, 1);
+			mface[numFaces] = cap_mface[i];
+			mface[numFaces].v1 = vert_map[mface[numFaces].v1];
+			mface[numFaces].v2 = vert_map[mface[numFaces].v2];
+			mface[numFaces].v3 = vert_map[mface[numFaces].v3];
+			if(mface[numFaces].v4) {
+				mface[numFaces].v4 = vert_map[mface[numFaces].v4];
+
+				test_index_face_maxvert(&mface[numFaces], &result->faceData,
+				numFaces, 4, numVerts);
+			}
+			else
+			{
+				test_index_face(&mface[numFaces], &result->faceData,
+				numFaces, 3);
+			}
+
+			origindex[numFaces] = ORIGINDEX_NONE;
+
+			numFaces++;
+		}
+
+		MEM_freeN(vert_map);
+		start_cap->release(start_cap);
+	}
+	return result;
+}*/

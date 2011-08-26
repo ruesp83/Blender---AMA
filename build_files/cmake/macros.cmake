@@ -1,5 +1,5 @@
 # -*- mode: cmake; indent-tabs-mode: t; -*-
-# $Id: macros.cmake 39171 2011-08-08 05:43:04Z campbellbarton $
+# $Id: macros.cmake 39614 2011-08-22 12:24:14Z campbellbarton $
 
 
 # foo_bar.spam --> foo_barMySuffix.spam
@@ -145,11 +145,6 @@ endmacro()
 
 
 macro(SETUP_LIBDIRS)
-	# see "cmake --help-policy CMP0003"
-	if(COMMAND cmake_policy)
-		cmake_policy(SET CMP0003 NEW)
-	endif()
-
 	link_directories(${JPEG_LIBPATH} ${PNG_LIBPATH} ${ZLIB_LIBPATH} ${FREETYPE_LIBPATH})
 
 	if(WITH_PYTHON)  #  AND NOT WITH_PYTHON_MODULE  # WIN32 needs

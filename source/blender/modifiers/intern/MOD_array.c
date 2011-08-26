@@ -90,7 +90,8 @@ static void initData(ModifierData *md)
 	amd->lock = !MOD_ARR_LOCK;
 	amd->proportion = MOD_ARR_PROP;
 	amd->rays = 1;
-	amd->rnd_mat = !MOD_ARR_MAT;
+	amd->rand_mat = MOD_ARR_MAT;
+	amd->cont_mat = 1;
 	amd->rays_dir = MOD_ARR_RAYS_X;
 	amd->arr_group = NULL;
 	amd->rand_group = !MOD_ARR_RAND_GROUP;
@@ -125,7 +126,8 @@ static void copyData(ModifierData *md, ModifierData *target)
 	tamd->proportion = amd->proportion;
 	tamd->rays = amd->rays;
 	tamd->Mem_Ob = MEM_dupallocN(amd->Mem_Ob);
-	tamd->rnd_mat = amd->rnd_mat;
+	tamd->rand_mat = amd->rand_mat;
+	tamd->cont_mat = amd->cont_mat;
 	tamd->rays_dir = amd->rays_dir;
 	tamd->arr_group = amd->arr_group;
 	tamd->rand_group = amd->rand_group;
@@ -183,92 +185,11 @@ static void updateDepgraph(ModifierData *md, DagForest *forest,
 	}
 }
 
-static float vertarray_size(MVert *mvert, int numVerts, int axis)
-{
-	int i;
-	float min_co, max_co;
-
-	/* if there are no vertices, width is 0 */
-	if(numVerts == 0) return 0;
-
-	/* find the minimum and maximum coordinates on the desired axis */
-	min_co = max_co = mvert->co[axis];
-	++mvert;
-	for(i = 1; i < numVerts; ++i, ++mvert) {
-		if(mvert->co[axis] < min_co) min_co = mvert->co[axis];
-		if(mvert->co[axis] > max_co) max_co = mvert->co[axis];
-	}
-
-	return max_co - min_co;
-}
-
-/* XXX This function fixes bad merging code, in some cases removing vertices creates indices > maxvert */
-
-static int test_index_face_maxvert(MFace *mface, CustomData *fdata, int mfindex, int nr, int maxvert)
-{
-	if(mface->v1 >= maxvert) {
-		// printf("bad index in array\n");
-		mface->v1= maxvert - 1;
-	}
-	if(mface->v2 >= maxvert) {
-		// printf("bad index in array\n");
-		mface->v2= maxvert - 1;
-	}
-	if(mface->v3 >= maxvert) {
-		// printf("bad index in array\n");
-		mface->v3= maxvert - 1;
-	}
-	if(mface->v4 >= maxvert) {
-		// printf("bad index in array\n");
-		mface->v4= maxvert - 1;
-	}
-	
-	return test_index_face(mface, fdata, mfindex, nr);
-}
-
-typedef struct IndexMapEntry {
-	/* the new vert index that this old vert index maps to */
-	int new;
-	/* -1 if this vert isn't merged, otherwise the old vert index it
-	* should be replaced with
-	*/
-	int merge;
-	/* 1 if this vert's first copy is merged with the last copy of its
-	* merge target, otherwise 0
-	*/
-	short merge_final;
-} IndexMapEntry;
-
-/* indexMap - an array of IndexMap entries
- * oldIndex - the old index to map
- * copyNum - the copy number to map to (original = 0, first copy = 1, etc.)
- */
-static int calc_mapping(IndexMapEntry *indexMap, int oldIndex, int copyNum)
-{
-	if(indexMap[oldIndex].merge < 0) {
-		/* vert wasn't merged, so use copy of this vert */
-		return indexMap[oldIndex].new + copyNum;
-	} else if(indexMap[oldIndex].merge == oldIndex) {
-		/* vert was merged with itself */
-		return indexMap[oldIndex].new;
-	} else {
-		/* vert was merged with another vert */
-		/* follow the chain of merges to the end, or until we've passed
-		* a number of vertices equal to the copy number
-		*/
-		if(copyNum <= 0)
-			return indexMap[oldIndex].new;
-		else
-			return calc_mapping(indexMap, indexMap[oldIndex].merge,
-						copyNum - 1);
-	}
-}
-
 static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 					  struct Scene *scene, Object *ob, DerivedMesh *dm,
 	   int initFlags)
 {
-	int i, j;
+	int i, j, flag;
 	int dim, start;
 	/* offset matrix */
 	float offset[4][4];
@@ -281,7 +202,7 @@ static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 	int numVerts, numEdges, numFaces;
 	int maxVerts, maxEdges, maxFaces;
 	int finalVerts, finalEdges, finalFaces;
-	DerivedMesh *result, *start_cap = NULL, *end_cap = NULL;
+	DerivedMesh *result, *start_cap = NULL, *mid_cap = NULL, *end_cap = NULL;
 	MVert *mvert, *src_mvert;
 	MEdge *medge;
 	MFace *mface;
@@ -293,6 +214,8 @@ static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 	/* need to avoid infinite recursion here */
 	if(amd->start_cap && amd->start_cap != ob)
 		start_cap = amd->start_cap->derivedFinal;
+	if(amd->mid_cap && amd->mid_cap != ob)
+		mid_cap = amd->mid_cap->derivedFinal;
 	if(amd->end_cap && amd->end_cap != ob)
 		end_cap = amd->end_cap->derivedFinal;
 
@@ -364,20 +287,25 @@ static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 		finalEdges += start_cap->getNumEdges(start_cap);
 		finalFaces += start_cap->getNumFaces(start_cap);
 	}
+	if(mid_cap) {
+		finalVerts += mid_cap->getNumVerts(mid_cap);
+		finalEdges += mid_cap->getNumEdges(mid_cap);
+		finalFaces += mid_cap->getNumFaces(mid_cap);
+	}
 	if(end_cap) {
 		finalVerts += end_cap->getNumVerts(end_cap);
 		finalEdges += end_cap->getNumEdges(end_cap);
 		finalFaces += end_cap->getNumFaces(end_cap);
 	}
 	result = CDDM_from_template(dm, finalVerts, finalEdges, finalFaces);
-
-	if (amd->mode & MOD_ARR_MOD_ADV){
+	flag = 0;
+	if ((amd->mode & MOD_ARR_MOD_ADV) || (amd->mode & MOD_ARR_MOD_ADV_MAT)){
 		start = 0;
 		if (!amd->Mem_Ob)
 			amd->Mem_Ob = MEM_callocN(sizeof(*amd->Mem_Ob) * (count), "Mem_Ob");
 		else {
 			dim = MEM_allocN_len(amd->Mem_Ob) / sizeof(*amd->Mem_Ob);
-			if ( dim < (count) ) {
+			if (dim < count) {
 				amd->Mem_Ob = MEM_reallocN(amd->Mem_Ob, sizeof(*amd->Mem_Ob) * (count));
 				start = dim;
 			}
@@ -388,9 +316,10 @@ static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 			init_offset(start, count, amd);
 			create_offset(count, ob->totcol, amd, ob);
 			amd->lock = 1;
+			flag = 1;
 		}
 		else 
-			if (start!=0)
+			if (start!=0)// || (amd->mode & MOD_ARR_MOD_ADV_MAT))
 				init_offset(start, count, amd);
 	}
 
@@ -675,9 +604,10 @@ static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 			numFaces++;
 
 			/*Rand Material*/
-			if (amd->rnd_mat && (ob->totcol>1))
+			if ((flag = 1) && (amd->mode & MOD_ARR_MOD_ADV_MAT) && (ob->totcol>1))
 			{
-				mf2->mat_nr = amd->Mem_Ob[j-1].id_mat;
+					mf2->mat_nr = amd->Mem_Ob[j-1].id_mat;
+					flag = 0;
 			}
 			/* if the face has fewer than 3 vertices, don't create it */
 			if(test_index_face_maxvert(mf2, &result->faceData, numFaces-1, inMF.v4?4:3, numVerts) < 3) {
@@ -687,7 +617,7 @@ static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 		}
 	}
 
-	/* add start and end caps */
+	/* add start, mid and end caps */
 	if(start_cap) {
 		float startoffset[4][4];
 		MVert *cap_mvert;
@@ -787,6 +717,108 @@ static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 
 		MEM_freeN(vert_map);
 		start_cap->release(start_cap);
+	}
+
+	/*insert_start_cap(amd, dm, result, start_cap, indexMap, edges, numVerts, numEdges, numFaces, offset);*/
+	if(mid_cap) {
+		float midoffset[4][4];
+		MVert *cap_mvert;
+		MEdge *cap_medge;
+		MFace *cap_mface;
+		int *origindex;
+		int *vert_map;
+		int capVerts, capEdges, capFaces;
+
+		capVerts = mid_cap->getNumVerts(mid_cap);
+		capEdges = mid_cap->getNumEdges(mid_cap);
+		capFaces = mid_cap->getNumFaces(mid_cap);
+		cap_mvert = mid_cap->getVertArray(mid_cap);
+		cap_medge = mid_cap->getEdgeArray(mid_cap);
+		cap_mface = mid_cap->getFaceArray(mid_cap);
+
+		invert_m4_m4(midoffset, offset);
+
+		vert_map = MEM_callocN(sizeof(*vert_map) * capVerts,
+		"arrayModifier_doArray vert_map");
+
+		origindex = result->getVertDataArray(result, CD_ORIGINDEX);
+		for(i = 0; i < capVerts; i++) {
+			MVert *mv = &cap_mvert[i];
+			short merged = 0;
+
+			if(amd->flags & MOD_ARR_MERGE) {
+				float tmp_co[3];
+				MVert *in_mv;
+				int j;
+
+				copy_v3_v3(tmp_co, mv->co);
+				mul_m4_v3(midoffset, tmp_co);
+
+				for(j = 0; j < maxVerts; j++) {
+					in_mv = &src_mvert[j];
+					/* if this vert is within merge limit, merge */
+					if(compare_len_v3v3(tmp_co, in_mv->co, amd->merge_dist)) {
+						vert_map[i] = calc_mapping(indexMap, j, 0);
+						merged = 1;
+						break;
+					}
+				}
+			}
+
+			if(!merged) {
+				DM_copy_vert_data(mid_cap, result, i, numVerts, 1);
+				mvert[numVerts] = *mv;
+				mul_m4_v3(midoffset, mvert[numVerts].co);
+				origindex[numVerts] = ORIGINDEX_NONE;
+
+				vert_map[i] = numVerts;
+
+				numVerts++;
+			}
+		}
+		origindex = result->getEdgeDataArray(result, CD_ORIGINDEX);
+		for(i = 0; i < capEdges; i++) {
+			int v1, v2;
+
+			v1 = vert_map[cap_medge[i].v1];
+			v2 = vert_map[cap_medge[i].v2];
+
+			if(!BLI_edgehash_haskey(edges, v1, v2)) {
+				DM_copy_edge_data(mid_cap, result, i, numEdges, 1);
+				medge[numEdges] = cap_medge[i];
+				medge[numEdges].v1 = v1;
+				medge[numEdges].v2 = v2;
+				origindex[numEdges] = ORIGINDEX_NONE;
+
+				numEdges++;
+			}
+		}
+		origindex = result->getFaceDataArray(result, CD_ORIGINDEX);
+		for(i = 0; i < capFaces; i++) {
+			DM_copy_face_data(mid_cap, result, i, numFaces, 1);
+			mface[numFaces] = cap_mface[i];
+			mface[numFaces].v1 = vert_map[mface[numFaces].v1];
+			mface[numFaces].v2 = vert_map[mface[numFaces].v2];
+			mface[numFaces].v3 = vert_map[mface[numFaces].v3];
+			if(mface[numFaces].v4) {
+				mface[numFaces].v4 = vert_map[mface[numFaces].v4];
+
+				test_index_face_maxvert(&mface[numFaces], &result->faceData,
+				numFaces, 4, numVerts);
+			}
+			else
+			{
+				test_index_face(&mface[numFaces], &result->faceData,
+				numFaces, 3);
+			}
+
+			origindex[numFaces] = ORIGINDEX_NONE;
+
+			numFaces++;
+		}
+
+		MEM_freeN(vert_map);
+		mid_cap->release(mid_cap);
 	}
 
 	if(end_cap) {

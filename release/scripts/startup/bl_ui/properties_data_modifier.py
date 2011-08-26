@@ -145,11 +145,17 @@ class DATA_PT_modifiers(ModifierButtonsPanel, Panel):
         else:
             row.prop(md, "use_advanced_material",
                 icon="RIGHTARROW", text="", emboss=False)
-        row.label("Advanced Material")
+        row.label("Advanced Material", icon="MATERIAL")
         if (md.use_advanced_material):
             col = col.box().column()
             row = col.row()
-            row.prop(md, "material", icon='MATERIAL')
+            row.prop(md, "material", expand=True)
+            act = col.row()
+            if md.material == 'SEQUENCE' :
+                act.active = True
+            else:
+                act.active = False
+            act.prop(md, "cont_mat")
 
         col = layout.column()
         row = col.box().row()
@@ -181,7 +187,7 @@ class DATA_PT_modifiers(ModifierButtonsPanel, Panel):
             act.prop(md, "rand_group")
             col = col.column()
             col.separator()
-            col.operator("object.array_rand", text="Refresh Ad. Offset")
+        layout.operator("object.array_rand", text="Refresh Ad. Offset")
 
     def BEVEL(self, layout, ob, md):
         split = layout.split()

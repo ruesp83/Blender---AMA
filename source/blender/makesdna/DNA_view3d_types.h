@@ -1,5 +1,5 @@
 /*
- * $Id: DNA_view3d_types.h 38908 2011-08-02 04:28:05Z merwin $ 
+ * $Id: DNA_view3d_types.h 39683 2011-08-24 20:28:54Z moguri $ 
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -247,6 +247,7 @@ typedef struct View3D {
 #define V3D_SOLID_TEX			8
 #define V3D_DISPGP				16
 #define V3D_LOCK_CAMERA			32
+#define V3D_RENDER_SHADOW		64 /* This is a runtime only flag that's used to tell draw_mesh_object() that we're doing a shadow pass instead of a regular draw */
 
 /* View3D->around */
 #define V3D_CENTER		 0

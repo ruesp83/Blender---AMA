@@ -1,5 +1,5 @@
 /*
- * $Id: RNA_enum_types.h 36924 2011-05-26 13:38:16Z campbellbarton $
+ * $Id: RNA_enum_types.h 39663 2011-08-24 00:44:58Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -54,6 +54,7 @@ extern EnumPropertyItem constraint_type_items[];
 extern EnumPropertyItem boidrule_type_items[];
 
 extern EnumPropertyItem image_type_items[];
+extern EnumPropertyItem image_color_mode_items[];
 
 extern EnumPropertyItem beztriple_keyframe_type_items[];
 extern EnumPropertyItem beztriple_handle_type_items[];

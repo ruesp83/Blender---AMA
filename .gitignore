@@ -1,3 +1,5 @@
 .svn
+vs2010
+addons_contrib
 *.pyc
 user-config.py

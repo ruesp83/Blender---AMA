@@ -1,5 +1,5 @@
 /*
- * $Id: writefile.c 39084 2011-08-05 20:45:26Z blendix $
+ * $Id: writefile.c 39659 2011-08-23 20:49:06Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -867,10 +867,12 @@ static void write_particlesettings(WriteData *wd, ListBase *idbase)
 			for(; dw; dw=dw->next) {
 				/* update indices */
 				dw->index = 0;
-				go = part->dup_group->gobject.first;
-				while(go && go->ob != dw->ob) {
-					go=go->next;
-					dw->index++;
+				if(part->dup_group) { /* can be NULL if lining fails or set to None */
+					go = part->dup_group->gobject.first;
+					while(go && go->ob != dw->ob) {
+						go=go->next;
+						dw->index++;
+					}
 				}
 				writestruct(wd, DATA, "ParticleDupliWeight", 1, dw);
 			}
@@ -2466,7 +2468,7 @@ static void write_global(WriteData *wd, int fileflags, Main *mainvar)
 	fg.subversion= BLENDER_SUBVERSION;
 	fg.minversion= BLENDER_MINVERSION;
 	fg.minsubversion= BLENDER_MINSUBVERSION;
-#ifdef NAN_BUILDINFO
+#ifdef WITH_BUILDINFO
 	{
 		extern char build_rev[];
 		fg.revision= atoi(build_rev);

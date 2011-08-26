@@ -1,5 +1,5 @@
 /*
- * $Id: BLI_string.h 36933 2011-05-26 21:04:01Z campbellbarton $
+ * $Id: BLI_string.h 39655 2011-08-23 15:08:54Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -26,7 +26,7 @@
  *
  * ***** END GPL LICENSE BLOCK *****
  *
- * $Id: BLI_string.h 36933 2011-05-26 21:04:01Z campbellbarton $ 
+ * $Id: BLI_string.h 39655 2011-08-23 15:08:54Z campbellbarton $ 
 */
 
 #ifndef BLI_STRING_H
@@ -121,6 +121,8 @@ char *BLI_sprintfN(const char *format, ...)
 __attribute__ ((format (printf, 1, 2)))
 #endif
 ;
+
+size_t BLI_strescape(char *dst, const char *src, const size_t maxlen);
 
 	/**
 	 * Compare two strings without regard to case.

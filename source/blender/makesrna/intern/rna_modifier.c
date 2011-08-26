@@ -1292,6 +1292,11 @@ static void rna_def_modifier_array(BlenderRNA *brna)
 	StructRNA *srna;
 	PropertyRNA *prop;
 
+	static EnumPropertyItem prop_material_items[] = {
+		{MOD_ARR_MAT, "RANDOM", 0, "Random", "Use a random material"},
+		{MOD_ARR_SEQ, "SEQUENCE", 0, "Sequence", "Use the materials in sequence"},
+		{0, NULL, 0, NULL, NULL}};
+
 	static EnumPropertyItem prop_fit_type_items[] = {
 		{MOD_ARR_FIXEDCOUNT, "FIXED_COUNT", 0, "Fixed Count", "Duplicate the object a certain number of times"},
 		{MOD_ARR_FITLENGTH, "FIT_LENGTH", 0, "Fit Length", "Duplicate the object as many times as fits in a certain length"},
@@ -1463,9 +1468,16 @@ static void rna_def_modifier_array(BlenderRNA *brna)
 	RNA_def_property_ui_text(prop, "Rays", "Rays");
 	RNA_def_property_update(prop, 0, "rna_Modifier_update");
 
-	prop= RNA_def_property(srna, "material", PROP_BOOLEAN, PROP_TRANSLATION);
-	RNA_def_property_boolean_sdna(prop, NULL, "rnd_mat", MOD_ARR_MAT);
-	RNA_def_property_ui_text(prop, "Rand Material", "Use in the random material for Array");
+	prop= RNA_def_property(srna, "material", PROP_ENUM, PROP_NONE);
+	RNA_def_property_enum_sdna(prop, NULL, "rand_mat");
+	RNA_def_property_enum_items(prop, prop_material_items);
+	RNA_def_property_ui_text(prop, "Offset Material", "");
+	RNA_def_property_update(prop, 0, "rna_Modifier_update");
+
+	prop= RNA_def_property(srna, "cont_mat", PROP_INT, PROP_NONE);
+	RNA_def_property_range(prop, 1, INT_MAX);
+	RNA_def_property_ui_range(prop, 1, 1000, 1, 0);
+	RNA_def_property_ui_text(prop, "Count Material",  "Repetition of material");
 	RNA_def_property_update(prop, 0, "rna_Modifier_update");
 
 	prop= RNA_def_property(srna, "rays_dir", PROP_ENUM, PROP_NONE);

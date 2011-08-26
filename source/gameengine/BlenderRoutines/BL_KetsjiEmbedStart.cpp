@@ -1,5 +1,5 @@
 /*
- * $Id: BL_KetsjiEmbedStart.cpp 37750 2011-06-23 09:27:56Z campbellbarton $
+ * $Id: BL_KetsjiEmbedStart.cpp 39594 2011-08-21 21:17:55Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -233,7 +233,6 @@ extern "C" void StartKetsjiShell(struct bContext *C, struct ARegion *ar, rcti *c
 		ketsjiengine->SetCanvas(canvas);
 		ketsjiengine->SetRenderTools(rendertools);
 		ketsjiengine->SetRasterizer(rasterizer);
-		ketsjiengine->SetNetworkDevice(networkdevice);
 		ketsjiengine->SetUseFixedTime(usefixed);
 		ketsjiengine->SetTimingDisplay(frameRate, profile, properties);
 

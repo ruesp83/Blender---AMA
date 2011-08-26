@@ -1,5 +1,5 @@
 /*
- * $Id: RAS_IPolygonMaterial.cpp 35390 2011-03-07 19:14:17Z dfelinto $
+ * $Id: RAS_IPolygonMaterial.cpp 39683 2011-08-24 20:28:54Z moguri $
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
  * This program is free software; you can redistribute it and/or
@@ -244,6 +244,11 @@ bool RAS_IPolyMaterial::UsesLighting(RAS_IRasterizer *rasty) const
 		dolights = (m_drawingmode & RAS_IRasterizer::KX_LIGHT)!=0;
 	
 	return dolights;
+}
+
+bool RAS_IPolyMaterial::CastsShadows() const
+{
+	return (m_flag & RAS_CASTSHADOW) != 0;
 }
 
 bool RAS_IPolyMaterial::UsesObjectColor() const

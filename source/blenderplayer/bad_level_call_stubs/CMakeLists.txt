@@ -1,4 +1,4 @@
-# $Id: CMakeLists.txt 38443 2011-07-17 09:11:13Z campbellbarton $
+# $Id: CMakeLists.txt 39631 2011-08-22 19:13:26Z campbellbarton $
 # ***** BEGIN GPL LICENSE BLOCK *****
 #
 # This program is free software; you can redistribute it and/or
@@ -49,7 +49,12 @@ if(WITH_BUILDINFO)
 	list(APPEND SRC
 		../../creator/buildinfo.c
 	)
-	add_definitions(-DBUILD_DATE)
+	add_definitions(-DBUILD_DATE="\"\""
+					-DBUILD_TIME="\"\""
+					-DBUILD_REV="\"\""
+					-DBUILD_PLATFORM="\"\""
+					-DBUILD_TYPE="\"\""
+					)
 endif()
 
 if(WITH_GAMEENGINE)

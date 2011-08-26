@@ -245,10 +245,13 @@ typedef struct ArrayModifierData {
 	int proportion;
 	int rays;
 	int rays_dir;
-	int rnd_mat;
+	int rand_mat;
+	int cont_mat;
+	int pad1;
 	struct Group *arr_group;
 	int rand_group;
 	int distribution;
+
 } ArrayModifierData;
 
 /* ArrayModifierData->fit_type */
@@ -270,6 +273,7 @@ typedef struct ArrayModifierData {
 #define MOD_ARR_MOD_ADV			(1<<0)
 #define MOD_ARR_MOD_ADV_MAT		(1<<1)
 #define MOD_ARR_MOD_ADV_CURVE	(1<<2)
+#define MOD_ARR_MOD_ADV_MID		(1<<3)
 
 /* ArrayModifierData->sign */
 #define MOD_ARR_SIGN_P		(1<<0)
@@ -283,6 +287,7 @@ typedef struct ArrayModifierData {
 
 /* ArrayModifierData->rnd_mat */
 #define MOD_ARR_MAT			(1<<0)
+#define MOD_ARR_SEQ			(1<<1)
 
 /* ArrayModifierData->rays_dir */
 #define MOD_ARR_RAYS_X 0

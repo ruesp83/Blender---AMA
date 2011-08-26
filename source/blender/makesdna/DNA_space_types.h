@@ -1,5 +1,5 @@
 /*
- * $Id: DNA_space_types.h 39016 2011-08-04 11:27:13Z campbellbarton $ 
+ * $Id: DNA_space_types.h 39663 2011-08-24 00:44:58Z campbellbarton $ 
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -267,7 +267,7 @@ typedef struct SpaceImage {
 	float centx, centy;				/* storage for offset while render drawing */
 
 	short curtile; /* the currently active tile of the image when tile is enabled, is kept in sync with the active faces tile */
-	short imtypenr;
+	short pad;
 	short lock;
 	short pin;
 	char dt_uv; /* UV draw type */

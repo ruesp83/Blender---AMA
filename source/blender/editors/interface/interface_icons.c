@@ -1,5 +1,5 @@
 /*
- * $Id: interface_icons.c 39066 2011-08-05 10:45:32Z campbellbarton $
+ * $Id: interface_icons.c 39694 2011-08-25 15:49:52Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -1103,8 +1103,7 @@ int ui_id_icon_get(bContext *C, ID *id, int big)
 	int iconid= 0;
 	
 	/* icon */
-	switch(GS(id->name))
-	{
+	switch(GS(id->name)) {
 		case ID_BR:
 			iconid= ui_id_brush_get_icon(C, id);
 			break;

@@ -1,5 +1,5 @@
 /*
- * $Id: fsmenu.c 36031 2011-04-06 06:03:48Z campbellbarton $
+ * $Id: fsmenu.c 39695 2011-08-25 16:41:08Z alexk $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -300,7 +300,7 @@ void fsmenu_read_system(struct FSMenu* fsmenu)
 			
 		tmp= GetLogicalDrives();
 		
-		for (i=2; i < 26; i++) {
+		for (i=0; i < 26; i++) {
 			if ((tmp>>i) & 1) {
 				tmps[0]='A'+i;
 				tmps[1]=':';

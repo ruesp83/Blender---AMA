@@ -1,5 +1,5 @@
 /*
- * $Id: DNA_texture_types.h 36399 2011-05-01 03:57:53Z joeedh $ 
+ * $Id: DNA_texture_types.h 39636 2011-08-22 19:57:54Z mmikkelsen $ 
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -342,6 +342,7 @@ typedef struct TexMapping {
 #define TEX_NORMALMAP	2048
 #define TEX_GAUSS_MIP	4096
 #define TEX_FILTER_MIN	8192
+#define TEX_DERIVATIVEMAP	16384
 
 /* texfilter */
 // TXF_BOX -> blender's old texture filtering method

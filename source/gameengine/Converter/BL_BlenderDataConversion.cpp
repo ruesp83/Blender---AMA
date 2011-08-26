@@ -1,5 +1,5 @@
 /*
- * $Id: BL_BlenderDataConversion.cpp 38501 2011-07-19 01:41:45Z dfelinto $
+ * $Id: BL_BlenderDataConversion.cpp 39683 2011-08-24 20:28:54Z moguri $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -350,6 +350,8 @@ bool ConvertMaterial(
 
 		// use lighting?
 		material->ras_mode |= ( mat->mode & MA_SHLESS )?0:USE_LIGHT;
+		// cast shadows?
+		material->ras_mode |= ( mat->mode & MA_SHADBUF )?CAST_SHADOW:0;
 		MTex *mttmp = 0;
 		numchan = getNumTexChannels(mat);
 		int valid_index = 0;
