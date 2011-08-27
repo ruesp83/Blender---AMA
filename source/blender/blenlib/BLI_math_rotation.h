@@ -1,5 +1,5 @@
 /*
- * $Id: BLI_math_rotation.h 35954 2011-04-02 03:05:49Z campbellbarton $
+ * $Id: BLI_math_rotation.h 39724 2011-08-27 01:42:49Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -107,9 +107,6 @@ void mat4_to_axis_angle(float axis[3], float *angle, float M[4][4]);
 /* TODO: the following calls should probably be depreceated sometime         */
 
 /* conversion */
-void mat3_to_vec_rot(float vec[3], float *phi, float mat[3][3]);
-void mat4_to_vec_rot(float vec[3], float *phi, float mat[4][4]);
-
 void vec_rot_to_quat(float quat[4], const float vec[3], const float phi);
 void vec_rot_to_mat3(float mat[3][3], const float vec[3], const float phi);
 void vec_rot_to_mat4(float mat[4][4], const float vec[3], const float phi);

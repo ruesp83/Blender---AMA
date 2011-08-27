@@ -1,5 +1,5 @@
 /*
- * $Id: gpu_codegen.c 35376 2011-03-06 23:12:12Z campbellbarton $
+ * $Id: gpu_codegen.c 39731 2011-08-27 03:25:02Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -291,7 +291,7 @@ static void gpu_parse_functions_string(GHash *hash, char *code)
 			}
 		}
 
-		if(strlen(function->name) == 0 || function->totparam == 0) {
+		if(function->name[0] == '\0' || function->totparam == 0) {
 			fprintf(stderr, "GPU functions parse error.\n");
 			MEM_freeN(function);
 			break;

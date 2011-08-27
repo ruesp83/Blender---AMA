@@ -115,8 +115,14 @@ class DATA_PT_modifiers(ModifierButtonsPanel, Panel):
         layout.separator()
 
         layout.prop(md, "start_cap")
-        layout.prop(md, "mid_cap")
         layout.prop(md, "end_cap")
+        layout.prop(md, "mid_cap")
+        act_mid = layout.row()
+        if md.mid_cap is None :
+            act_mid.active = False
+        else:
+            act_mid.active = True
+        act_mid.prop(md, "cont_mid_cap")
         layout.separator()
 
         if md.fit_type == 'FIT_CURVE':

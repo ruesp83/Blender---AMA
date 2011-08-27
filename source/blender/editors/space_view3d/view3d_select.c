@@ -1,5 +1,5 @@
 /*
- * $Id: view3d_select.c 39644 2011-08-23 09:05:12Z campbellbarton $
+ * $Id: view3d_select.c 39709 2011-08-26 11:35:33Z blendix $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -1765,9 +1765,15 @@ static int view3d_borderselect_exec(bContext *C, wmOperator *op)
 		case OB_CURVE:
 		case OB_SURF:
 			ret= do_nurbs_box_select(&vc, &rect, select, extend);
+			if(ret & OPERATOR_FINISHED) {
+				WM_event_add_notifier(C, NC_GEOM|ND_SELECT, vc.obedit->data);
+			}
 			break;
 		case OB_MBALL:
 			ret= do_meta_box_select(&vc, &rect, select, extend);
+			if(ret & OPERATOR_FINISHED) {
+				WM_event_add_notifier(C, NC_GEOM|ND_SELECT, vc.obedit->data);
+			}
 			break;
 		case OB_ARMATURE:
 			ret= do_armature_box_select(&vc, &rect, select, extend);

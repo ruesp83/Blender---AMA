@@ -1,7 +1,7 @@
 /*
  * Set random/camera stuff
  *
- * $Id: SCA_RandomActuator.cpp 35169 2011-02-25 13:32:11Z jesterking $
+ * $Id: SCA_RandomActuator.cpp 39731 2011-08-27 03:25:02Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -152,7 +152,7 @@ bool SCA_RandomActuator::Update()
 		/* If x_1, x_2, ... is a sequence of random numbers with uniform     */
 		/* distribution between zero and one, k is the first integer for     */
 		/* which the product x_1*x_2*...*x_k < exp(-\lamba).                 */
-		float a = 0.0, b = 0.0;
+		float a, b;
 		int res = 0;
 		/* The - sign is important here! The number to test for, a, must be  */
 		/* between 0 and 1.                                                  */

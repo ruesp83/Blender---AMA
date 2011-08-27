@@ -1,5 +1,5 @@
 # -*- mode: cmake; indent-tabs-mode: t; -*-
-# $Id: CMakeLists.txt 39676 2011-08-24 16:11:20Z campbellbarton $
+# $Id: CMakeLists.txt 39736 2011-08-27 08:19:26Z campbellbarton $
 # ***** BEGIN GPL LICENSE BLOCK *****
 #
 # This program is free software; you can redistribute it and/or
@@ -843,11 +843,11 @@ elseif(WIN32)
 		if(WITH_OPENCOLLADA)
 			set(OPENCOLLADA ${LIBDIR}/gcc/opencollada)
 			set(OPENCOLLADA_INCLUDE_DIRS
-				${LIBDIR}/opencollada/include/COLLADAStreamWriter/include
-				${LIBDIR}/opencollada/include/COLLADABaseUtils/include
-				${LIBDIR}/opencollada/include/COLLADAFramework/include
-				${LIBDIR}/opencollada/include/COLLADASaxFrameworkLoader/include
-				${LIBDIR}/opencollada/include/GeneratedSaxParser/include			
+				${LIBDIR}/gcc/opencollada/include/COLLADAStreamWriter/include
+				${LIBDIR}/gcc/opencollada/include/COLLADABaseUtils/include
+				${LIBDIR}/gcc/opencollada/include/COLLADAFramework/include
+				${LIBDIR}/gcc/opencollada/include/COLLADASaxFrameworkLoader/include
+				${LIBDIR}/gcc/opencollada/include/GeneratedSaxParser/include			
 			)
 			set(OPENCOLLADA_LIBPATH ${OPENCOLLADA}/lib ${OPENCOLLADA}/lib)
 			set(OPENCOLLADA_LIBRARIES OpenCOLLADAStreamWriter OpenCOLLADASaxFrameworkLoader OpenCOLLADAFramework OpenCOLLADABaseUtils GeneratedSaxParser UTF MathMLSolver expat pcre buffer ftoa)

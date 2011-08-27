@@ -1,5 +1,5 @@
 /*
- * $Id: physics_pointcache.c 36704 2011-05-15 17:59:48Z dingto $
+ * $Id: physics_pointcache.c 39730 2011-08-27 03:20:32Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -172,7 +172,6 @@ void PTCACHE_OT_free_bake_all(wmOperatorType *ot)
 {
 	/* identifiers */
 	ot->name= "Free All Physics Bakes";
-	ot->name= "Free all physics bakes";
 	ot->idname= "PTCACHE_OT_free_bake_all";
 	
 	/* api callbacks */

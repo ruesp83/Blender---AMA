@@ -1,5 +1,5 @@
 /*
- * $Id: rna_define.c 37260 2011-06-06 17:50:20Z campbellbarton $
+ * $Id: rna_define.c 39731 2011-08-27 03:25:02Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -1049,7 +1049,7 @@ void RNA_def_property_array(PropertyRNA *prop, int length)
 	}
 
 	if(prop->arraydimension > 1) {
-		fprintf(stderr, "RNA_def_property_array: \"%s.%s\", array dimensions has been set to %d but would be overwritten as 1.\n", srna->identifier, prop->identifier, prop->arraydimension);
+		fprintf(stderr, "RNA_def_property_array: \"%s.%s\", array dimensions has been set to %u but would be overwritten as 1.\n", srna->identifier, prop->identifier, prop->arraydimension);
 		DefRNA.error= 1;
 		return;
 	}

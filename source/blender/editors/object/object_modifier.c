@@ -1,5 +1,5 @@
 /*
- * $Id: object_modifier.c 38115 2011-07-05 10:35:48Z blendix $
+ * $Id: object_modifier.c 39731 2011-08-27 03:25:02Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -1284,7 +1284,7 @@ static int meshdeform_bind_exec(bContext *C, wmOperator *op)
 		return OPERATOR_CANCELLED;
 
 	if(mmd->bindcagecos) {
-		if(mmd->bindcagecos) MEM_freeN(mmd->bindcagecos);
+		MEM_freeN(mmd->bindcagecos);
 		if(mmd->dyngrid) MEM_freeN(mmd->dyngrid);
 		if(mmd->dyninfluences) MEM_freeN(mmd->dyninfluences);
 		if(mmd->bindinfluences) MEM_freeN(mmd->bindinfluences);

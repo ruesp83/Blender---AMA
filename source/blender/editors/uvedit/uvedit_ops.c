@@ -1,5 +1,5 @@
 /*
- * $Id: uvedit_ops.c 38727 2011-07-26 13:33:04Z campbellbarton $
+ * $Id: uvedit_ops.c 39730 2011-08-27 03:20:32Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -833,7 +833,7 @@ static int select_edgeloop(Scene *scene, Image *ima, EditMesh *em, NearestHit *h
 	if(extend) {
 		tf= CustomData_em_get(&em->fdata, hit->efa->data, CD_MTFACE);
 
-		if(uvedit_uv_selected(scene, hit->efa, tf, hit->edge) && uvedit_uv_selected(scene, hit->efa, tf, hit->edge))
+		if(uvedit_uv_selected(scene, hit->efa, tf, hit->edge))
 			select= 0;
 		else
 			select= 1;

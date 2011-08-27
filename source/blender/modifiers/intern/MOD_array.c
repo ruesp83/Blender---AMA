@@ -92,6 +92,7 @@ static void initData(ModifierData *md)
 	amd->rays = 1;
 	amd->rand_mat = MOD_ARR_MAT;
 	amd->cont_mat = 1;
+	amd->cont_mid_cap = 1;
 	amd->rays_dir = MOD_ARR_RAYS_X;
 	amd->arr_group = NULL;
 	amd->rand_group = !MOD_ARR_RAND_GROUP;
@@ -128,6 +129,7 @@ static void copyData(ModifierData *md, ModifierData *target)
 	tamd->Mem_Ob = MEM_dupallocN(amd->Mem_Ob);
 	tamd->rand_mat = amd->rand_mat;
 	tamd->cont_mat = amd->cont_mat;
+	tamd->cont_mid_cap = amd->cont_mid_cap;
 	tamd->rays_dir = amd->rays_dir;
 	tamd->arr_group = amd->arr_group;
 	tamd->rand_group = amd->rand_group;
@@ -194,6 +196,7 @@ static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 	/* offset matrix */
 	float offset[4][4];
 	float final_offset[4][4];
+	float mid_offset[4][4];
 	float tmp_mat[4][4];
 	float length = amd->length;
 	float alpha, d_alp, circle;
@@ -288,9 +291,9 @@ static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 		finalFaces += start_cap->getNumFaces(start_cap);
 	}
 	if(mid_cap) {
-		finalVerts += mid_cap->getNumVerts(mid_cap);
-		finalEdges += mid_cap->getNumEdges(mid_cap);
-		finalFaces += mid_cap->getNumFaces(mid_cap);
+		finalVerts += mid_cap->getNumVerts(mid_cap) * amd->cont_mid_cap;
+		finalEdges += mid_cap->getNumEdges(mid_cap) * amd->cont_mid_cap;
+		finalFaces += mid_cap->getNumFaces(mid_cap) * amd->cont_mid_cap;
 	}
 	if(end_cap) {
 		finalVerts += end_cap->getNumVerts(end_cap);
@@ -337,7 +340,11 @@ static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 		mul_m4_m4m4(tmp_mat, final_offset, offset);
 		copy_m4_m4(final_offset, tmp_mat);
 	}
-
+	
+	copy_m4_m4(mid_offset, offset);
+	mid_offset[3][0] = mid_offset[3][0] / 2;
+	mid_offset[3][1] = mid_offset[3][1] / 2;
+	mid_offset[3][2] = mid_offset[3][2] / 2;
 	copy_m4_m4(amd->delta, offset);
 	numVerts = numEdges = numFaces = 0;
 	mvert = CDDM_get_verts(result);
@@ -721,7 +728,6 @@ static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 
 	/*insert_start_cap(amd, dm, result, start_cap, indexMap, edges, numVerts, numEdges, numFaces, offset);*/
 	if(mid_cap) {
-		float midoffset[4][4];
 		MVert *cap_mvert;
 		MEdge *cap_medge;
 		MFace *cap_mface;
@@ -736,87 +742,92 @@ static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 		cap_medge = mid_cap->getEdgeArray(mid_cap);
 		cap_mface = mid_cap->getFaceArray(mid_cap);
 
-		invert_m4_m4(midoffset, offset);
-
 		vert_map = MEM_callocN(sizeof(*vert_map) * capVerts,
 		"arrayModifier_doArray vert_map");
+		if (amd->cont_mid_cap>=amd->count)
+			amd->cont_mid_cap = amd->count -1;
+		for(j=0; j < amd->cont_mid_cap; j++) {
+			origindex = result->getVertDataArray(result, CD_ORIGINDEX);
+			for(i = 0; i < capVerts; i++) {
+				MVert *mv = &cap_mvert[i];
+				short merged = 0;
 
-		origindex = result->getVertDataArray(result, CD_ORIGINDEX);
-		for(i = 0; i < capVerts; i++) {
-			MVert *mv = &cap_mvert[i];
-			short merged = 0;
+				if(amd->flags & MOD_ARR_MERGE) {
+					float tmp_co[3];
+					MVert *in_mv;
+					int j;
 
-			if(amd->flags & MOD_ARR_MERGE) {
-				float tmp_co[3];
-				MVert *in_mv;
-				int j;
+					copy_v3_v3(tmp_co, mv->co);
+					mul_m4_v3(mid_offset, tmp_co);
 
-				copy_v3_v3(tmp_co, mv->co);
-				mul_m4_v3(midoffset, tmp_co);
-
-				for(j = 0; j < maxVerts; j++) {
-					in_mv = &src_mvert[j];
-					/* if this vert is within merge limit, merge */
-					if(compare_len_v3v3(tmp_co, in_mv->co, amd->merge_dist)) {
-						vert_map[i] = calc_mapping(indexMap, j, 0);
-						merged = 1;
-						break;
+					for(j = 0; j < maxVerts; j++) {
+						in_mv = &src_mvert[j];
+						/* if this vert is within merge limit, merge */
+						if(compare_len_v3v3(tmp_co, in_mv->co, amd->merge_dist)) {
+							vert_map[i] = calc_mapping(indexMap, j, 0);
+							merged = 1;
+							break;
+						}
 					}
+				}
+
+				if(!merged) {
+					//for(j=0; j < amd->cont_mid_cap; j++) {
+						DM_copy_vert_data(mid_cap, result, i, numVerts, 1);
+						mvert[numVerts] = *mv;
+						mul_m4_v3(mid_offset, mvert[numVerts].co);
+						origindex[numVerts] = ORIGINDEX_NONE;
+
+						vert_map[i] = numVerts;
+
+						numVerts++;
+					//}
 				}
 			}
 
-			if(!merged) {
-				DM_copy_vert_data(mid_cap, result, i, numVerts, 1);
-				mvert[numVerts] = *mv;
-				mul_m4_v3(midoffset, mvert[numVerts].co);
-				origindex[numVerts] = ORIGINDEX_NONE;
+			origindex = result->getEdgeDataArray(result, CD_ORIGINDEX);
+			for(i = 0; i < capEdges; i++) {
+				int v1, v2;
 
-				vert_map[i] = numVerts;
+				v1 = vert_map[cap_medge[i].v1];
+				v2 = vert_map[cap_medge[i].v2];
 
-				numVerts++;
+				if(!BLI_edgehash_haskey(edges, v1, v2)) {
+					DM_copy_edge_data(mid_cap, result, i, numEdges, 1);
+					medge[numEdges] = cap_medge[i];
+					medge[numEdges].v1 = v1;
+					medge[numEdges].v2 = v2;
+					origindex[numEdges] = ORIGINDEX_NONE;
+
+					numEdges++;
+				}
 			}
+			origindex = result->getFaceDataArray(result, CD_ORIGINDEX);
+			for(i = 0; i < capFaces; i++) {
+				DM_copy_face_data(mid_cap, result, i, numFaces, 1);
+				mface[numFaces] = cap_mface[i];
+				mface[numFaces].v1 = vert_map[mface[numFaces].v1];
+				mface[numFaces].v2 = vert_map[mface[numFaces].v2];
+				mface[numFaces].v3 = vert_map[mface[numFaces].v3];
+				if(mface[numFaces].v4) {
+					mface[numFaces].v4 = vert_map[mface[numFaces].v4];
+
+					test_index_face_maxvert(&mface[numFaces], &result->faceData,
+					numFaces, 4, numVerts);
+				}
+				else
+				{
+					test_index_face(&mface[numFaces], &result->faceData,
+					numFaces, 3);
+				}
+
+				origindex[numFaces] = ORIGINDEX_NONE;
+
+				numFaces++;
+			}
+			mul_m4_m4m4(tmp_mat, mid_offset, offset);
+			copy_m4_m4(mid_offset, tmp_mat);
 		}
-		origindex = result->getEdgeDataArray(result, CD_ORIGINDEX);
-		for(i = 0; i < capEdges; i++) {
-			int v1, v2;
-
-			v1 = vert_map[cap_medge[i].v1];
-			v2 = vert_map[cap_medge[i].v2];
-
-			if(!BLI_edgehash_haskey(edges, v1, v2)) {
-				DM_copy_edge_data(mid_cap, result, i, numEdges, 1);
-				medge[numEdges] = cap_medge[i];
-				medge[numEdges].v1 = v1;
-				medge[numEdges].v2 = v2;
-				origindex[numEdges] = ORIGINDEX_NONE;
-
-				numEdges++;
-			}
-		}
-		origindex = result->getFaceDataArray(result, CD_ORIGINDEX);
-		for(i = 0; i < capFaces; i++) {
-			DM_copy_face_data(mid_cap, result, i, numFaces, 1);
-			mface[numFaces] = cap_mface[i];
-			mface[numFaces].v1 = vert_map[mface[numFaces].v1];
-			mface[numFaces].v2 = vert_map[mface[numFaces].v2];
-			mface[numFaces].v3 = vert_map[mface[numFaces].v3];
-			if(mface[numFaces].v4) {
-				mface[numFaces].v4 = vert_map[mface[numFaces].v4];
-
-				test_index_face_maxvert(&mface[numFaces], &result->faceData,
-				numFaces, 4, numVerts);
-			}
-			else
-			{
-				test_index_face(&mface[numFaces], &result->faceData,
-				numFaces, 3);
-			}
-
-			origindex[numFaces] = ORIGINDEX_NONE;
-
-			numFaces++;
-		}
-
 		MEM_freeN(vert_map);
 		mid_cap->release(mid_cap);
 	}

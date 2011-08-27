@@ -1,5 +1,5 @@
 /*
- * $Id: gpu_material.c 39636 2011-08-22 19:57:54Z mmikkelsen $
+ * $Id: gpu_material.c 39730 2011-08-27 03:20:32Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -358,7 +358,7 @@ void GPU_material_enable_alpha(GPUMaterial *material)
 	material->alpha= 1;
 }
 
-GPUBlendMode GPU_material_blend_mode(GPUMaterial *material, float obcol[3])
+GPUBlendMode GPU_material_blend_mode(GPUMaterial *material, float obcol[4])
 {
 	if(material->alpha || (material->obcolalpha && obcol[3] < 1.0f))
 		return GPU_BLEND_ALPHA;

@@ -1,5 +1,5 @@
 /*
- * $Id: anim_markers.c 38086 2011-07-04 15:09:02Z campbellbarton $
+ * $Id: anim_markers.c 39731 2011-08-27 03:25:02Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -339,7 +339,7 @@ void debug_markers_print_list(ListBase *markers)
 	printf("List of markers follows: -----\n");
 	
 	for (marker = markers->first; marker; marker = marker->next) {
-		printf("\t'%s' on %d at %p with %d\n", marker->name, marker->frame, (void *)marker, marker->flag);
+		printf("\t'%s' on %d at %p with %u\n", marker->name, marker->frame, (void *)marker, marker->flag);
 	}
 	
 	printf("End of list ------------------\n");

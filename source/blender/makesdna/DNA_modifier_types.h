@@ -247,7 +247,7 @@ typedef struct ArrayModifierData {
 	int rays_dir;
 	int rand_mat;
 	int cont_mat;
-	int pad1;
+	int cont_mid_cap;
 	struct Group *arr_group;
 	int rand_group;
 	int distribution;

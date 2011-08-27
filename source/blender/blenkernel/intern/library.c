@@ -1,5 +1,5 @@
 /* 
- * $Id: library.c 36411 2011-05-01 10:14:09Z campbellbarton $
+ * $Id: library.c 39734 2011-08-27 07:06:44Z campbellbarton $
  * 
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -671,7 +671,7 @@ void *copy_libblock(void *rt)
 	assert(idn != NULL);
 
 	idn_len= MEM_allocN_len(idn);
-	if(idn_len - sizeof(ID) > 0) {
+	if((int)idn_len - (int)sizeof(ID) > 0) { /* signed to allow neg result */
 		cp= (char *)id;
 		cpn= (char *)idn;
 		memcpy(cpn+sizeof(ID), cp+sizeof(ID), idn_len - sizeof(ID));

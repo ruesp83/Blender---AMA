@@ -1,5 +1,5 @@
 /*
- * $Id: readblenentry.c 36757 2011-05-18 19:42:30Z elubie $
+ * $Id: readblenentry.c 39731 2011-08-27 03:25:02Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -115,7 +115,7 @@ void BLO_blendhandle_print_sizes(BlendHandle *bh, void *fp)
 			buf[2]= buf[2]?buf[2]:' ';
 			buf[3]= buf[3]?buf[3]:' ';
 			
-			fprintf(fp, "['%.4s', '%s', %d, %ld ], \n", buf, name, bhead->nr, (long int)bhead->len+sizeof(BHead));
+			fprintf(fp, "['%.4s', '%s', %d, %ld ], \n", buf, name, bhead->nr, (long int)(bhead->len+sizeof(BHead)));
 		}
 	}
 	fprintf(fp, "]\n");

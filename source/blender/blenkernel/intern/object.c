@@ -1,7 +1,7 @@
 /* object.c
  *
  * 
- * $Id: object.c 37503 2011-06-15 09:45:26Z blendix $
+ * $Id: object.c 39730 2011-08-27 03:20:32Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -3134,7 +3134,7 @@ int object_is_modified(Scene *scene, Object *ob)
 	int flag= 0;
 
 	if(ob_get_key(ob)) {
-		flag |= eModifierMode_Render | eModifierMode_Render;
+		flag |= eModifierMode_Render;
 	}
 	else {
 		ModifierData *md;

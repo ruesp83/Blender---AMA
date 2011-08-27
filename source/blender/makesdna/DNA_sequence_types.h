@@ -1,5 +1,5 @@
 /*
- * $Id: DNA_sequence_types.h 37303 2011-06-07 18:34:33Z campbellbarton $
+ * $Id: DNA_sequence_types.h 39727 2011-08-27 02:59:43Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -209,14 +209,9 @@ typedef struct GlowVars {
 typedef struct TransformVars {
 	float ScalexIni;
 	float ScaleyIni;
-	float ScalexFin; /* deprecated - old transform strip */
-	float ScaleyFin; /* deprecated - old transform strip */
 	float xIni;
-	float xFin; /* deprecated - old transform strip */
 	float yIni;
-	float yFin; /* deprecated - old transform strip */
 	float rotIni;
-	float rotFin; /* deprecated - old transform strip */
 	int percent;
 	int interpolation;
 	int uniform_scale; /* preserve aspect/ratio when scaling */

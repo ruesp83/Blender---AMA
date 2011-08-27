@@ -1,5 +1,5 @@
 /*
- * $Id: KX_GameObject.cpp 38273 2011-07-09 19:59:32Z campbellbarton $
+ * $Id: KX_GameObject.cpp 39723 2011-08-27 01:37:47Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -1839,7 +1839,7 @@ PyObject* KX_GameObject::pyattr_get_lin_vel_min(void *self_v, const KX_PYATTRIBU
 {
 	KX_GameObject* self= static_cast<KX_GameObject*>(self_v);
 	KX_IPhysicsController *spc = self->GetPhysicsController();
-	return PyFloat_FromDouble(spc ? spc->GetLinVelocityMax() : 0.0f);
+	return PyFloat_FromDouble(spc ? spc->GetLinVelocityMin() : 0.0f);
 }
 
 int KX_GameObject::pyattr_set_lin_vel_min(void *self_v, const KX_PYATTRIBUTE_DEF *attrdef, PyObject *value)

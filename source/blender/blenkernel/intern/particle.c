@@ -1,7 +1,7 @@
 /* particle.c
  *
  *
- * $Id: particle.c 39244 2011-08-10 07:36:57Z jesterking $
+ * $Id: particle.c 39730 2011-08-27 03:20:32Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -3161,7 +3161,7 @@ void psys_cache_edit_paths(Scene *scene, Object *ob, PTCacheEdit *edit, float cf
 			}
 			else {
 				ca->vel[0] = ca->vel[1] = 0.0f;
-				ca->vel[1] = 1.0f;
+				ca->vel[2] = 1.0f;
 			}
 
 			/* selection coloring in edit mode */

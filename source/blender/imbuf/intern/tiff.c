@@ -1,7 +1,7 @@
 /*
  * tiff.c
  *
- * $Id: tiff.c 36669 2011-05-13 14:27:12Z campbellbarton $
+ * $Id: tiff.c 39731 2011-08-27 03:25:02Z campbellbarton $
  * 
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -646,7 +646,7 @@ void imb_loadtiletiff(ImBuf *ibuf, unsigned char *mem, size_t size, int tx, int 
 			}
 		}
 		else
-			printf("imb_loadtiff: mipmap level %d has unexpected size %dx%d instead of %dx%d\n", ibuf->miplevel, width, height, ibuf->x, ibuf->y);
+			printf("imb_loadtiff: mipmap level %d has unexpected size %ux%u instead of %dx%d\n", ibuf->miplevel, width, height, ibuf->x, ibuf->y);
 	}
 	else
 		printf("imb_loadtiff: could not find mipmap level %d\n", ibuf->miplevel);
