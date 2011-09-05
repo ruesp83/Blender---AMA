@@ -1,6 +1,4 @@
 /*
- * $Id: space_outliner.c 39291 2011-08-11 05:46:18Z campbellbarton $
- *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
  * This program is free software; you can redistribute it and/or

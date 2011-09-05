@@ -1,5 +1,5 @@
 /*
- * $Id: filelist.c 39421 2011-08-15 16:18:04Z blendix $
+ * $Id: filelist.c 39792 2011-08-30 09:15:55Z nexyon $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -1105,7 +1105,7 @@ void filelist_from_main(struct FileList *filelist)
 	if( filelist->dir[0]==0) {
 		
 		/* make directories */
-		filelist->numfiles= 23;
+		filelist->numfiles= 24;
 		filelist->filelist= (struct direntry *)malloc(filelist->numfiles * sizeof(struct direntry));
 		
 		for(a=0; a<filelist->numfiles; a++) {
@@ -1135,6 +1135,7 @@ void filelist_from_main(struct FileList *filelist)
 		filelist->filelist[20].relname= BLI_strdup("Armature");
 		filelist->filelist[21].relname= BLI_strdup("Action");
 		filelist->filelist[22].relname= BLI_strdup("NodeTree");
+		filelist->filelist[23].relname= BLI_strdup("Speaker");
 		filelist_sort(filelist, FILE_SORT_ALPHA);
 	}
 	else {

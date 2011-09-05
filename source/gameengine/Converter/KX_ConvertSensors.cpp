@@ -1,5 +1,5 @@
 /*
- * $Id: KX_ConvertSensors.cpp 36083 2011-04-10 09:37:04Z campbellbarton $
+ * $Id: KX_ConvertSensors.cpp 39834 2011-09-01 02:12:53Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -276,7 +276,7 @@ void BL_ConvertSensors(struct Object* blenderobject,
 		gReverseKeyTranslateTable[ENDKEY			] = SCA_IInputDevice::KX_ENDKEY;
 	}
 
-    int executePriority = 0;
+	int executePriority = 0;
 	int uniqueint = 0;
 	int count = 0;
 	bSensor* sens = (bSensor*)blenderobject->sensors.first;

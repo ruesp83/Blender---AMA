@@ -1,6 +1,4 @@
 /*
- * $Id: ED_keyframes_draw.h 35737 2011-03-24 03:19:30Z aligorith $
- *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
  * This program is free software; you can redistribute it and/or

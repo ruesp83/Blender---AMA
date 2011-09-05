@@ -1,6 +1,4 @@
 /*
- * $Id: drawgpencil.c 36811 2011-05-21 08:56:37Z campbellbarton $
- *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
  * This program is free software; you can redistribute it and/or

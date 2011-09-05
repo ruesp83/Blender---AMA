@@ -1,5 +1,5 @@
 /*
- * $Id: RAS_OpenGLRasterizer.cpp 36470 2011-05-04 01:50:17Z dfelinto $
+ * $Id: RAS_OpenGLRasterizer.cpp 39818 2011-08-31 05:51:51Z moguri $
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
  * This program is free software; you can redistribute it and/or
@@ -99,12 +99,16 @@ RAS_OpenGLRasterizer::RAS_OpenGLRasterizer(RAS_ICanvas* canvas)
 		hinterlace_mask[i] = (i&1)*0xFFFFFFFF;
 	}
 	hinterlace_mask[32] = 0;
+
+	m_prevafvalue = GPU_get_anisotropic();
 }
 
 
 
 RAS_OpenGLRasterizer::~RAS_OpenGLRasterizer()
 {
+	// Restore the previous AF value
+	GPU_set_anisotropic(m_prevafvalue);
 }
 
 bool RAS_OpenGLRasterizer::Init()
@@ -1204,3 +1208,12 @@ void RAS_OpenGLRasterizer::SetFrontFace(bool ccw)
 	m_last_frontface = ccw;
 }
 
+void RAS_OpenGLRasterizer::SetAnisotropicFiltering(short level)
+{
+	GPU_set_anisotropic((float)level);
+}
+
+short RAS_OpenGLRasterizer::GetAnisotropicFiltering()
+{
+	return (short)GPU_get_anisotropic();
+}

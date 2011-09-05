@@ -1,7 +1,7 @@
 /*
  * allocimbuf.c
  *
- * $Id: allocimbuf.c 36715 2011-05-16 13:34:42Z blendix $
+ * $Id: allocimbuf.c 39749 2011-08-28 14:46:03Z schlaile $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -175,6 +175,19 @@ void IMB_freeImBuf(ImBuf *ibuf)
 void IMB_refImBuf(ImBuf *ibuf)
 {
 	ibuf->refcounter++;
+}
+
+ImBuf * IMB_makeSingleUser(ImBuf *ibuf)
+{
+	ImBuf * rval;
+
+	if (!ibuf || ibuf->refcounter == 0) { return ibuf; }
+
+	rval = IMB_dupImBuf(ibuf);
+
+	IMB_freeImBuf(ibuf);
+
+	return rval;
 }
 
 short addzbufImBuf(ImBuf *ibuf)

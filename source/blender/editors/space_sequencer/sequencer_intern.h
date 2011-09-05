@@ -1,5 +1,5 @@
 /*
- * $Id: sequencer_intern.h 39379 2011-08-14 03:59:22Z campbellbarton $
+ * $Id: sequencer_intern.h 39749 2011-08-28 14:46:03Z schlaile $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -117,6 +117,8 @@ void SEQUENCER_OT_change_path(struct wmOperatorType *ot);
 
 void SEQUENCER_OT_copy(struct wmOperatorType *ot);
 void SEQUENCER_OT_paste(struct wmOperatorType *ot);
+
+void SEQUENCER_OT_rebuild_proxy(struct wmOperatorType *ot);
 
 /* preview specific operators */
 void SEQUENCER_OT_view_all_preview(struct wmOperatorType *ot);

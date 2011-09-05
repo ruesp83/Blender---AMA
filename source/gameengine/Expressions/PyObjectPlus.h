@@ -1,5 +1,5 @@
 /*
- * $Id: PyObjectPlus.h 38602 2011-07-22 11:21:01Z campbellbarton $
+ * $Id: PyObjectPlus.h 39792 2011-08-30 09:15:55Z nexyon $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -255,12 +255,15 @@ typedef struct PyObjectPlus_Proxy {
 #define KX_PYMETHODTABLE_NOARGS(class_name, method_name) \
 	{#method_name , (PyCFunction) class_name::sPy##method_name, METH_NOARGS, (const char *)class_name::method_name##_doc}
 
+#define KX_PYMETHODTABLE_KEYWORDS(class_name, method_name) \
+	{#method_name , (PyCFunction) class_name::sPy##method_name, METH_VARARGS|METH_KEYWORDS, (const char *)class_name::method_name##_doc}
+
 /**
  * Function implementation macro
  */
 #define KX_PYMETHODDEF_DOC(class_name, method_name, doc_string) \
 const char class_name::method_name##_doc[] = doc_string; \
-PyObject* class_name::Py##method_name(PyObject* args, PyObject*)
+PyObject* class_name::Py##method_name(PyObject* args, PyObject* kwds)
 
 #define KX_PYMETHODDEF_DOC_VARARGS(class_name, method_name, doc_string) \
 const char class_name::method_name##_doc[] = doc_string; \

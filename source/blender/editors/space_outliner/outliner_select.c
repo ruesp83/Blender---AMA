@@ -1,6 +1,4 @@
 /*
- * $Id: outliner_select.c 39532 2011-08-18 18:42:42Z campbellbarton $
- *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
  * This program is free software; you can redistribute it and/or

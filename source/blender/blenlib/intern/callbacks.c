@@ -1,5 +1,5 @@
 /*
- * $Id: callbacks.c 37799 2011-06-24 23:14:26Z gsrb3d $
+ * $Id: callbacks.c 39744 2011-08-28 05:06:30Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -28,7 +28,7 @@
 
 #include "MEM_guardedalloc.h"
 
-static ListBase callback_slots[BLI_CB_EVT_TOT]= {{0}};
+static ListBase callback_slots[BLI_CB_EVT_TOT]= {{NULL}};
 
 void BLI_exec_cb(struct Main *main, struct ID *self, eCbEvent evt)
 {

@@ -1,5 +1,5 @@
 /*
- * $Id: RAS_OpenGLRasterizer.h 35072 2011-02-22 12:42:55Z jesterking $
+ * $Id: RAS_OpenGLRasterizer.h 39818 2011-08-31 05:51:51Z moguri $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -93,6 +93,8 @@ class RAS_OpenGLRasterizer : public RAS_IRasterizer
 	float			m_focallength;
 	bool			m_setfocallength;
 	int				m_noOfScanlines;
+
+	short			m_prevafvalue;
 
 	//motion blur
 	int	m_motionblur;
@@ -293,6 +295,9 @@ public:
 
 	virtual void	SetBlendingMode(int blendmode);
 	virtual void	SetFrontFace(bool ccw);
+	
+	virtual void	SetAnisotropicFiltering(short level);
+	virtual short	GetAnisotropicFiltering();
 	
 	
 #ifdef WITH_CXX_GUARDEDALLOC

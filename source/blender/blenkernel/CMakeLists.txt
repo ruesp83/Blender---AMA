@@ -1,4 +1,4 @@
-# $Id: CMakeLists.txt 38866 2011-07-31 02:24:06Z nicholasbishop $
+# $Id: CMakeLists.txt 39792 2011-08-30 09:15:55Z nexyon $
 # ***** BEGIN GPL LICENSE BLOCK *****
 #
 # This program is free software; you can redistribute it and/or
@@ -141,6 +141,7 @@ set(SRC
 	intern/smoke.c
 	intern/softbody.c
 	intern/sound.c
+	intern/speaker.c
 	intern/subsurf_ccg.c
 	intern/suggestions.c
 	intern/text.c
@@ -222,6 +223,7 @@ set(SRC
 	BKE_smoke.h
 	BKE_softbody.h
 	BKE_sound.h
+	BKE_speaker.h
 	BKE_subsurf.h
 	BKE_suggestions.h
 	BKE_text.h

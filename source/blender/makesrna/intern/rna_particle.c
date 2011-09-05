@@ -1,5 +1,5 @@
 /*
- * $Id: rna_particle.c 37760 2011-06-23 18:59:47Z lukastoenne $
+ * $Id: rna_particle.c 39936 2011-09-05 19:27:21Z blendix $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -33,6 +33,7 @@
 #include "limits.h"
 
 #include "RNA_define.h"
+#include "RNA_enum_types.h"
 
 #include "rna_internal.h"
 

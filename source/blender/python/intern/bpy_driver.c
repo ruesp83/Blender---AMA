@@ -1,5 +1,5 @@
 /*
- * $Id: bpy_driver.c 39006 2011-08-04 01:56:36Z campbellbarton $
+ * $Id: bpy_driver.c 39919 2011-09-05 05:42:49Z zanqdo $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -73,6 +73,13 @@ int bpy_pydriver_create_dict(void)
 	mod= PyImport_ImportModuleLevel((char *)"bpy", NULL, NULL, NULL, 0);
 	if (mod) {
 		PyDict_SetItemString(bpy_pydriver_Dict, "bpy", mod);
+		Py_DECREF(mod);
+	}
+
+	/* add noise to global namespace */
+	mod= PyImport_ImportModuleLevel((char *)"noise", NULL, NULL, NULL, 0);
+	if (mod) {
+		PyDict_SetItemString(bpy_pydriver_Dict, "noise", mod);
 		Py_DECREF(mod);
 	}
 

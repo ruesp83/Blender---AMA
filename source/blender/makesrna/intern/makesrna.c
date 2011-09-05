@@ -1,5 +1,5 @@
 /*
- * $Id: makesrna.c 39731 2011-08-27 03:25:02Z campbellbarton $
+ * $Id: makesrna.c 39792 2011-08-30 09:15:55Z nexyon $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -42,7 +42,7 @@
 
 #include "rna_internal.h"
 
-#define RNA_VERSION_DATE "$Id: makesrna.c 39731 2011-08-27 03:25:02Z campbellbarton $"
+#define RNA_VERSION_DATE "$Id: makesrna.c 39792 2011-08-30 09:15:55Z nexyon $"
 
 #ifdef _WIN32
 #ifndef snprintf
@@ -66,7 +66,7 @@ static int file_older(const char *file1, const char *file2)
 
 	return (st1.st_mtime < st2.st_mtime);
 }
-const char *makesrna_path= NULL;
+static const char *makesrna_path= NULL;
 
 static int replace_if_different(char *tmpfile, const char *dep_files[])
 {
@@ -2417,7 +2417,7 @@ typedef struct RNAProcessItem {
 static RNAProcessItem PROCESS_ITEMS[]= {
 	{"rna_rna.c", NULL, RNA_def_rna},
 	{"rna_ID.c", NULL, RNA_def_ID},
-	{"rna_texture.c", NULL, RNA_def_texture},
+	{"rna_texture.c", "rna_texture_api.c", RNA_def_texture},
 	{"rna_action.c", "rna_action_api.c", RNA_def_action},
 	{"rna_animation.c", "rna_animation_api.c", RNA_def_animation},
 	{"rna_animviz.c", NULL, RNA_def_animviz},
@@ -2461,6 +2461,7 @@ static RNAProcessItem PROCESS_ITEMS[]= {
 	{"rna_sequencer.c", "rna_sequencer_api.c", RNA_def_sequencer},
 	{"rna_smoke.c", NULL, RNA_def_smoke},
 	{"rna_space.c", NULL, RNA_def_space},
+	{"rna_speaker.c", NULL, RNA_def_speaker},
 	{"rna_test.c", NULL, RNA_def_test},
 	{"rna_text.c", NULL, RNA_def_text},
 	{"rna_timeline.c", NULL, RNA_def_timeline_marker},

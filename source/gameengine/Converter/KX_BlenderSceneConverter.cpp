@@ -1,5 +1,5 @@
 /*
- * $Id: KX_BlenderSceneConverter.cpp 39044 2011-08-05 05:26:19Z campbellbarton $
+ * $Id: KX_BlenderSceneConverter.cpp 39883 2011-09-03 02:15:49Z campbellbarton $
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
  * This program is free software; you can redistribute it and/or
@@ -566,18 +566,18 @@ void KX_BlenderSceneConverter::RegisterPolyMaterial(RAS_IPolyMaterial *polymat)
 
 
 void KX_BlenderSceneConverter::RegisterInterpolatorList(
-									BL_InterpolatorList *adtList,
-									struct AnimData *for_adt)
+									BL_InterpolatorList *actList,
+									struct bAction *for_act)
 {
-	m_map_blender_to_gameAdtList.insert(CHashedPtr(for_adt), adtList);
+	m_map_blender_to_gameAdtList.insert(CHashedPtr(for_act), actList);
 }
 
 
 
 BL_InterpolatorList *KX_BlenderSceneConverter::FindInterpolatorList(
-									struct AnimData *for_adt)
+									struct bAction *for_act)
 {
-	BL_InterpolatorList **listp = m_map_blender_to_gameAdtList[CHashedPtr(for_adt)];
+	BL_InterpolatorList **listp = m_map_blender_to_gameAdtList[CHashedPtr(for_act)];
 		
 	return listp?*listp:NULL;
 }
@@ -679,7 +679,7 @@ void	KX_BlenderSceneConverter::ResetPhysicsObjectsAnimationIpo(bool clearIpo)
 								MEM_freeN( tmpicu );
 								localDel_ipoCurve( tmpicu );
 							}
-					  	}
+						}
 					} else
 					{	ipo = NULL; // XXX add_ipo(blenderObject->id.name+2, ID_OB);
 						blenderObject->ipo = ipo;
@@ -1083,7 +1083,7 @@ bool KX_BlenderSceneConverter::LinkBlendFile(BlendHandle *bpy_openlib, const cha
  * most are temp and NewRemoveObject frees m_map_gameobject_to_blender */
 bool KX_BlenderSceneConverter::FreeBlendFile(struct Main *maggie)
 {
-	int maggie_index;
+	int maggie_index= -1;
 	int i=0;
 
 	if(maggie==NULL)
@@ -1100,6 +1100,10 @@ bool KX_BlenderSceneConverter::FreeBlendFile(struct Main *maggie)
 		}
 		i++;
 	}
+
+	/* should never happen but just to be safe */
+	if(maggie_index == -1)
+		return false;
 
 	m_DynamicMaggie.erase(m_DynamicMaggie.begin() + maggie_index);
 	tag_main(maggie, 1);

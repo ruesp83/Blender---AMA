@@ -1,5 +1,5 @@
 /*
- * $Id: MEM_sys_types.h 36360 2011-04-28 05:15:47Z campbellbarton $
+ * $Id: MEM_sys_types.h 39888 2011-09-03 09:43:20Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -88,7 +88,7 @@ typedef unsigned long uintptr_t;
 #define _UINTPTR_T_DEFINED
 #endif
 
-#elif defined(__linux__) || defined(__NetBSD__)
+#elif defined(__linux__) || defined(__NetBSD__) || defined(__OpenBSD__)
 
 	/* Linux-i386, Linux-Alpha, Linux-ppc */
 #include <stdint.h>

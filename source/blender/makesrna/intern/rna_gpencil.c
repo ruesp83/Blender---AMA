@@ -1,6 +1,4 @@
 /*
- * $Id: rna_gpencil.c 36223 2011-04-19 13:02:49Z aligorith $
- *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
  * This program is free software; you can redistribute it and/or

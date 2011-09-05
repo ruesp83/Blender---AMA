@@ -1,6 +1,4 @@
 /*
- * $Id: time_ops.c 36380 2011-04-29 06:59:18Z campbellbarton $
- *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
  * This program is free software; you can redistribute it and/or

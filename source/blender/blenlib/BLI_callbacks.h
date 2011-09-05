@@ -1,5 +1,5 @@
 /*
- * $Id: BLI_callbacks.h 37799 2011-06-24 23:14:26Z gsrb3d $
+ * $Id: BLI_callbacks.h 39821 2011-08-31 10:43:22Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -42,6 +42,7 @@ struct ID;
 typedef enum {
 	BLI_CB_EVT_RENDER_PRE,
 	BLI_CB_EVT_RENDER_POST,
+	BLI_CB_EVT_RENDER_STATS,
 	BLI_CB_EVT_LOAD_PRE,
 	BLI_CB_EVT_LOAD_POST,
 	BLI_CB_EVT_SAVE_PRE,

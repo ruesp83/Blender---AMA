@@ -1,6 +1,4 @@
 /*
- * $Id: gpencil_paint.c 39304 2011-08-11 13:40:47Z nazgul $
- *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
  * This program is free software; you can redistribute it and/or

@@ -1,5 +1,5 @@
 /*
- * $Id: ED_view3d.h 37327 2011-06-09 03:56:32Z campbellbarton $
+ * $Id: ED_view3d.h 39739 2011-08-27 11:52:59Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -288,7 +288,7 @@ unsigned int ED_viewedit_datamask(struct bScreen *screen);
 int ED_view3d_camera_lock_check(struct View3D *v3d, struct RegionView3D *rv3d);
 /* copy the camera to the view before starting a view transformation */
 void ED_view3d_camera_lock_init(struct View3D *v3d, struct RegionView3D *rv3d);
-/* copy the view to the camera */
-void ED_view3d_camera_lock_sync(struct View3D *v3d, struct RegionView3D *rv3d);
+/* copy the view to the camera, return TRUE if */
+int ED_view3d_camera_lock_sync(struct View3D *v3d, struct RegionView3D *rv3d);
 
 #endif /* ED_VIEW3D_H */

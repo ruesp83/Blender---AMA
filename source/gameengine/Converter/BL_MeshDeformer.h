@@ -1,5 +1,5 @@
 /*
- * $Id: BL_MeshDeformer.h 36523 2011-05-06 20:18:42Z blendix $
+ * $Id: BL_MeshDeformer.h 39883 2011-09-03 02:15:49Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -88,7 +88,7 @@ protected:
 	// --
 	int							m_tvtot;
 	BL_DeformableGameObject*	m_gameobj;
-	double					 	m_lastDeformUpdate;
+	double						m_lastDeformUpdate;
 
 
 #ifdef WITH_CXX_GUARDEDALLOC

@@ -1,5 +1,5 @@
 /*
- * $Id: drawmesh.c 39343 2011-08-12 18:13:55Z blendix $
+ * $Id: drawmesh.c 39777 2011-08-29 16:07:44Z nazgul $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -607,7 +607,7 @@ void draw_mesh_textured(Scene *scene, View3D *v3d, RegionView3D *rv3d, Object *o
 	}
 	else if(faceselect) {
 		if(ob->mode & OB_MODE_WEIGHT_PAINT)
-			dm->drawMappedFaces(dm, wpaint__setSolidDrawOptions, me, 1, GPU_enable_material);
+			dm->drawMappedFaces(dm, wpaint__setSolidDrawOptions, me, 1, GPU_enable_material, NULL);
 		else
 			dm->drawMappedFacesTex(dm, me->mface ? draw_tface_mapped__set_draw : NULL, me);
 	}

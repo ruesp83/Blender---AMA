@@ -1,7 +1,7 @@
 /* texture.c
  *
  *
- * $Id: texture.c 39416 2011-08-15 13:17:39Z blendix $
+ * $Id: texture.c 39941 2011-09-05 21:01:50Z lukastoenne $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -766,7 +766,9 @@ Tex *copy_texture(Tex *tex)
 	if(tex->preview) texn->preview = BKE_previewimg_copy(tex->preview);
 
 	if(tex->nodetree) {
-		ntreeEndExecTree(tex->nodetree);
+		if (tex->nodetree->execdata) {
+			ntreeTexEndExecTree(tex->nodetree->execdata);
+		}
 		texn->nodetree= ntreeCopyTree(tex->nodetree); 
 	}
 	

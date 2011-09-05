@@ -1,5 +1,5 @@
 /*
- * $Id: wm_jobs.c 36276 2011-04-21 15:53:30Z campbellbarton $
+ * $Id: wm_jobs.c 39749 2011-08-28 14:46:03Z schlaile $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -200,6 +200,20 @@ char *WM_jobs_name(wmWindowManager *wm, void *owner)
 		return steve->name;
 	
 	return NULL;
+}
+
+int WM_jobs_is_running(wmJob *steve)
+{
+	return steve->running;
+}
+
+void* WM_jobs_get_customdata(wmJob * steve)
+{
+	if (!steve->customdata) {
+		return steve->run_customdata;
+	} else {
+		return steve->customdata;
+	}
 }
 
 void WM_jobs_customdata(wmJob *steve, void *customdata, void (*free)(void *))

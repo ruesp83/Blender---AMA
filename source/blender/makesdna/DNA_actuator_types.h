@@ -1,5 +1,5 @@
 /*
- * $Id: DNA_actuator_types.h 37455 2011-06-13 17:08:33Z dfelinto $ 
+ * $Id: DNA_actuator_types.h 39792 2011-08-30 09:15:55Z nexyon $ 
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -56,9 +56,12 @@ typedef struct bActionActuator {
 	char	frameProp[32];	/* Set this property to the actions current frame */
 	short	blendin;		/* Number of frames of blending */
 	short	priority;		/* Execution priority */
+	short	layer;			/* Animation layer */
 	short	end_reset;	/* Ending the actuator (negative pulse) wont reset the the action to its starting frame */
 	short	strideaxis;		/* Displacement axis */
+	short	pad;
 	float	stridelength;	/* Displacement incurred by cycle */ // not in use
+	float	layer_weight;	/* How much of the previous layer to use for blending. (<0 = disable, 0 = add mode) */
 } bActionActuator;												
 
 typedef struct Sound3D
@@ -120,6 +123,7 @@ typedef struct bObjectActuator {
 	struct Object *reference;
 } bObjectActuator;
 
+/* deprecated, handled by bActionActuator now */
 typedef struct bIpoActuator {
 	short flag, type;
 	float sta, end;

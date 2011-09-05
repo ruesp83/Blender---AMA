@@ -1,6 +1,4 @@
 /*
- * $Id: space_nla.c 36788 2011-05-20 05:27:31Z campbellbarton $
- *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
  * This program is free software; you can redistribute it and/or

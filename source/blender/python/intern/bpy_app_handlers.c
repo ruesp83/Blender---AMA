@@ -1,5 +1,5 @@
 /*
- * $Id: bpy_app_handlers.c 37799 2011-06-24 23:14:26Z gsrb3d $
+ * $Id: bpy_app_handlers.c 39821 2011-08-31 10:43:22Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -42,9 +42,10 @@ static PyTypeObject BlenderAppCbType;
 static PyStructSequence_Field app_cb_info_fields[]= {
 	{(char *)"render_pre", NULL},
 	{(char *)"render_post", NULL},
-    {(char *)"load_pre", NULL},
+	{(char *)"render_stats", NULL},
+	{(char *)"load_pre", NULL},
 	{(char *)"load_post", NULL},
-    {(char *)"save_pre", NULL},
+	{(char *)"save_pre", NULL},
 	{(char *)"save_post", NULL},
 	{NULL}
 };

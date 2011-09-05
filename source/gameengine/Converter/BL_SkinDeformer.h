@@ -1,5 +1,5 @@
 /*
- * $Id: BL_SkinDeformer.h 36523 2011-05-06 20:18:42Z blendix $
+ * $Id: BL_SkinDeformer.h 39792 2011-08-30 09:15:55Z nexyon $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -109,6 +109,11 @@ protected:
 	bool					m_releaseobject;
 	bool					m_poseApplied;
 	bool					m_recalcNormal;
+	bool					m_copyNormals; // dirty flag so we know if Apply() needs to copy normal information (used for BGEDeformVerts())
+	struct bPoseChannel**	m_dfnrToPC;
+
+	void BlenderDeformVerts();
+	void BGEDeformVerts();
 
 
 #ifdef WITH_CXX_GUARDEDALLOC

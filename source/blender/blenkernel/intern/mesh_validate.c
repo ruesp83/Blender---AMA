@@ -1,5 +1,5 @@
 /*
- * $Id: mesh_validate.c 39731 2011-08-27 03:25:02Z campbellbarton $
+ * $Id: mesh_validate.c 39893 2011-09-03 15:36:36Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -166,7 +166,7 @@ int BKE_mesh_validate_arrays(Mesh *me, MVert *UNUSED(mverts), unsigned int totve
 		}
 
 		if(BLI_edgehash_haskey(edge_hash, med->v1, med->v2)) {
-			PRINT("    edge %u: is a duplicate of, %u\n", i, GET_INT_FROM_POINTER(BLI_edgehash_lookup(edge_hash, med->v1, med->v2)));
+			PRINT("    edge %u: is a duplicate of, %d\n", i, GET_INT_FROM_POINTER(BLI_edgehash_lookup(edge_hash, med->v1, med->v2)));
 			remove= do_fixes;
 		}
 

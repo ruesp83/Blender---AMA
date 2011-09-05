@@ -1,5 +1,5 @@
 /*
- * $Id: editmesh_lib.c 36007 2011-04-04 17:28:31Z blendix $
+ * $Id: editmesh_lib.c 39806 2011-08-30 15:30:38Z nazgul $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -1141,6 +1141,9 @@ short extrudeflag_face_indiv(EditMesh *em, short UNUSED(flag), float *UNUSED(nor
 	
 	EM_select_flush(em);
 	
+	/* step 5; update normals after extrude */
+	recalc_editnormals(em);
+
 	return 'n';
 }
 
@@ -1206,6 +1209,9 @@ short extrudeflag_edges_indiv(EditMesh *em, short flag, float *nor)
 		if(eed->v1->f & eed->v2->f & flag) eed->f |= flag;
 	}
 	
+	/* update normals after extrude */
+	recalc_editnormals(em);
+
 	if(is_zero_v3(nor)) return 'g'; // g is grab
 	return 'n';  // n is for normal constraint
 }
@@ -1484,6 +1490,9 @@ static short extrudeflag_edge(Object *obedit, EditMesh *em, short UNUSED(flag), 
 	}
 
 	EM_select_flush(em);
+
+	/* step 8; update normals after extrude */
+	recalc_editnormals(em);
 
 	if(is_zero_v3(nor)) return 'g'; // grab
 	return 'n'; // normal constraint 

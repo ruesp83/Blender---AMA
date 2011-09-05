@@ -1,5 +1,5 @@
 /*
- * $Id: DNA_ID.h 36725 2011-05-17 06:56:10Z campbellbarton $
+ * $Id: DNA_ID.h 39792 2011-08-30 09:15:55Z nexyon $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -178,6 +178,7 @@ typedef struct PreviewImage {
 #define ID_SCRN		MAKE_ID2('S', 'N') /* (depreciated?) */
 #define ID_VF		MAKE_ID2('V', 'F') /* VectorFont */
 #define ID_TXT		MAKE_ID2('T', 'X') /* Text */
+#define ID_SPK		MAKE_ID2('S', 'K') /* Speaker */
 #define ID_SO		MAKE_ID2('S', 'O') /* Sound */
 #define ID_GR		MAKE_ID2('G', 'R') /* Group */
 #define ID_ID		MAKE_ID2('I', 'D') /* (internal use only) */

@@ -1,6 +1,6 @@
 
 /*
- * $Id: sequencer_ops.c 39379 2011-08-14 03:59:22Z campbellbarton $
+ * $Id: sequencer_ops.c 39749 2011-08-28 14:46:03Z schlaile $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -87,6 +87,7 @@ void sequencer_operatortypes(void)
 	WM_operatortype_append(SEQUENCER_OT_view_zoom_ratio);
 	WM_operatortype_append(SEQUENCER_OT_view_ghost_border);
 
+	WM_operatortype_append(SEQUENCER_OT_rebuild_proxy);
 	WM_operatortype_append(SEQUENCER_OT_change_effect_input);
 	WM_operatortype_append(SEQUENCER_OT_change_effect_type);
 	WM_operatortype_append(SEQUENCER_OT_change_path);

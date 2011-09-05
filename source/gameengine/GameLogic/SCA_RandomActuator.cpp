@@ -1,7 +1,7 @@
 /*
  * Set random/camera stuff
  *
- * $Id: SCA_RandomActuator.cpp 39731 2011-08-27 03:25:02Z campbellbarton $
+ * $Id: SCA_RandomActuator.cpp 39883 2011-09-03 02:15:49Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -207,10 +207,10 @@ bool SCA_RandomActuator::Update()
 			  sensible values. The termination condition states two 
 			  things: 
 			  1. s >= 0 is not allowed: to prevent the distro from 
-			     getting a bias towards high values. This is a small 
+				 getting a bias towards high values. This is a small
 				 correction, really, and might also be left out.
 			  2. s == 0 is not allowed: to prevent a division by zero
-			     when renormalising the drawn value to the desired 
+				 when renormalising the drawn value to the desired
 				 distribution shape. As a side effect, the distro will
 				 never yield the exact mean. 
 			  I am not sure whether this is consistent, since the error 

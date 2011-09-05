@@ -1,5 +1,5 @@
 /*
- * $Id: object_modifier.c 39731 2011-08-27 03:25:02Z campbellbarton $
+ * $Id: object_modifier.c 39904 2011-09-04 11:38:53Z nazgul $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -1070,7 +1070,12 @@ static int multires_reshape_exec(bContext *C, wmOperator *op)
 
 	if (!mmd)
 		return OPERATOR_CANCELLED;
-	
+
+	if(mmd->lvl==0) {
+		BKE_report(op->reports, RPT_ERROR, "Reshape can work only with higher levels of subdivisions.");
+		return OPERATOR_CANCELLED;
+	}
+
 	CTX_DATA_BEGIN(C, Object*, selob, selected_editable_objects) {
 		if(selob->type == OB_MESH && selob != ob) {
 			secondob= selob;

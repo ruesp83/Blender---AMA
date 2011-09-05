@@ -1,5 +1,5 @@
 /*
- * $Id: rna_fluidsim.c 37441 2011-06-12 23:51:30Z genscher $
+ * $Id: rna_fluidsim.c 39880 2011-09-02 17:58:09Z nazgul $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -184,7 +184,11 @@ static void rna_DomainFluidSettings_memory_estimate_get(PointerRNA *ptr, char *v
 
 static int rna_DomainFluidSettings_memory_estimate_length(PointerRNA *ptr)
 {
-	return 32;
+#ifdef DISABLE_ELBEEM
+	return 0;
+#else
+	return 31;
+#endif
 }
 
 static char *rna_FluidSettings_path(PointerRNA *ptr)

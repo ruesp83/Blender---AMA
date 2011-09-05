@@ -1,5 +1,5 @@
 /*
- * $Id: storage.c 38142 2011-07-06 10:19:04Z blendix $
+ * $Id: storage.c 39795 2011-08-30 10:07:50Z blendix $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -338,7 +338,7 @@ void BLI_adddirstrings(void)
 			if ( pwuser ) {
 				BLI_strncpy(file->owner, pwuser->pw_name, sizeof(file->owner));
 			} else {
-				snprintf(file->owner, sizeof(file->owner), "%d", file->s.st_uid);
+				BLI_snprintf(file->owner, sizeof(file->owner), "%d", file->s.st_uid);
 			}
 		}
 #endif

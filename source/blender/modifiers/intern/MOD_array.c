@@ -459,7 +459,7 @@ static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 					if (amd->Mem_Ob[j].transform)
 					{
 						float fo[3];
-												
+						
 						copy_v3_v3(fo, mv2->co);
 						mul_m4_v3(amd->Mem_Ob[j].location, fo);
 						copy_v3_v3(mv2->co, fo);

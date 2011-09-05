@@ -1,5 +1,5 @@
 /*
- * $Id: RAS_IRasterizer.h 35390 2011-03-07 19:14:17Z dfelinto $
+ * $Id: RAS_IRasterizer.h 39818 2011-08-31 05:51:51Z moguri $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -417,6 +417,9 @@ public:
 
 	virtual void	SetBlendingMode(int blendmode)=0;
 	virtual void	SetFrontFace(bool ccw)=0;
+
+	virtual void	SetAnisotropicFiltering(short level)=0;
+	virtual short	GetAnisotropicFiltering()=0;
 	
 	
 #ifdef WITH_CXX_GUARDEDALLOC

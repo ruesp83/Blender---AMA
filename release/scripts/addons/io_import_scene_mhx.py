@@ -2883,6 +2883,7 @@ def copyConstraint(cns1, pb1, pb2, mhx, rigify):
 class OBJECT_OT_RigifyMhxButton(bpy.types.Operator):
     bl_idname = "mhxrig.rigify_mhx"
     bl_label = "Rigify MHX rig"
+    bl_options = {'UNDO'}
 
     def execute(self, context):
         rigifyMhx(context, context.object.name)
@@ -2907,8 +2908,7 @@ class RigifyMhxPanel(bpy.types.Panel):
         return False
 
     def draw(self, context):
-        layout = self.layout
-        layout.operator("mhxrig.rigify_mhx")
+        self.layout.operator("mhxrig.rigify_mhx")
         return
 
 ###################################################################################
@@ -3000,6 +3000,7 @@ class ImportMhx(bpy.types.Operator, ImportHelper):
     bl_label = "Import MHX"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
+    bl_options = {'UNDO'}
 
     scale = FloatProperty(name="Scale", description="Default meter, decimeter = 1.0", default = theScale)
     enums = []

@@ -1,5 +1,5 @@
 /*
- * $Id: BKE_image.h 36413 2011-05-01 14:02:40Z campbellbarton $ 
+ * $Id: BKE_image.h 39749 2011-08-28 14:46:03Z schlaile $ 
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -60,7 +60,7 @@ int		BKE_ftype_to_imtype(int ftype);
 int		BKE_imtype_to_ftype(int imtype);
 int		BKE_imtype_is_movie(int imtype);
 
-struct anim *openanim(char * name, int flags);
+struct anim *openanim(char * name, int flags, int streamindex);
 
 void	image_de_interlace(struct Image *ima, int odd);
 	

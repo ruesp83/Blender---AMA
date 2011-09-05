@@ -1,5 +1,5 @@
 /*
- * $Id: WM_api.h 39321 2011-08-12 03:53:26Z campbellbarton $
+ * $Id: WM_api.h 39749 2011-08-28 14:46:03Z schlaile $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -300,6 +300,8 @@ int			WM_jobs_test(struct wmWindowManager *wm, void *owner);
 float		WM_jobs_progress(struct wmWindowManager *wm, void *owner);
 char		*WM_jobs_name(struct wmWindowManager *wm, void *owner);
 
+int             WM_jobs_is_running(struct wmJob *);
+void*           WM_jobs_get_customdata(struct wmJob *);
 void		WM_jobs_customdata(struct wmJob *, void *customdata, void (*free)(void *));
 void		WM_jobs_timer(struct wmJob *, double timestep, unsigned int note, unsigned int endnote);
 void		WM_jobs_callbacks(struct wmJob *, 

@@ -1,4 +1,4 @@
-// $Id: KX_TrackToActuator.h 36523 2011-05-06 20:18:42Z blendix $
+// $Id: KX_TrackToActuator.h 39883 2011-09-03 02:15:49Z campbellbarton $
 //
 // ***** BEGIN GPL LICENSE BLOCK *****
 //
@@ -57,7 +57,7 @@ class KX_TrackToActuator : public SCA_IActuator
 
   public:
 	KX_TrackToActuator(SCA_IObject* gameobj, SCA_IObject *ob, int time,
-				       bool threedee,int trackflag,int upflag);
+	                   bool threedee,int trackflag,int upflag);
 	virtual ~KX_TrackToActuator();
 	virtual CValue* GetReplica() {
 		KX_TrackToActuator* replica = new KX_TrackToActuator(*this);

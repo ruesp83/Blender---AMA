@@ -1,5 +1,5 @@
 /*
- * $Id: text_ops.c 38751 2011-07-27 06:55:20Z campbellbarton $
+ * $Id: text_ops.c 39738 2011-08-27 11:41:48Z nazgul $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -192,11 +192,12 @@ static int new_exec(bContext *C, wmOperator *UNUSED(op))
 void TEXT_OT_new(wmOperatorType *ot)
 {
 	/* identifiers */
-	ot->name= "New";
+	ot->name= "Create Text Block";
 	ot->idname= "TEXT_OT_new";
 	ot->description= "Create a new text data block";
 	
 	/* api callbacks */
+	ot->invoke= WM_operator_confirm;
 	ot->exec= new_exec;
 	ot->poll= text_new_poll;
 	

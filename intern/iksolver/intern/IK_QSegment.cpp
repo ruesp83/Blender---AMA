@@ -1,5 +1,5 @@
 /*
- * $Id: IK_QSegment.cpp 37836 2011-06-27 03:36:14Z campbellbarton $
+ * $Id: IK_QSegment.cpp 39893 2011-09-03 15:36:36Z campbellbarton $
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
  * This program is free software; you can redistribute it and/or
@@ -319,7 +319,7 @@ void IK_QSegment::RemoveChild(IK_QSegment *child)
 	else {
 		IK_QSegment *seg = m_child;
 
-		while (seg->m_sibling != child);
+		while (seg->m_sibling != child)
 			seg = seg->m_sibling;
 
 		if (child == seg->m_sibling)

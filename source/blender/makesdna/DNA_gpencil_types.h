@@ -1,6 +1,4 @@
 /*
- * $Id: DNA_gpencil_types.h 35935 2011-04-01 11:55:21Z campbellbarton $
- *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
  * This program is free software; you can redistribute it and/or

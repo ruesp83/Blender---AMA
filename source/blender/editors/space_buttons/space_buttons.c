@@ -1,5 +1,5 @@
 /*
- * $Id: space_buttons.c 37557 2011-06-16 15:28:39Z campbellbarton $
+ * $Id: space_buttons.c 39755 2011-08-28 18:54:02Z nazgul $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -269,6 +269,7 @@ static void buttons_area_listener(ScrArea *sa, wmNotifier *wmn)
 					buttons_area_redraw(sa, BCONTEXT_DATA);	/* autotexpace flag */
 					break;
 				case ND_POSE:
+					buttons_area_redraw(sa, BCONTEXT_DATA);
 				case ND_BONE_ACTIVE:
 				case ND_BONE_SELECT:
 					buttons_area_redraw(sa, BCONTEXT_BONE);

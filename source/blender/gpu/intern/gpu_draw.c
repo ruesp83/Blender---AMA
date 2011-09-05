@@ -1,5 +1,5 @@
 /*
- * $Id: gpu_draw.c 38372 2011-07-13 18:40:21Z campbellbarton $
+ * $Id: gpu_draw.c 39744 2011-08-28 05:06:30Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -308,7 +308,7 @@ void GPU_set_anisotropic(float value)
 	}
 }
 
-float GPU_get_anisotropic()
+float GPU_get_anisotropic(void)
 {
 	return GTS.anisotropic;
 }

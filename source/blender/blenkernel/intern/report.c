@@ -1,5 +1,5 @@
 /*
- * $Id: report.c 36271 2011-04-21 13:11:51Z campbellbarton $
+ * $Id: report.c 39795 2011-08-30 10:07:50Z blendix $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -43,12 +43,6 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
-
-#ifdef _WIN32
-#ifndef vsnprintf
-#define vsnprintf _vsnprintf
-#endif
-#endif
 
 static const char *report_type_str(int type)
 {

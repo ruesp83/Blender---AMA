@@ -1,6 +1,4 @@
 /*
- * $Id: armature.c 37546 2011-06-16 07:59:22Z campbellbarton $
- *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
  * This program is free software; you can redistribute it and/or

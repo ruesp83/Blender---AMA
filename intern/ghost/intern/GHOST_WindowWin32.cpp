@@ -1,5 +1,5 @@
 /*
- * $Id: GHOST_WindowWin32.cpp 39423 2011-08-15 16:26:37Z alexk $
+ * $Id: GHOST_WindowWin32.cpp 39808 2011-08-30 17:30:35Z moguri $
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
  * This program is free software; you can redistribute it and/or
@@ -33,7 +33,7 @@
 
 /**
 
- * $Id: GHOST_WindowWin32.cpp 39423 2011-08-15 16:26:37Z alexk $
+ * $Id: GHOST_WindowWin32.cpp 39808 2011-08-30 17:30:35Z moguri $
  * Copyright (C) 2001 NaN Technologies B.V.
  * @author	Maarten Gribnau
  * @date	May 10, 2001
@@ -866,6 +866,8 @@ GHOST_TSuccess GHOST_WindowWin32::installDrawingContext(GHOST_TDrawingContextTyp
 				{
 
 					// Make sure we don't screw up the context
+					if (m_hGlRc == s_firsthGLRc)
+						s_firsthGLRc = NULL;
 					m_drawingContextType = GHOST_kDrawingContextTypeOpenGL;
 					removeDrawingContext();
 

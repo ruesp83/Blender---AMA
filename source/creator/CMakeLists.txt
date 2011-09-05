@@ -1,5 +1,5 @@
 # -*- mode: cmake; indent-tabs-mode: t; -*-
-# $Id: CMakeLists.txt 39627 2011-08-22 18:49:42Z nazgul $
+# $Id: CMakeLists.txt 39941 2011-09-05 21:01:50Z lukastoenne $
 # ***** BEGIN GPL LICENSE BLOCK *****
 #
 # This program is free software; you can redistribute it and/or
@@ -717,7 +717,6 @@ set(BLENDER_LINK_LIBS bf_nodes ${BLENDER_LINK_LIBS} bf_windowmanager bf_render)
 if(WITH_MOD_FLUID)
 	list(APPEND BLENDER_LINK_LIBS bf_intern_elbeem)
 endif()
-
 
 #if(UNIX)
 	# Sort libraries

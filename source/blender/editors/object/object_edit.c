@@ -1,5 +1,5 @@
 /*
- * $Id: object_edit.c 39421 2011-08-15 16:18:04Z blendix $
+ * $Id: object_edit.c 39881 2011-09-02 18:05:07Z nazgul $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -1411,6 +1411,8 @@ static int forcefield_toggle_exec(bContext *C, wmOperator *UNUSED(op))
 	else
 		ob->pd->forcefield = 0;
 	
+	WM_event_add_notifier(C, NC_OBJECT|ND_DRAW, NULL);
+
 	return OPERATOR_FINISHED;
 }
 

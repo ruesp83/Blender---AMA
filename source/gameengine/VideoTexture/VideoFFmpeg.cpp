@@ -1,7 +1,7 @@
 /** \file gameengine/VideoTexture/VideoFFmpeg.cpp
  *  \ingroup bgevideotex
  */
-/* $Id: VideoFFmpeg.cpp 36961 2011-05-27 23:46:47Z schlaile $
+/* $Id: VideoFFmpeg.cpp 39834 2011-09-01 02:12:53Z campbellbarton $
 -----------------------------------------------------------------------------
 This source file is part of VideoTexture library
 
@@ -544,11 +544,11 @@ void VideoFFmpeg::openFile (char * filename)
 		// It would be good to find this information from the context but there are no simple indication
 		!strncmp(filename, "http://", 7) ||
 #ifdef FFMPEG_PB_IS_POINTER
-        (m_formatCtx->pb && m_formatCtx->pb->is_streamed)
+		(m_formatCtx->pb && m_formatCtx->pb->is_streamed)
 #else
-        m_formatCtx->pb.is_streamed
+		m_formatCtx->pb.is_streamed
 #endif
-        )
+		)
 	{
 		// the file is in fact a streaming source, treat as cam to prevent seeking
 		m_isFile = false;

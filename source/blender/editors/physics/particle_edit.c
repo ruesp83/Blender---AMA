@@ -1,5 +1,5 @@
 /*
- * $Id: particle_edit.c 38102 2011-07-05 01:49:34Z jhk $
+ * $Id: particle_edit.c 39744 2011-08-28 05:06:30Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -3988,7 +3988,7 @@ static void PTCacheUndo_clear(PTCacheEdit *edit)
 {
 	PTCacheUndo *undo;
 
-	if(edit==0) return;
+	if(edit==NULL) return;
 	
 	undo= edit->undo.first;
 	while(undo) {

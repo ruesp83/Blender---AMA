@@ -1,5 +1,5 @@
 /*
- * $Id: BLI_ghash.c 39403 2011-08-15 03:41:31Z campbellbarton $
+ * $Id: BLI_ghash.c 39744 2011-08-28 05:06:30Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -40,7 +40,7 @@
 #include "BLO_sys_types.h" // for intptr_t support
 /***/
 
-unsigned int hashsizes[]= {
+static unsigned int hashsizes[]= {
 	5, 11, 17, 37, 67, 131, 257, 521, 1031, 2053, 4099, 8209, 
 	16411, 32771, 65537, 131101, 262147, 524309, 1048583, 2097169, 
 	4194319, 8388617, 16777259, 33554467, 67108879, 134217757, 

@@ -1,5 +1,5 @@
 /*
- * $Id: KX_BlenderSceneConverter.h 36523 2011-05-06 20:18:42Z blendix $
+ * $Id: KX_BlenderSceneConverter.h 39792 2011-08-30 09:15:55Z nexyon $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -113,8 +113,8 @@ public:
 
 	void RegisterBlenderMaterial(BL_Material *mat);
 	
-	void RegisterInterpolatorList(BL_InterpolatorList *adtList, struct AnimData *for_adt);
-	BL_InterpolatorList *FindInterpolatorList(struct AnimData *for_adt);
+	void RegisterInterpolatorList(BL_InterpolatorList *actList, struct bAction *for_act);
+	BL_InterpolatorList *FindInterpolatorList(struct bAction *for_act);
 
 	void RegisterGameActuator(SCA_IActuator *act, struct bActuator *for_actuator);
 	SCA_IActuator *FindGameActuator(struct bActuator *for_actuator);

@@ -1,5 +1,5 @@
 /*
- * $Id: KX_PolygonMaterial.cpp 35390 2011-03-07 19:14:17Z dfelinto $
+ * $Id: KX_PolygonMaterial.cpp 39883 2011-09-03 02:15:49Z campbellbarton $
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
  * This program is free software; you can redistribute it and/or
@@ -187,7 +187,7 @@ void KX_PolygonMaterial::DefaultActivate(RAS_IRasterizer* rasty, TCachingInfo& c
 			rasty->SetCullFace(true);
 
 		if ((m_drawingmode & RAS_IRasterizer::KX_LINES) ||
-		    (rasty->GetDrawingMode() <= RAS_IRasterizer::KX_WIREFRAME))
+		        (rasty->GetDrawingMode() <= RAS_IRasterizer::KX_WIREFRAME))
 			rasty->SetLines(true);
 		else
 			rasty->SetLines(false);

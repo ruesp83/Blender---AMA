@@ -1,5 +1,5 @@
 /*
- * $Id: RNA_enum_types.h 39663 2011-08-24 00:44:58Z campbellbarton $
+ * $Id: RNA_enum_types.h 39941 2011-09-05 21:01:50Z lukastoenne $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -59,6 +59,7 @@ extern EnumPropertyItem image_color_mode_items[];
 extern EnumPropertyItem beztriple_keyframe_type_items[];
 extern EnumPropertyItem beztriple_handle_type_items[];
 extern EnumPropertyItem beztriple_interpolation_mode_items[];
+extern EnumPropertyItem keyframe_handle_type_items[];
 
 extern EnumPropertyItem keyingset_path_grouping_items[];
 
@@ -98,11 +99,15 @@ extern EnumPropertyItem wm_report_items[];
 
 extern EnumPropertyItem transform_mode_types[];
 
+extern EnumPropertyItem posebone_rotmode_items[];
+
 extern EnumPropertyItem property_type_items[];
+extern EnumPropertyItem property_subtype_items[];
 extern EnumPropertyItem property_unit_items[];
 
 extern EnumPropertyItem viewport_shade_items[];
 
+extern EnumPropertyItem nodetree_type_items[];
 extern EnumPropertyItem node_socket_type_items[];
 
 extern EnumPropertyItem node_math_items[];

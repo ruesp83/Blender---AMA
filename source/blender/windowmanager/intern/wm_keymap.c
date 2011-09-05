@@ -1,5 +1,5 @@
 /*
- * $Id: wm_keymap.c 39409 2011-08-15 10:03:17Z blendix $
+ * $Id: wm_keymap.c 39744 2011-08-28 05:06:30Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -225,7 +225,7 @@ static wmKeyConfig *wm_keyconfig_list_find(ListBase *lb, char *idname)
 	return NULL;
 }
 
-wmKeyConfig *WM_keyconfig_active(wmWindowManager *wm)
+static wmKeyConfig *WM_keyconfig_active(wmWindowManager *wm)
 {
 	wmKeyConfig *keyconf;
 

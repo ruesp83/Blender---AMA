@@ -1,5 +1,5 @@
 /*
- * $Id: object_bake.c 39558 2011-08-19 16:21:29Z campbellbarton $
+ * $Id: object_bake.c 39833 2011-09-01 01:48:50Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -159,7 +159,7 @@ typedef struct {
 static void multiresbake_get_normal(const MResolvePixelData *data, float norm[], const int face_num, const int vert_index)
 {
 	unsigned int indices[]= {data->mface[face_num].v1, data->mface[face_num].v2,
-                             data->mface[face_num].v3, data->mface[face_num].v4};
+	                         data->mface[face_num].v3, data->mface[face_num].v4};
 	const int smoothnormal= (data->mface[face_num].flag & ME_SMOOTH);
 
 	if(!smoothnormal)  { /* flat */

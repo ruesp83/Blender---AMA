@@ -20,8 +20,8 @@ bl_info = {
     "name": "3D-Coat Applink",
     "author": "Kalle-Samuli Riihikoski (haikalle)",
     "version": (3, 5, 20),
-    "blender": (2, 5, 8),
-    "api": 35622,
+    "blender": (2, 5, 9),
+    "api": 39685,
     "location": "Scene > 3D-Coat Applink",
     "description": "Transfer data between 3D-Coat/Blender",
     "warning": "",
@@ -121,12 +121,6 @@ def register():
             description="Export Coarse.",
             default= True
         )
-   
-        smooth_on = BoolProperty(
-            name="Auto Smooth",
-            description="Add Modifiers and export.",
-            default= True
-        )
         exportfile = BoolProperty(
             name="No Import File",
             description="Add Modifiers and export.",
@@ -135,7 +129,7 @@ def register():
         importmod = BoolProperty(
             name="Remove Modifiers",
             description="Import and add modifiers.",
-            default= True
+            default= False
         )
         exportmod = BoolProperty(
             name="Modifiers",
@@ -145,6 +139,11 @@ def register():
         export_pos = BoolProperty(
             name="Remember Position",
             description="Remember position.",
+            default= True
+        )
+        multires = BoolProperty(
+            name="Multires. Levels",
+            description="Saves Multiresolution data.",
             default= True
         )
         importtextures = BoolProperty(

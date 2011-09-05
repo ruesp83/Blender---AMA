@@ -1,4 +1,4 @@
-# $Id: CMakeLists.txt 36620 2011-05-11 19:29:23Z blendix $
+# $Id: CMakeLists.txt 39792 2011-08-30 09:15:55Z nexyon $
 # ***** BEGIN GPL LICENSE BLOCK *****
 #
 # This program is free software; you can redistribute it and/or
@@ -73,6 +73,7 @@ set(SRC_DNA_INC
 	${CMAKE_CURRENT_SOURCE_DIR}/makesdna/DNA_smoke_types.h
 	${CMAKE_CURRENT_SOURCE_DIR}/makesdna/DNA_sound_types.h
 	${CMAKE_CURRENT_SOURCE_DIR}/makesdna/DNA_space_types.h
+	${CMAKE_CURRENT_SOURCE_DIR}/makesdna/DNA_speaker_types.h
 	${CMAKE_CURRENT_SOURCE_DIR}/makesdna/DNA_text_types.h
 	${CMAKE_CURRENT_SOURCE_DIR}/makesdna/DNA_texture_types.h
 	${CMAKE_CURRENT_SOURCE_DIR}/makesdna/DNA_userdef_types.h

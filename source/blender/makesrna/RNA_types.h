@@ -1,5 +1,5 @@
 /*
- * $Id: RNA_types.h 39403 2011-08-15 03:41:31Z campbellbarton $
+ * $Id: RNA_types.h 39941 2011-09-05 21:01:50Z lukastoenne $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -99,7 +99,10 @@ typedef enum PropertyUnit {
 
 #define RNA_ENUM_BITFLAG_SIZE 32
 
-/* also update enums in bpy_props.c when adding items here */
+/* also update enums in bpy_props.c when adding items here
+ * watch it: these values are written to files as part of
+ * node socket button subtypes!
+ */
 typedef enum PropertySubType {
 	PROP_NONE = 0,
 

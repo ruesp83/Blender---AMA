@@ -1,5 +1,5 @@
 /*
- * $Id: ArmatureExporter.h 38079 2011-07-04 08:59:28Z jesterking $
+ * $Id: ArmatureExporter.h 39792 2011-08-30 09:15:55Z nexyon $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -91,6 +91,8 @@ private:
 	void add_bone_node(Bone *bone, Object *ob_arm);
 
 	void add_bone_transform(Object *ob_arm, Bone *bone, COLLADASW::Node& node);
+
+	void add_blender_leaf_bone(Bone *bone, Object *ob_arm, COLLADASW::Node& node);
 
 	std::string get_controller_id(Object *ob_arm, Object *ob);
 

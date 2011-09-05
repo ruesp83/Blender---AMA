@@ -1,5 +1,5 @@
 /* 
- * $Id: bgl.c 38472 2011-07-18 09:49:26Z campbellbarton $
+ * $Id: bgl.c 39833 2011-09-01 01:48:50Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -52,11 +52,9 @@ static int Buffer_len(Buffer *self);
 static PyObject *Buffer_item(Buffer *self, int i);
 static PyObject *Buffer_slice(Buffer *self, int begin, int end);
 static int Buffer_ass_item(Buffer *self, int i, PyObject *v);
-static int Buffer_ass_slice(Buffer *self, int begin, int end,
-                            PyObject *seq);
+static int Buffer_ass_slice(Buffer *self, int begin, int end, PyObject *seq);
 static PyObject *Buffer_subscript(Buffer *self, PyObject *item);
-static int Buffer_ass_subscript(Buffer *self, PyObject *item,
-                                PyObject *value);
+static int Buffer_ass_subscript(Buffer *self, PyObject *item, PyObject *value);
 
 static PySequenceMethods Buffer_SeqMethods = {
 	(lenfunc) Buffer_len,						/*sq_length */

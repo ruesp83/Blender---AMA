@@ -1,5 +1,5 @@
 /*
- * $Id: rna_main.c 37031 2011-05-31 02:14:25Z campbellbarton $
+ * $Id: rna_main.c 39792 2011-08-30 09:15:55Z nexyon $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -187,6 +187,12 @@ static void rna_Main_text_begin(CollectionPropertyIterator *iter, PointerRNA *pt
 	rna_iterator_listbase_begin(iter, &bmain->text, NULL);
 }
 
+static void rna_Main_speaker_begin(CollectionPropertyIterator *iter, PointerRNA *ptr)
+{
+	Main *bmain= (Main*)ptr->data;
+	rna_iterator_listbase_begin(iter, &bmain->speaker, NULL);
+}
+
 static void rna_Main_sound_begin(CollectionPropertyIterator *iter, PointerRNA *ptr)
 {
 	Main *bmain= (Main*)ptr->data;
@@ -297,6 +303,7 @@ void RNA_def_main(BlenderRNA *brna)
 		{"shape_keys", "Key", "rna_Main_key_begin", "Shape Keys", "Shape Key datablocks.", NULL},
 		{"scripts", "ID", "rna_Main_script_begin", "Scripts", "Script datablocks (DEPRECATED).", NULL},
 		{"texts", "Text", "rna_Main_text_begin", "Texts", "Text datablocks.", RNA_def_main_texts},
+		{"speakers", "Speaker", "rna_Main_speaker_begin", "Speakers", "Speaker datablocks.", RNA_def_main_speakers},
 		{"sounds", "Sound", "rna_Main_sound_begin", "Sounds", "Sound datablocks.", RNA_def_main_sounds},
 		{"armatures", "Armature", "rna_Main_armature_begin", "Armatures", "Armature datablocks.", RNA_def_main_armatures},
 		{"actions", "Action", "rna_Main_action_begin", "Actions", "Action datablocks.", RNA_def_main_actions},

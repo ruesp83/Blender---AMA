@@ -1,7 +1,7 @@
 /*
  * SCA_2DFilterActuator.h
  *
- * $Id: SCA_2DFilterActuator.h 37446 2011-06-13 11:36:25Z blendix $
+ * $Id: SCA_2DFilterActuator.h 39883 2011-09-03 02:15:49Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -52,19 +52,19 @@ private:
 
 public:
 
-    SCA_2DFilterActuator(
-        class SCA_IObject* gameobj,
-        RAS_2DFilterManager::RAS_2DFILTER_MODE type,
-		short flag,
-		float float_arg,
-		int int_arg,
-		RAS_IRasterizer* rasterizer,
-		SCA_IScene* scene);
+	SCA_2DFilterActuator(
+	        class SCA_IObject* gameobj,
+	        RAS_2DFilterManager::RAS_2DFILTER_MODE type,
+	        short flag,
+	        float float_arg,
+	        int int_arg,
+	        RAS_IRasterizer* rasterizer,
+	        SCA_IScene* scene);
 
 	void	SetShaderText(const char *text);
-    virtual ~SCA_2DFilterActuator();
-    virtual bool Update();
+	virtual ~SCA_2DFilterActuator();
+	virtual bool Update();
 
-    virtual CValue* GetReplica();
+	virtual CValue* GetReplica();
 };
 #endif

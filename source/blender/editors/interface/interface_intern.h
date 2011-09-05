@@ -1,5 +1,5 @@
 /*
- * $Id: interface_intern.h 39535 2011-08-18 20:01:30Z campbellbarton $
+ * $Id: interface_intern.h 39792 2011-08-30 09:15:55Z nexyon $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -523,6 +523,7 @@ void ui_but_anim_add_keyingset(struct bContext *C);
 void ui_but_anim_remove_keyingset(struct bContext *C);
 int ui_but_anim_expression_get(uiBut *but, char *str, int maxlen);
 int ui_but_anim_expression_set(uiBut *but, const char *str);
+int ui_but_anim_expression_create(uiBut *but, const char *str);
 void ui_but_anim_autokey(struct bContext *C, uiBut *but, struct Scene *scene, float cfra);
 
 #endif

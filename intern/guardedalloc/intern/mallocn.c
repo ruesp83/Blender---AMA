@@ -1,5 +1,5 @@
 /*
- * $Id: mallocn.c 36276 2011-04-21 15:53:30Z campbellbarton $
+ * $Id: mallocn.c 39744 2011-08-28 05:06:30Z campbellbarton $
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
  * This program is free software; you can redistribute it and/or
@@ -33,7 +33,7 @@
 
 /**
 
- * $Id: mallocn.c 36276 2011-04-21 15:53:30Z campbellbarton $
+ * $Id: mallocn.c 39744 2011-08-28 05:06:30Z campbellbarton $
  * Copyright (C) 2001 NaN Technologies B.V.
  * Guarded memory allocation, and boundary-write detection.
  */
@@ -429,7 +429,7 @@ static int compare_len(const void *p1, const void *p2)
 		return -1;
 }
 
-void MEM_printmemlist_stats()
+void MEM_printmemlist_stats(void)
 {
 	MemHead *membl;
 	MemPrintBlock *pb, *printblock;

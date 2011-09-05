@@ -1,5 +1,5 @@
 /*
- * $Id: wm_init_exit.c 39293 2011-08-11 06:06:17Z campbellbarton $
+ * $Id: wm_init_exit.c 39744 2011-08-28 05:06:30Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -116,7 +116,7 @@ static void wm_free_reports(bContext *C)
 	BKE_reports_clear(CTX_wm_reports(C));
 }
 
-int wm_start_with_console = 0;
+int wm_start_with_console = 0; /* used in creator.c */
 
 /* only called once, for startup */
 void WM_init(bContext *C, int argc, const char **argv)

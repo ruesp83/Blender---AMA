@@ -1,6 +1,4 @@
 /*
- * $Id: gpencil_edit.c 36966 2011-05-28 04:53:17Z campbellbarton $
- *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
  * This program is free software; you can redistribute it and/or

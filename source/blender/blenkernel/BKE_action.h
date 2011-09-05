@@ -1,6 +1,4 @@
 /*
- * $Id: BKE_action.h 37512 2011-06-15 14:06:25Z campbellbarton $
- *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
  * This program is free software; you can redistribute it and/or

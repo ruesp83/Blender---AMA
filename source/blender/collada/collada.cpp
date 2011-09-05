@@ -1,5 +1,5 @@
 /*
- * $Id: collada.cpp 38079 2011-07-04 08:59:28Z jesterking $
+ * $Id: collada.cpp 39939 2011-09-05 20:41:58Z jesterking $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -46,9 +46,9 @@ extern "C"
 	int collada_import(bContext *C, const char *filepath)
 	{
 		DocumentImporter imp (C, filepath);
-		imp.import();
+		if(imp.import()) return 1;
 
-		return 1;
+		return 0;
 	}
 
 	int collada_export(Scene *sce, const char *filepath, int selected)

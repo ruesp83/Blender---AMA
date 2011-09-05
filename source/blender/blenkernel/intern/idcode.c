@@ -1,5 +1,5 @@
 /*
- * $Id: idcode.c 35493 2011-03-12 14:38:00Z campbellbarton $
+ * $Id: idcode.c 39792 2011-08-30 09:15:55Z nexyon $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -73,7 +73,8 @@ static IDType idtypes[]= {
 	{ ID_SCE,		"Scene",	"scenes",		IDTYPE_FLAGS_ISLINKABLE}, 
 	{ ID_SCR,		"Screen",	"screens",		0}, 
 	{ ID_SEQ,		"Sequence",	"sequences",	0}, /* not actually ID data */
-	{ ID_SO,		"Sound",	"sounds",		IDTYPE_FLAGS_ISLINKABLE}, 
+	{ ID_SPK,		"Speaker",	"speakers",		IDTYPE_FLAGS_ISLINKABLE},
+	{ ID_SO,		"Sound",	"sounds",		IDTYPE_FLAGS_ISLINKABLE},
 	{ ID_TE,		"Texture",	"textures",		IDTYPE_FLAGS_ISLINKABLE}, 
 	{ ID_TXT,		"Text",		"texts",		IDTYPE_FLAGS_ISLINKABLE}, 
 	{ ID_VF,		"VFont",	"fonts",		IDTYPE_FLAGS_ISLINKABLE}, 

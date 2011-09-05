@@ -1,4 +1,4 @@
-# $Id: CMakeLists.txt 38443 2011-07-17 09:11:13Z campbellbarton $
+# $Id: CMakeLists.txt 39936 2011-09-05 19:27:21Z blendix $
 # ***** BEGIN GPL LICENSE BLOCK *****
 #
 # This program is free software; you can redistribute it and/or
@@ -95,7 +95,6 @@ if(WITH_CODEC_FFMPEG)
 		${PTHREADS_INCLUDE_DIRS}
 	)
 	add_definitions(-DWITH_FFMPEG)
-	add_definitions(-D__STDC_CONSTANT_MACROS)
 endif()
 
 blender_add_lib(ge_videotex "${SRC}" "${INC}" "${INC_SYS}")

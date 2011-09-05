@@ -1,5 +1,5 @@
 /*
- * $Id: GHOST_NDOFManager.cpp 39153 2011-08-07 16:44:10Z merwin $
+ * $Id: GHOST_NDOFManager.cpp 39942 2011-09-05 21:52:06Z jesterking $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -366,11 +366,11 @@ void GHOST_NDOFManager::setDeadZone(float dz)
 	}
 	else if (dz > 0.5f) {
 		// warn the rogue user/programmer, but allow it
-		printf("ndof: dead zone of %.2f is rather high...\n", dz);
+		GHOST_PRINT("ndof: dead zone of %.2f is rather high...\n", dz);
 	}
 	m_deadZone = dz;
 
-	printf("ndof: dead zone set to %.2f\n", dz);
+	GHOST_PRINT("ndof: dead zone set to %.2f\n", dz);
 }
 
 static bool atHomePosition(GHOST_TEventNDOFMotionData* ndof)

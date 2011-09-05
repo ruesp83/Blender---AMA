@@ -1,5 +1,5 @@
 /*
- * $Id: graph.c 35246 2011-02-27 20:37:56Z jesterking $
+ * $Id: graph.c 39794 2011-08-30 09:50:31Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -714,7 +714,7 @@ static void handleRadialSymmetry(BGraph *graph, BNode *root_node, int depth, flo
 		int dispatch = 0;
 		int last = i - 1;
 		
-		if (fabs(ring[first].arc->length - ring[i].arc->length) > limit)
+		if (fabsf(ring[first].arc->length - ring[i].arc->length) > limit)
 		{
 			dispatch = 1;
 		}

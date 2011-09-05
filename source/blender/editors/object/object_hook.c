@@ -1,5 +1,5 @@
 /*
- * $Id: object_hook.c 38006 2011-07-01 08:48:00Z campbellbarton $
+ * $Id: object_hook.c 39922 2011-09-05 08:20:11Z nazgul $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *

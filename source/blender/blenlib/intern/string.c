@@ -3,7 +3,7 @@
  * various string, file, list operations.
  *
  *
- * $Id: string.c 39655 2011-08-23 15:08:54Z campbellbarton $
+ * $Id: string.c 39745 2011-08-28 09:28:41Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -129,7 +129,6 @@ size_t BLI_strescape(char *dst, const char *src, const size_t maxlen)
 	while(len < maxlen) {
 		switch(*src) {
 			case '\0':
-				*dst= '\0';
 				break;
 			case '\\':
 			case '"':
@@ -144,7 +143,6 @@ size_t BLI_strescape(char *dst, const char *src, const size_t maxlen)
 				}
 				else {
 					/* not enough space to escape */
-					*dst= '\0';
 					break;
 				}
 				/* intentionally pass through */
@@ -155,6 +153,8 @@ size_t BLI_strescape(char *dst, const char *src, const size_t maxlen)
 		src++;
 		len++;
 	}
+
+	*dst= '\0';
 
 	return len;
 }

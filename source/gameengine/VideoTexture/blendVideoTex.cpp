@@ -1,7 +1,7 @@
 /** \file gameengine/VideoTexture/blendVideoTex.cpp
  *  \ingroup bgevideotex
  */
-/* $Id: blendVideoTex.cpp 35176 2011-02-25 13:39:34Z jesterking $
+/* $Id: blendVideoTex.cpp 39834 2011-09-01 02:12:53Z campbellbarton $
 -----------------------------------------------------------------------------
 This source file is part of VideoTexture library
 
@@ -175,9 +175,9 @@ PyObject* initVideoTexture(void)
 
 	// prepare classes
 	registerAllTypes();
-    registerAllExceptions();
+	registerAllExceptions();
 
-	if (!pyImageTypes.ready()) 
+	if (!pyImageTypes.ready())
 		return NULL;
 	if (!pyFilterTypes.ready()) 
 		return NULL;

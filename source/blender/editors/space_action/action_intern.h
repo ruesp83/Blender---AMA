@@ -1,6 +1,4 @@
 /*
- * $Id: action_intern.h 35590 2011-03-17 10:02:37Z aligorith $
- *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
  * This program is free software; you can redistribute it and/or

@@ -1,5 +1,5 @@
 /*
- * $Id: GeometryExporter.h 38079 2011-07-04 08:59:28Z jesterking $
+ * $Id: GeometryExporter.h 39792 2011-08-30 09:15:55Z nexyon $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -110,7 +110,8 @@ struct GeometryFunctor {
 			Object *ob = base->object;
 			
 			if (ob->type == OB_MESH && ob->data
-				&& !(export_selected && !(ob->flag && SELECT))) {
+				&& !(export_selected && !(ob->flag && SELECT))
+				&& ((sce->lay & ob->lay)!=0)) {
 				f(ob);
 			}
 			base= base->next;

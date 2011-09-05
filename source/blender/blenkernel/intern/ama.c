@@ -305,6 +305,10 @@ void create_offset(const int n, const int totmat, ArrayModifierData *ar, Object 
 			if (ar->Mem_Ob[i].transform)
 			{
 				loc_eul_size_to_mat4(ar->Mem_Ob[i].location, loc, rot, scale);
+				//Scaling
+				//size_to_mat4(ar->Mem_Ob[i].location,scale);
+				//Location
+				//add_v3_v3(ar->Mem_Ob[i].location[3],loc);
 			}
 			if (ar->rand_group & MOD_ARR_RAND_GROUP)
 			{

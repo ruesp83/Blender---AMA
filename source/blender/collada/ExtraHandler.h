@@ -1,5 +1,5 @@
 /*
- * $Id: ExtraHandler.h 35777 2011-03-25 11:07:57Z jesterking $
+ * $Id: ExtraHandler.h 39792 2011-08-30 09:15:55Z nexyon $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -32,8 +32,10 @@
 #include <algorithm> // sort()
 
 #include "COLLADASaxFWLIExtraDataCallbackHandler.h"
+#include "COLLADASaxFWLFilePartLoader.h"
 
 #include "DocumentImporter.h"
+#include "AnimationImporter.h"
 
 /** \brief Handler class for <extra> data, through which different
  * profiles can be handled
@@ -42,7 +44,7 @@ class ExtraHandler : public COLLADASaxFWL::IExtraDataCallbackHandler
 {
 public:
 	/** Constructor. */
-	ExtraHandler(DocumentImporter *dimp);
+	ExtraHandler(DocumentImporter *dimp, AnimationImporter *aimp);
 
 	/** Destructor. */
 	virtual ~ExtraHandler();
@@ -69,6 +71,7 @@ private:
 	
 	/** Handle to DocumentImporter for interface to extra element data saving. */
 	DocumentImporter* dimp;
+	AnimationImporter* aimp;
 	/** Holds Id of element for which <extra> XML elements are handled. */
 	COLLADAFW::UniqueId currentUid;
 	ExtraTags* currentExtraTags;

@@ -1,5 +1,5 @@
 /*
- * $Id: DNA_space_types.h 39663 2011-08-24 00:44:58Z campbellbarton $ 
+ * $Id: DNA_space_types.h 39749 2011-08-28 14:46:03Z schlaile $ 
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -930,6 +930,7 @@ enum {
 #define SEQ_PROXY_RENDER_SIZE_25        25
 #define SEQ_PROXY_RENDER_SIZE_50        50
 #define SEQ_PROXY_RENDER_SIZE_75        75
+#define SEQ_PROXY_RENDER_SIZE_100       99
 #define SEQ_PROXY_RENDER_SIZE_FULL      100
 
 

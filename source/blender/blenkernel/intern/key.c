@@ -2,7 +2,7 @@
 /*  key.c      
  *  
  * 
- * $Id: key.c 38887 2011-08-01 02:58:44Z campbellbarton $
+ * $Id: key.c 39792 2011-08-30 09:15:55Z nexyon $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -1400,7 +1400,7 @@ float *do_ob_key(Scene *scene, Object *ob)
 		/* do shapekey local drivers */
 		float ctime= (float)scene->r.cfra; // XXX this needs to be checked
 		
-		BKE_animsys_evaluate_animdata(&key->id, key->adt, ctime, ADT_RECALC_DRIVERS);
+		BKE_animsys_evaluate_animdata(scene, &key->id, key->adt, ctime, ADT_RECALC_DRIVERS);
 		
 		if(ob->type==OB_MESH) do_mesh_key(scene, ob, key, out, tot);
 		else if(ob->type==OB_LATTICE) do_latt_key(scene, ob, key, out, tot);

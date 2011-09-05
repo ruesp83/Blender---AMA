@@ -1,5 +1,5 @@
 # -*- mode: cmake; indent-tabs-mode: t; -*-
-# $Id: CMakeLists.txt 39736 2011-08-27 08:19:26Z campbellbarton $
+# $Id: CMakeLists.txt 39834 2011-09-01 02:12:53Z campbellbarton $
 # ***** BEGIN GPL LICENSE BLOCK *****
 #
 # This program is free software; you can redistribute it and/or
@@ -948,7 +948,7 @@ elseif(APPLE)
 		# we use precompiled libraries for py 3.2 and up by default
 
 		# normally cached but not since we include them with blender
-                set(PYTHON_VERSION 3.2)
+		set(PYTHON_VERSION 3.2)
 		set(PYTHON_INCLUDE_DIR "${LIBDIR}/python/include/python${PYTHON_VERSION}")
 		# set(PYTHON_BINARY "${LIBDIR}/python/bin/python${PYTHON_VERSION}") # not used yet
 		set(PYTHON_LIBRARY python${PYTHON_VERSION})

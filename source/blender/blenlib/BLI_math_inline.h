@@ -1,5 +1,5 @@
 /*
- * $Id: BLI_math_inline.h 34966 2011-02-18 13:58:08Z jesterking $
+ * $Id: BLI_math_inline.h 39936 2011-09-05 19:27:21Z blendix $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -45,7 +45,7 @@ extern "C" {
 #define MALWAYS_INLINE MINLINE
 #else
 #define MINLINE static inline
-#define MALWAYS_INLINE static __attribute__((always_inline))
+#define MALWAYS_INLINE static inline __attribute__((always_inline))
 #endif
 #else
 #define MINLINE

@@ -1,7 +1,7 @@
 /** \file gameengine/VideoTexture/Exception.cpp
  *  \ingroup bgevideotex
  */
-/* $Id: Exception.cpp 39731 2011-08-27 03:25:02Z campbellbarton $
+/* $Id: Exception.cpp 39834 2011-09-01 02:12:53Z campbellbarton $
 -----------------------------------------------------------------------------
 This source file is part of VideoTexture library
 
@@ -201,20 +201,20 @@ void Exception::copy (const Exception & xpt)
 
 void registerAllExceptions(void)
 {
-    errGenerDesc.registerDesc();
-    errNFoundDesc.registerDesc();
-    MaterialNotAvailDesc.registerDesc();
-    ImageSizesNotMatchDesc.registerDesc();
-    ImageHasExportsDesc.registerDesc();
+	errGenerDesc.registerDesc();
+	errNFoundDesc.registerDesc();
+	MaterialNotAvailDesc.registerDesc();
+	ImageSizesNotMatchDesc.registerDesc();
+	ImageHasExportsDesc.registerDesc();
 	InvalidColorChannelDesc.registerDesc();
-    SceneInvalidDesc.registerDesc();
-    CameraInvalidDesc.registerDesc();
-    ObserverInvalidDesc.registerDesc();
-    MirrorInvalidDesc.registerDesc();
-    MirrorSizeInvalidDesc.registerDesc();
-    MirrorNormalInvalidDesc.registerDesc();
-    MirrorHorizontalDesc.registerDesc();
-    MirrorTooSmallDesc.registerDesc();
-    SourceVideoEmptyDesc.registerDesc();
-    SourceVideoCreationDesc.registerDesc();
+	SceneInvalidDesc.registerDesc();
+	CameraInvalidDesc.registerDesc();
+	ObserverInvalidDesc.registerDesc();
+	MirrorInvalidDesc.registerDesc();
+	MirrorSizeInvalidDesc.registerDesc();
+	MirrorNormalInvalidDesc.registerDesc();
+	MirrorHorizontalDesc.registerDesc();
+	MirrorTooSmallDesc.registerDesc();
+	SourceVideoEmptyDesc.registerDesc();
+	SourceVideoCreationDesc.registerDesc();
 }

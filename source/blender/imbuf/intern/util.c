@@ -26,7 +26,7 @@
  * ***** END GPL LICENSE BLOCK *****
  * util.c
  *
- * $Id: util.c 38125 2011-07-05 18:54:16Z blendix $
+ * $Id: util.c 39749 2011-08-28 14:46:03Z schlaile $
  */
 
 /** \file blender/imbuf/intern/util.c
@@ -221,7 +221,7 @@ void silence_log_ffmpeg(int quiet)
 	}
 	else
 	{
-		av_log_set_level(AV_LOG_INFO);
+		av_log_set_level(AV_LOG_DEBUG);
 	}
 }
 
@@ -234,9 +234,10 @@ void do_init_ffmpeg(void)
 		av_register_all();
 		avdevice_register_all();
 		
-		if ((G.f & G_DEBUG) == 0)
-		{
+		if ((G.f & G_DEBUG) == 0) {
 			silence_log_ffmpeg(1);
+		} else {
+			silence_log_ffmpeg(0);
 		}
 	}
 }

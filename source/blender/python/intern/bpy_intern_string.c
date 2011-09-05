@@ -1,5 +1,5 @@
 /*
- * $Id: bpy_intern_string.c 37626 2011-06-18 23:22:55Z gsrb3d $
+ * $Id: bpy_intern_string.c 39815 2011-08-31 01:07:55Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -28,18 +28,19 @@
 
 #include <Python.h>
 
+#include "bpy_intern_string.h"
+
 PyObject *bpy_intern_str_register;
 PyObject *bpy_intern_str_unregister;
 PyObject *bpy_intern_str_bl_rna;
 PyObject *bpy_intern_str_order;
 PyObject *bpy_intern_str_attr;
 PyObject *bpy_intern_str___slots__;
-PyObject *bpy_intern_str___bases__;
 
 void bpy_intern_string_init(void)
 {
 	bpy_intern_str_register= PyUnicode_FromString("register");
-	bpy_intern_str_unregister= PyUnicode_FromString("unregister");;
+	bpy_intern_str_unregister= PyUnicode_FromString("unregister");
 	bpy_intern_str_bl_rna= PyUnicode_FromString("bl_rna");
 	bpy_intern_str_order= PyUnicode_FromString("order");
 	bpy_intern_str_attr= PyUnicode_FromString("attr");

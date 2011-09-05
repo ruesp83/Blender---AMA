@@ -1,5 +1,5 @@
 /*
- * $Id: KX_Light.cpp 39380 2011-08-14 04:37:53Z dfelinto $
+ * $Id: KX_Light.cpp 39834 2011-09-01 02:12:53Z campbellbarton $
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
  * This program is free software; you can redistribute it and/or
@@ -355,11 +355,11 @@ PyObject* KX_LightObject::pyattr_get_typeconst(void *self_v, const KX_PYATTRIBUT
 	} else if (!strcmp(type, "NORMAL")) {
 		retvalue = PyLong_FromSsize_t(RAS_LightObject::LIGHT_NORMAL);
 	}
-    else {
-        /* should never happen */
-        PyErr_SetString(PyExc_TypeError, "light.type: internal error, invalid light type");
-        retvalue = NULL;
-    }
+	else {
+		/* should never happen */
+		PyErr_SetString(PyExc_TypeError, "light.type: internal error, invalid light type");
+		retvalue = NULL;
+	}
 
 	return retvalue;
 }

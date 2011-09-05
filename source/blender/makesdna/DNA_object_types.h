@@ -1,5 +1,5 @@
 /*
- * $Id: DNA_object_types.h 37505 2011-06-15 10:19:35Z blendix $ 
+ * $Id: DNA_object_types.h 39792 2011-08-30 09:15:55Z nexyon $ 
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -306,6 +306,8 @@ typedef struct DupliObject {
 
 #define OB_LAMP			10
 #define OB_CAMERA		11
+
+#define OB_SPEAKER		12
 
 // #define OB_WAVE			21
 #define OB_LATTICE		22

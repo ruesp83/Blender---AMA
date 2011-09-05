@@ -1,5 +1,5 @@
 /*
- * $Id: seqeffects.c 39727 2011-08-27 02:59:43Z campbellbarton $
+ * $Id: seqeffects.c 39792 2011-08-30 09:15:55Z nexyon $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -2873,7 +2873,7 @@ static struct ImBuf * do_adjustment_impl(SeqRenderData context, Sequence * seq,
 {
 	Editing * ed;
 	ListBase * seqbasep;
-	struct ImBuf * i = 0;
+	struct ImBuf * i= NULL;
 
 	ed = context.scene->ed;
 
@@ -2908,7 +2908,7 @@ static struct ImBuf * do_adjustment(
 	struct ImBuf *UNUSED(ibuf1), struct ImBuf *UNUSED(ibuf2), 
 	struct ImBuf *UNUSED(ibuf3))
 {
-	struct ImBuf * i = 0;
+	struct ImBuf * i = NULL;
 	struct ImBuf * out;
 	Editing * ed;
 
@@ -3031,7 +3031,7 @@ void sequence_effect_speed_rebuild_map(Scene *scene, Sequence * seq, int force)
 
 	/* XXX - new in 2.5x. should we use the animation system this way?
 	 * The fcurve is needed because many frames need evaluating at once - campbell */
-	fcu= id_data_find_fcurve(&scene->id, seq, &RNA_Sequence, "speed_factor", 0);
+	fcu= id_data_find_fcurve(&scene->id, seq, &RNA_Sequence, "speed_factor", 0, NULL);
 
 
 	if (!v->frameMap || v->length != seq->len) {

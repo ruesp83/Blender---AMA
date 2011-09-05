@@ -4,7 +4,7 @@
 //
 // Replace the mesh for this actuator's parent
 //
-// $Id: KX_TrackToActuator.cpp 36523 2011-05-06 20:18:42Z blendix $
+// $Id: KX_TrackToActuator.cpp 39834 2011-09-01 02:12:53Z campbellbarton $
 //
 // ***** BEGIN GPL LICENSE BLOCK *****
 //
@@ -54,16 +54,16 @@
 
 
 KX_TrackToActuator::KX_TrackToActuator(SCA_IObject *gameobj, 
-								       SCA_IObject *ob,
-									   int time,
-									   bool allow3D,
-									   int trackflag,
-									   int upflag)
-									   : SCA_IActuator(gameobj, KX_ACT_TRACKTO)
+                                       SCA_IObject *ob,
+                                       int time,
+                                       bool allow3D,
+                                       int trackflag,
+                                       int upflag)
+    : SCA_IActuator(gameobj, KX_ACT_TRACKTO)
 {
-    m_time = time;
-    m_allow3D = allow3D;
-    m_object = ob;
+	m_time = time;
+	m_allow3D = allow3D;
+	m_object = ob;
 	m_trackflag = trackflag;
 	m_upflag = upflag;
 	m_parentobj = 0;
