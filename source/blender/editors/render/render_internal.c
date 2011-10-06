@@ -1,5 +1,5 @@
 /*
- * $Id: render_internal.c 37916 2011-06-28 16:25:07Z blendix $
+ * $Id: render_internal.c 40351 2011-09-19 12:26:20Z mont29 $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -203,7 +203,7 @@ static int screen_render_exec(bContext *C, wmOperator *op)
 	struct Object *camera_override= v3d ? V3D_CAMERA_LOCAL(v3d) : NULL;
 
 	if(!is_animation && is_write_still && BKE_imtype_is_movie(scene->r.imtype)) {
-		BKE_report(op->reports, RPT_ERROR, "Can't write a single file with an animation format selected.");
+		BKE_report(op->reports, RPT_ERROR, "Can't write a single file with an animation format selected");
 		return OPERATOR_CANCELLED;
 	}
 
@@ -477,7 +477,7 @@ static int screen_render_invoke(bContext *C, wmOperator *op, wmEvent *event)
 	}
 
 	if(!is_animation && is_write_still && BKE_imtype_is_movie(scene->r.imtype)) {
-		BKE_report(op->reports, RPT_ERROR, "Can't write a single file with an animation format selected.");
+		BKE_report(op->reports, RPT_ERROR, "Can't write a single file with an animation format selected");
 		return OPERATOR_CANCELLED;
 	}	
 	

@@ -1,5 +1,5 @@
 /*
- * $Id: DocumentImporter.cpp 39939 2011-09-05 20:41:58Z jesterking $
+ * $Id: DocumentImporter.cpp 40455 2011-09-22 14:42:29Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -816,7 +816,7 @@ bool DocumentImporter::writeCamera( const COLLADAFW::Camera* camera )
 						double aspect = camera->getAspectRatio().getValue();
 						double xfov = aspect*yfov;
 						// xfov is in degrees, cam->lens is in millimiters
-						cam->lens = angle_to_lens((float)xfov*(M_PI/180.0f));
+						cam->lens = angle_to_lens(DEG2RADF(xfov));
 					}
 					break;
 			}
@@ -837,7 +837,7 @@ bool DocumentImporter::writeCamera( const COLLADAFW::Camera* camera )
 					{
 						double x = camera->getXFov().getValue();
 						// x is in degrees, cam->lens is in millimiters
-						cam->lens = angle_to_lens((float)x*(M_PI/180.0f));
+						cam->lens = angle_to_lens(DEG2RADF(x));
 					}
 					break;
 			}
@@ -854,7 +854,7 @@ bool DocumentImporter::writeCamera( const COLLADAFW::Camera* camera )
 					{
 					double yfov = camera->getYFov().getValue();
 					// yfov is in degrees, cam->lens is in millimiters
-					cam->lens = angle_to_lens((float)yfov*(M_PI/180.0f));
+					cam->lens = angle_to_lens(DEG2RADF(yfov));
 					}
 					break;
 			}

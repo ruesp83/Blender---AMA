@@ -1,5 +1,5 @@
 /*
- * $Id: object_bake.c 39833 2011-09-01 01:48:50Z campbellbarton $
+ * $Id: object_bake.c 40641 2011-09-28 05:53:40Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -883,7 +883,8 @@ static void multiresbake_start(MultiresBakeRender *bkr)
 	finish_images(bkr);
 }
 
-static int multiresbake_check(bContext *C, wmOperator *op) {
+static int multiresbake_check(bContext *C, wmOperator *op)
+{
 	Scene *scene= CTX_data_scene(C);
 	Object *ob;
 	Mesh *me;

@@ -1,5 +1,5 @@
 /*
- * $Id: BKE_particle.h 37760 2011-06-23 18:59:47Z lukastoenne $
+ * $Id: BKE_particle.h 40537 2011-09-25 11:51:28Z z0r $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -80,6 +80,10 @@ typedef struct ParticleSimulationData {
 	struct ParticleSystem *psys;
 	struct ParticleSystemModifierData *psmd;
 	struct ListBase *colliders;
+	/* Courant number. This is used to implement an adaptive time step. Only the
+	   maximum value per time step is important. Only sph_integrate makes use of
+	   this at the moment. Other solvers could, too. */
+	float courant_num;
 } ParticleSimulationData;
 
 typedef struct ParticleTexture{

@@ -1,7 +1,7 @@
 /* particle.c
  *
  *
- * $Id: particle.c 39730 2011-08-27 03:20:32Z campbellbarton $
+ * $Id: particle.c 40537 2011-09-25 11:51:28Z z0r $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -2090,10 +2090,10 @@ void precalc_guides(ParticleSimulationData *sim, ListBase *effectors)
 			data = eff->guide_data + p;
 
 			VECSUB(efd.vec_to_point, state.co, eff->guide_loc);
-			VECCOPY(efd.nor, eff->guide_dir);
+			copy_v3_v3(efd.nor, eff->guide_dir);
 			efd.distance = len_v3(efd.vec_to_point);
 
-			VECCOPY(data->vec_to_point, efd.vec_to_point);
+			copy_v3_v3(data->vec_to_point, efd.vec_to_point);
 			data->strength = effector_falloff(eff, &efd, &point, weights);
 		}
 	}
@@ -2542,7 +2542,7 @@ static void psys_thread_create_path(ParticleThread *thread, struct ChildParticle
 						normalize_v3(v1);
 						normalize_v3(v2);
 
-						d = saacos(dot_v3v3(v1, v2)) * 180.0f/(float)M_PI;
+						d = RAD2DEGF(saacos(dot_v3v3(v1, v2)));
 					}
 
 					if(p_max > p_min)
@@ -3488,6 +3488,7 @@ static void default_particle_settings(ParticleSettings *part)
 	part->totpart= 1000;
 	part->grid_res= 10;
 	part->timetweak= 1.0;
+	part->courant_target = 0.2;
 	
 	part->integrator= PART_INT_MIDPOINT;
 	part->phystype= PART_PHYS_NEWTON;

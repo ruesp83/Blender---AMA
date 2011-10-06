@@ -1,5 +1,5 @@
 /*
- * $Id: bmp.c 35336 2011-03-03 17:58:06Z campbellbarton $
+ * $Id: bmp.c 40641 2011-09-28 05:53:40Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -101,8 +101,8 @@ static int checkbmp(unsigned char *mem)
 	return(ret_val);
 }
 
-int imb_is_a_bmp(unsigned char *buf) {
-	
+int imb_is_a_bmp(unsigned char *buf)
+{
 	return checkbmp(buf);
 }
 
@@ -200,8 +200,8 @@ static int putShortLSB(unsigned short us,FILE *ofile) {
 } 
 
 /* Found write info at http://users.ece.gatech.edu/~slabaugh/personal/c/bitmapUnix.c */
-int imb_savebmp(struct ImBuf *ibuf, const char *name, int flags) {
-
+int imb_savebmp(struct ImBuf *ibuf, const char *name, int flags)
+{
 	BMPINFOHEADER infoheader;
 	int bytesize, extrabytes, x, y, t, ptr;
 	uchar *data;

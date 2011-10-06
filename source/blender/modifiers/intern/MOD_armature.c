@@ -1,5 +1,5 @@
 /*
-* $Id: MOD_armature.c 39342 2011-08-12 18:11:22Z blendix $
+* $Id: MOD_armature.c 40581 2011-09-26 18:51:10Z campbellbarton $
 *
 * ***** BEGIN GPL LICENSE BLOCK *****
 *
@@ -42,6 +42,7 @@
 #include "DNA_mesh_types.h"
 
 #include "BLI_utildefines.h"
+#include "BLI_string.h"
 
 
 #include "BKE_cdderivedmesh.h"
@@ -70,7 +71,7 @@ static void copyData(ModifierData *md, ModifierData *target)
 	tamd->object = amd->object;
 	tamd->deformflag = amd->deformflag;
 	tamd->multi = amd->multi;
-	strncpy(tamd->defgrp_name, amd->defgrp_name, 32);
+	BLI_strncpy(tamd->defgrp_name, amd->defgrp_name, 32);
 }
 
 static CustomDataMask requiredDataMask(Object *UNUSED(ob), ModifierData *UNUSED(md))

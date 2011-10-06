@@ -1,5 +1,5 @@
 /*
- * $Id: WM_api.h 39749 2011-08-28 14:46:03Z schlaile $
+ * $Id: WM_api.h 40394 2011-09-20 12:22:19Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -72,6 +72,7 @@ void		WM_setinitialstate_fullscreen(void);
 void		WM_setinitialstate_normal(void);
 
 void		WM_init				(struct bContext *C, int argc, const char **argv);
+void		WM_exit_ext			(struct bContext *C, const short do_python);
 void		WM_exit				(struct bContext *C);
 void		WM_main				(struct bContext *C);
 

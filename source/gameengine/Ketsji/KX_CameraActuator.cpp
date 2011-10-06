@@ -1,7 +1,7 @@
 /*
  * KX_CameraActuator.cpp
  *
- * $Id: KX_CameraActuator.cpp 37455 2011-06-13 17:08:33Z dfelinto $
+ * $Id: KX_CameraActuator.cpp 40538 2011-09-25 12:31:21Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -253,7 +253,7 @@ bool KX_CameraActuator::Update(double curtime, bool frame)
 	/* ... set up some parameters ...                                        */
 	/* missing here: the 'floorloc' of the actor's shadow */
 
- 	mindistsq= m_minHeight*m_minHeight;
+	mindistsq= m_minHeight*m_minHeight;
 	maxdistsq= m_maxHeight*m_maxHeight;
 
 	/* C1: not checked... is a future option                                 */

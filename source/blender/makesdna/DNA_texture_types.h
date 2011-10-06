@@ -1,5 +1,5 @@
 /*
- * $Id: DNA_texture_types.h 39636 2011-08-22 19:57:54Z mmikkelsen $ 
+ * $Id: DNA_texture_types.h 40714 2011-09-30 09:55:21Z nazgul $ 
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -466,6 +466,7 @@ typedef struct TexMapping {
 #define MTEX_5TAP_BUMP		512
 #define MTEX_BUMP_OBJECTSPACE	1024
 #define MTEX_BUMP_TEXTURESPACE	2048
+#define MTEX_BUMP_FLIPPED		4096 /* temp flag for 2.59/2.60 */
 
 /* blendtype */
 #define MTEX_BLEND		0

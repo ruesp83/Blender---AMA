@@ -1,5 +1,5 @@
 /*
- * $Id: rna_key.c 36704 2011-05-15 17:59:48Z dingto $
+ * $Id: rna_key.c 40732 2011-10-01 15:40:32Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -76,7 +76,7 @@ void rna_ShapeKey_name_set(PointerRNA *ptr, const char *value)
 	BLI_strncpy(oldname, kb->name, sizeof(kb->name));
 	
 	/* copy the new name into the name slot */
-	BLI_strncpy(kb->name, value, sizeof(kb->name));
+	BLI_strncpy_utf8(kb->name, value, sizeof(kb->name));
 	
 	/* make sure the name is truly unique */
 	if (ptr->id.data) {
@@ -581,7 +581,7 @@ static void rna_def_keyblock(BlenderRNA *brna)
 	RNA_def_property_collection_sdna(prop, NULL, "data", "totelem");
 	RNA_def_property_struct_type(prop, "UnknownType");
 	RNA_def_property_ui_text(prop, "Data", "");
-	RNA_def_property_collection_funcs(prop, "rna_ShapeKey_data_begin", 0, 0, "rna_ShapeKey_data_get", "rna_ShapeKey_data_length", 0, 0);
+	RNA_def_property_collection_funcs(prop, "rna_ShapeKey_data_begin", NULL, NULL, "rna_ShapeKey_data_get", "rna_ShapeKey_data_length", NULL, NULL, NULL);
 }
 
 static void rna_def_key(BlenderRNA *brna)

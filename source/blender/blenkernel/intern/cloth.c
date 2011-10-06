@@ -1,5 +1,5 @@
 /*
- * $Id: cloth.c 39558 2011-08-19 16:21:29Z campbellbarton $
+ * $Id: cloth.c 40659 2011-09-28 15:22:13Z mont29 $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -741,7 +741,7 @@ static void cloth_apply_vgroup ( ClothModifierData *clmd, DerivedMesh *dm )
 	MDeformVert *dvert = NULL;
 	Cloth *clothObj = NULL;
 	int numverts;
-	float goalfac = 0;
+	/* float goalfac = 0; */ /* UNUSED */
 	ClothVertex *verts = NULL;
 
 	if (!clmd || !dm) return;
@@ -764,7 +764,7 @@ static void cloth_apply_vgroup ( ClothModifierData *clmd, DerivedMesh *dm )
 					if (( dvert->dw[j].def_nr == (clmd->sim_parms->vgroup_mass-1)) && (clmd->sim_parms->flags & CLOTH_SIMSETTINGS_FLAG_GOAL ))
 					{
 						verts->goal = dvert->dw [j].weight;
-						goalfac= 1.0f;
+						/* goalfac= 1.0f; */ /* UNUSED */
 						
 						/*
 						// Kicking goal factor to simplify things...who uses that anyway?

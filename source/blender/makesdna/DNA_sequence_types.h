@@ -1,5 +1,5 @@
 /*
- * $Id: DNA_sequence_types.h 39792 2011-08-30 09:15:55Z nexyon $
+ * $Id: DNA_sequence_types.h 40122 2011-09-11 10:35:26Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -237,6 +237,8 @@ typedef struct SpeedControlVars {
 	int length;
 	int lastValidFrame;
 } SpeedControlVars;
+
+#define MAXSEQ          32
 
 #define SELECT 1
 

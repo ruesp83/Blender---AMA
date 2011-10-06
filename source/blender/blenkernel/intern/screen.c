@@ -1,5 +1,5 @@
 /* 
- * $Id: screen.c 36791 2011-05-20 08:52:52Z jesterking $
+ * $Id: screen.c 40284 2011-09-17 07:14:39Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -277,8 +277,7 @@ void BKE_area_region_free(SpaceType *st, ARegion *ar)
 		ar->v2d.tab_offset= NULL;
 	}
 
-	if(ar)
-		BLI_freelistN(&ar->panels);
+	BLI_freelistN(&ar->panels);
 }
 
 /* not area itself */

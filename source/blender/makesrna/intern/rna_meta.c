@@ -1,5 +1,5 @@
 /*
- * $Id: rna_meta.c 36095 2011-04-11 01:18:25Z campbellbarton $
+ * $Id: rna_meta.c 40735 2011-10-01 17:54:33Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -236,15 +236,15 @@ static void rna_def_metaball_elements(BlenderRNA *brna, PropertyRNA *cprop)
 	RNA_def_struct_ui_text(srna, "Meta Elements", "Collection of metaball elements");
 
 	func= RNA_def_function(srna, "new", "rna_MetaBall_elements_new");
-	RNA_def_function_ui_description(func, "Add a new spline to the curve.");
-	RNA_def_enum(func, "type", metaelem_type_items, MB_BALL, "", "type for the new meta-element.");
-	parm= RNA_def_pointer(func, "element", "MetaElement", "", "The newly created meta-element.");
+	RNA_def_function_ui_description(func, "Add a new spline to the curve");
+	RNA_def_enum(func, "type", metaelem_type_items, MB_BALL, "", "type for the new meta-element");
+	parm= RNA_def_pointer(func, "element", "MetaElement", "", "The newly created meta-element");
 	RNA_def_function_return(func, parm);
 
 	func= RNA_def_function(srna, "remove", "rna_MetaBall_elements_remove");
-	RNA_def_function_ui_description(func, "Remove a spline from a curve.");
+	RNA_def_function_ui_description(func, "Remove a spline from a curve");
 	RNA_def_function_flag(func, FUNC_USE_REPORTS);
-	parm= RNA_def_pointer(func, "element", "MetaElement", "", "The element to remove.");
+	parm= RNA_def_pointer(func, "element", "MetaElement", "", "The element to remove");
 	RNA_def_property_flag(parm, PROP_REQUIRED|PROP_NEVER_NULL);
 
 	prop= RNA_def_property(srna, "active", PROP_POINTER, PROP_NONE);
@@ -330,7 +330,8 @@ static void rna_def_metaball(BlenderRNA *brna)
 	RNA_def_property_collection_sdna(prop, NULL, "mat", "totcol");
 	RNA_def_property_struct_type(prop, "Material");
 	RNA_def_property_ui_text(prop, "Materials", "");
-	RNA_def_property_srna(prop, "IDMaterials"); /* see rna_ID.c */	
+	RNA_def_property_srna(prop, "IDMaterials"); /* see rna_ID.c */
+	RNA_def_property_collection_funcs(prop, 0, NULL, NULL, NULL, NULL, NULL, NULL, "rna_IDMaterials_assign_int");
 	
 	/* anim */
 	rna_def_animdata_common(srna);

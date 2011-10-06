@@ -1,5 +1,5 @@
 /*
- * $Id: space_info.c 35854 2011-03-28 18:51:27Z ton $
+ * $Id: space_info.c 40395 2011-09-20 13:41:43Z nazgul $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -40,6 +40,8 @@
 #include "BLI_math.h"
 #include "BLI_rand.h"
 #include "BLI_utildefines.h"
+
+#include "BLF_translation.h"
 
 #include "BKE_context.h"
 #include "BKE_global.h"
@@ -278,7 +280,7 @@ static void recent_files_menu_draw(const bContext *UNUSED(C), Menu *menu)
 			uiItemStringO(layout, BLI_path_basename(recent->filepath), ICON_FILE_BLEND, "WM_OT_open_mainfile", "filepath", recent->filepath);
 		}
 	} else {
-		uiItemL(layout, "No Recent Files", ICON_NONE);
+		uiItemL(layout, UI_translate_do_iface(N_("No Recent Files")), ICON_NONE);
 	}
 }
 

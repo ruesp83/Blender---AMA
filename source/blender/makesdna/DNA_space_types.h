@@ -1,5 +1,5 @@
 /*
- * $Id: DNA_space_types.h 39749 2011-08-28 14:46:03Z schlaile $ 
+ * $Id: DNA_space_types.h 40066 2011-09-09 12:46:07Z aligorith $ 
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -861,6 +861,7 @@ enum {
 /* outliner search flags (SpaceOops->search_flags) */
 #define SO_FIND_CASE_SENSITIVE		(1<<0)
 #define SO_FIND_COMPLETE			(1<<1)
+#define SO_SEARCH_RECURSIVE		(1<<2)
 
 /* headerbuttons: 450-499 */
 

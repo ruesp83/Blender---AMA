@@ -1,5 +1,5 @@
 /*
- * $Id: rna_world.c 37078 2011-06-01 16:17:38Z blendix $
+ * $Id: rna_world.c 39972 2011-09-06 15:44:44Z dingto $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -360,7 +360,7 @@ static void rna_def_lighting(BlenderRNA *brna)
 
 	prop= RNA_def_property(srna, "samples", PROP_INT, PROP_NONE);
 	RNA_def_property_int_sdna(prop, NULL, "aosamp");
-	RNA_def_property_range(prop, 1, 32);
+	RNA_def_property_range(prop, 1, 128);
 	RNA_def_property_ui_text(prop, "Samples", "Amount of ray samples. Higher values give smoother results and longer rendering times");
 	RNA_def_property_update(prop, 0, "rna_World_update");
 

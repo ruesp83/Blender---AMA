@@ -1,6 +1,6 @@
 /*
  *
- * $Id: filter.c 39749 2011-08-28 14:46:03Z schlaile $
+ * $Id: filter.c 40252 2011-09-16 06:47:01Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -28,7 +28,7 @@
  * ***** END GPL LICENSE BLOCK *****
  * filter.c
  *
- * $Id: filter.c 39749 2011-08-28 14:46:03Z schlaile $
+ * $Id: filter.c 40252 2011-09-16 06:47:01Z campbellbarton $
  */
 
 /** \file blender/imbuf/intern/filter.c
@@ -518,7 +518,7 @@ void IMB_makemipmap(ImBuf *ibuf, int use_filter)
 		hbuf= ibuf->mipmap[curmap];
 		hbuf->miplevel= curmap+1;
 
-		if(!hbuf || (hbuf->x <= 2 && hbuf->y <= 2))
+		if(hbuf->x <= 2 && hbuf->y <= 2)
 			break;
 
 		curmap++;

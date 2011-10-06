@@ -1,5 +1,5 @@
 /*
- * $Id: BKE_blender.h 39941 2011-09-05 21:01:50Z lukastoenne $ 
+ * $Id: BKE_blender.h 40743 2011-10-02 14:41:13Z dingto $ 
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -44,7 +44,7 @@ extern "C" {
  * and keep comment above the defines.
  * Use STRINGIFY() rather than defining with quotes */
 #define BLENDER_VERSION			259
-#define BLENDER_SUBVERSION		2
+#define BLENDER_SUBVERSION		4
 
 #define BLENDER_MINVERSION		250
 #define BLENDER_MINSUBVERSION	0
@@ -53,7 +53,7 @@ extern "C" {
 		/* can be left blank, otherwise a,b,c... etc with no quotes */
 #define BLENDER_VERSION_CHAR
 		/* alpha/beta/rc/release, docs use this */
-#define BLENDER_VERSION_CYCLE	alpha
+#define BLENDER_VERSION_CYCLE	rc
 
 struct ListBase;
 struct MemFile;

@@ -1,5 +1,5 @@
 /*
- * $Id: info_draw.c 35242 2011-02-27 20:29:51Z jesterking $
+ * $Id: info_draw.c 40538 2011-09-25 12:31:21Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -87,7 +87,7 @@ static void info_report_color(unsigned char *fg, unsigned char *bg, Report *repo
 			if (bool) { bg[0]=220; bg[1]=128; bg[2]=96;  }
 			else      { bg[0]=214; bg[1]=122; bg[2]=90;  }
 		}
-#if 0 // XXX: this looks like the selected colour, so don't use this
+#if 0 // XXX: this looks like the selected color, so don't use this
 		else if (report->type & RPT_OPERATOR_ALL) {
 			if (bool) { bg[0]=96;  bg[1]=128; bg[2]=255; }
 			else      { bg[0]=90;  bg[1]=122; bg[2]=249; }

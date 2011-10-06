@@ -1,5 +1,5 @@
 /*
- * $Id: BL_ArmatureObject.cpp 39901 2011-09-04 01:42:47Z moguri $
+ * $Id: BL_ArmatureObject.cpp 40248 2011-09-16 02:42:50Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -110,7 +110,6 @@ void game_copy_pose(bPose **dst, bPose *src, int copy_constraint)
 	for (pchan=(bPoseChannel*)out->chanbase.first; pchan; pchan=(bPoseChannel*)pchan->next) {
 		pchan->parent= (bPoseChannel*)BLI_ghash_lookup(ghash, pchan->parent);
 		pchan->child= (bPoseChannel*)BLI_ghash_lookup(ghash, pchan->child);
-		pchan->path= NULL;
 
 		if (copy_constraint) {
 			ListBase listb;

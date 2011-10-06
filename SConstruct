@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# $Id: SConstruct 39693 2011-08-25 15:18:54Z jensverwiebe $
+# $Id: SConstruct 40808 2011-10-05 23:35:03Z campbellbarton $
 # ***** BEGIN GPL LICENSE BLOCK *****
 #
 # This program is free software; you can redistribute it and/or
@@ -30,6 +30,7 @@
 # Then read all SConscripts and build
 #
 # TODO: fix /FORCE:MULTIPLE on windows to get proper debug builds.
+# TODO: cleanup CCFLAGS / CPPFLAGS use, often both are set when we only need one.
 
 import platform as pltfrm
 
@@ -277,32 +278,27 @@ if env['OURPLATFORM']=='darwin':
             print "3D_CONNEXION_CLIENT_LIBRARY not found, disabling WITH_BF_3DMOUSE" # avoid build errors !
             env['WITH_BF_3DMOUSE'] = 0
         else:
-            env.Append(LINKFLAGS=['-weak_framework','3DconnexionClient'])
+            env.Append(LINKFLAGS=['-Xlinker','-weak_framework','-Xlinker','3DconnexionClient'])
 
 if env['WITH_BF_OPENMP'] == 1:
         if env['OURPLATFORM'] in ('win32-vc', 'win64-vc'):
                 env['CCFLAGS'].append('/openmp')
                 env['CPPFLAGS'].append('/openmp')
-                env['CXXFLAGS'].append('/openmp')
         else:
             if env['CC'].endswith('icc'): # to be able to handle CC=/opt/bla/icc case
                 env.Append(LINKFLAGS=['-openmp', '-static-intel'])
                 env['CCFLAGS'].append('-openmp')
                 env['CPPFLAGS'].append('-openmp')
-                env['CXXFLAGS'].append('-openmp')
             else:
                 env.Append(CCFLAGS=['-fopenmp']) 
                 env.Append(CPPFLAGS=['-fopenmp'])
-                env.Append(CXXFLAGS=['-fopenmp'])
 
 if env['WITH_GHOST_COCOA'] == True:
     env.Append(CFLAGS=['-DGHOST_COCOA']) 
-    env.Append(CXXFLAGS=['-DGHOST_COCOA'])
     env.Append(CPPFLAGS=['-DGHOST_COCOA'])
     
 if env['USE_QTKIT'] == True:
-    env.Append(CFLAGS=['-DUSE_QTKIT']) 
-    env.Append(CXXFLAGS=['-DUSE_QTKIT'])
+    env.Append(CFLAGS=['-DUSE_QTKIT'])
     env.Append(CPPFLAGS=['-DUSE_QTKIT'])
 
 #check for additional debug libnames
@@ -334,12 +330,19 @@ if 'blendernogame' in B.targets:
 # disable elbeem (fluidsim) compilation?
 if env['BF_NO_ELBEEM'] == 1:
     env['CPPFLAGS'].append('-DDISABLE_ELBEEM')
-    env['CXXFLAGS'].append('-DDISABLE_ELBEEM')
     env['CCFLAGS'].append('-DDISABLE_ELBEEM')
+
+
+if btools.ENDIAN == "big":
+    env['CPPFLAGS'].append('-D__BIG_ENDIAN__')
+    env['CCFLAGS'].append('-D__BIG_ENDIAN__')
+else:
+    env['CPPFLAGS'].append('-D__LITTLE_ENDIAN__')
+    env['CCFLAGS'].append('-D__LITTLE_ENDIAN__')	
+
 
 # TODO, make optional
 env['CPPFLAGS'].append('-DWITH_AUDASPACE')
-env['CXXFLAGS'].append('-DWITH_AUDASPACE')
 env['CCFLAGS'].append('-DWITH_AUDASPACE')
 
 # lastly we check for root_build_dir ( we should not do before, otherwise we might do wrong builddir
@@ -501,31 +504,35 @@ datafilestargetlist = []
 dottargetlist = []
 scriptinstall = []
 
-if  env['OURPLATFORM']!='darwin':
-        for dp, dn, df in os.walk('bin/.blender'):
+if env['OURPLATFORM']!='darwin':
+        for dp, dn, df in os.walk('release/bin/.blender'):
+            dp = os.path.normpath(dp)
+
             if '.svn' in dn:
                 dn.remove('.svn')
             if '_svn' in dn:
                 dn.remove('_svn')
             
             for f in df:
+                # This files aren't used anymore
+                if f in (".bfont.ttf", ):
+                    continue
+
                 if not env['WITH_BF_INTERNATIONAL']:
                     if 'locale' in dp:
-                        continue
-                    if f == '.Blanguages':
                         continue
                 if not env['WITH_BF_FREETYPE']:
                     if f.endswith('.ttf'):
                         continue
                 
-                if 'locale' in dp:
+                if 'locale' in dp or 'fonts' in dp:
                     datafileslist.append(os.path.join(dp,f))
-                    dir= os.path.join(*([env['BF_INSTALLDIR']] + [VERSION] + ['datafiles'] + dp.split(os.sep)[1:]))    # skip bin
+                    dir= os.path.join(*([env['BF_INSTALLDIR']] + [VERSION] + ['datafiles'] + dp.split(os.sep)[3:]))    # skip bin
                     datafilestargetlist.append(dir + os.sep + f)
 
                 else:
                     dotblendlist.append(os.path.join(dp, f))
-                    dir= os.path.join(*([env['BF_INSTALLDIR']] + [VERSION] + ['config'] + dp.split(os.sep)[1:]))    # skip bin
+                    dir= os.path.join(*([env['BF_INSTALLDIR']] + [VERSION] + ['config'] + dp.split(os.sep)[3:]))    # skip bin
                     dottargetlist.append(dir + os.sep + f)
                     
         dotblenderinstall = []
@@ -645,7 +652,7 @@ else:
 if env['OURPLATFORM'] in ('win32-vc', 'win32-mingw', 'win64-vc', 'linuxcross'):
     dllsources = []
 
-    if not env['OURPLATFORM'] in ('win32-mingw', 'win64-vc', 'linuxcross'):
+    if not env['OURPLATFORM'] in ('win32-mingw', 'linuxcross'):
         # For MinGW and linuxcross static linking will be used
         dllsources += ['${LCGDIR}/gettext/lib/gnu_gettext.dll']
 

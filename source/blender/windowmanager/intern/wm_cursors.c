@@ -1,5 +1,5 @@
 /*
-* $Id: wm_cursors.c 35388 2011-03-07 14:56:19Z ton $
+* $Id: wm_cursors.c 40641 2011-09-28 05:53:40Z campbellbarton $
 *
 * ***** BEGIN GPL LICENSE BLOCK *****
 *
@@ -317,8 +317,8 @@ are for */
 #define BEGIN_CURSOR_BLOCK {
 #define END_CURSOR_BLOCK   }
 
-void wm_init_cursor_data(void){
-
+void wm_init_cursor_data(void)
+{
 	/********************** NW_ARROW Cursor **************************/
 BEGIN_CURSOR_BLOCK
 		static char nw_sbm[]={

@@ -1,5 +1,5 @@
 /*
- * $Id: paint_image.c 39941 2011-09-05 21:01:50Z lukastoenne $
+ * $Id: paint_image.c 40782 2011-10-04 08:28:37Z campbellbarton $
  * imagepaint.c
  *
  * Functions to paint images in 2D and 3D.
@@ -356,9 +356,13 @@ typedef struct UndoImageTile {
 	struct UndoImageTile *next, *prev;
 
 	char idname[MAX_ID_NAME];	/* name instead of pointer*/
+	char ibufname[IB_FILENAME_SIZE];
 
 	void *rect;
 	int x, y;
+
+	short source;
+	char gen_type;
 } UndoImageTile;
 
 static ImagePaintPartialRedraw imapaintpartial = {0, 0, 0, 0, 0};
@@ -389,8 +393,9 @@ static void *image_undo_push_tile(Image *ima, ImBuf *ibuf, ImBuf **tmpibuf, int 
 	int allocsize;
 
 	for(tile=lb->first; tile; tile=tile->next)
-		if(tile->x == x_tile && tile->y == y_tile && strcmp(tile->idname, ima->id.name)==0)
-			return tile->rect;
+		if(tile->x == x_tile && tile->y == y_tile && ima->gen_type == tile->gen_type && ima->source == tile->source)
+			if(strcmp(tile->idname, ima->id.name)==0 && strcmp(tile->ibufname, ibuf->name)==0)
+				return tile->rect;
 	
 	if (*tmpibuf==NULL)
 		*tmpibuf = IMB_allocImBuf(IMAPAINT_TILE_SIZE, IMAPAINT_TILE_SIZE, 32, IB_rectfloat|IB_rect);
@@ -403,6 +408,11 @@ static void *image_undo_push_tile(Image *ima, ImBuf *ibuf, ImBuf **tmpibuf, int 
 	allocsize= IMAPAINT_TILE_SIZE*IMAPAINT_TILE_SIZE*4;
 	allocsize *= (ibuf->rect_float)? sizeof(float): sizeof(char);
 	tile->rect= MEM_mapallocN(allocsize, "UndeImageTile.rect");
+
+	strcpy(tile->ibufname, ibuf->name);
+
+	tile->gen_type= ima->gen_type;
+	tile->source= ima->source;
 
 	undo_copy_tile(tile, *tmpibuf, ibuf, 0);
 	undo_paint_push_count_alloc(UNDO_PAINT_IMAGE, allocsize);
@@ -424,16 +434,28 @@ static void image_undo_restore(bContext *C, ListBase *lb)
 	
 	for(tile=lb->first; tile; tile=tile->next) {
 		/* find image based on name, pointer becomes invalid with global undo */
-		if(ima && strcmp(tile->idname, ima->id.name)==0);
+		if(ima && strcmp(tile->idname, ima->id.name)==0) {
+			/* ima is valid */
+		}
 		else {
-			for(ima=bmain->image.first; ima; ima=ima->id.next)
-				if(strcmp(tile->idname, ima->id.name)==0)
-					break;
+			ima= BLI_findstring(&bmain->image, tile->idname, offsetof(ID, name));
 		}
 
 		ibuf= BKE_image_get_ibuf(ima, NULL);
 
+		if(ima && ibuf && strcmp(tile->ibufname, ibuf->name)!=0) {
+			/* current ImBuf filename was changed, probably current frame
+			   was changed when paiting on image sequence, rather than storing
+			   full image user (which isn't so obvious, btw) try to find ImBuf with
+			   matched file name in list of already loaded images */
+
+			ibuf= BLI_findstring(&ima->ibufs, tile->ibufname, offsetof(ImBuf, name));
+		}
+
 		if (!ima || !ibuf || !(ibuf->rect || ibuf->rect_float))
+			continue;
+
+		if (ima->gen_type != tile->gen_type || ima->source != tile->source)
 			continue;
 
 		undo_copy_tile(tile, tmpibuf, ibuf, 1);
@@ -717,7 +739,7 @@ static int project_paint_PickColor(const ProjPaintState *ps, float pt[2], float 
  *  1	: occluded
 	2	: occluded with w[3] weights set (need to know in some cases) */
 
-static int project_paint_occlude_ptv(float pt[3], float v1[3], float v2[3], float v3[3], float w[3], int is_ortho)
+static int project_paint_occlude_ptv(float pt[3], float v1[4], float v2[4], float v3[4], float w[3], int is_ortho)
 {
 	/* if all are behind us, return false */
 	if(v1[2] > pt[2] && v2[2] > pt[2] && v3[2] > pt[2])
@@ -749,7 +771,7 @@ static int project_paint_occlude_ptv(float pt[3], float v1[3], float v2[3], floa
 
 static int project_paint_occlude_ptv_clip(
 		const ProjPaintState *ps, const MFace *mf,
-		float pt[3], float v1[3], float v2[3], float v3[3],
+		float pt[3], float v1[4], float v2[4], float v3[4],
 		const int side )
 {
 	float w[3], wco[3];
@@ -1857,11 +1879,13 @@ static int IsectPT2Df_limit(float pt[2], float v1[2], float v2[2], float v3[2], 
 /* Clip the face by a bucket and set the uv-space bucket_bounds_uv
  * so we have the clipped UV's to do pixel intersection tests with 
  * */
-static int float_z_sort_flip(const void *p1, const void *p2) {
+static int float_z_sort_flip(const void *p1, const void *p2)
+{
 	return (((float *)p1)[2] < ((float *)p2)[2] ? 1:-1);
 }
 
-static int float_z_sort(const void *p1, const void *p2) {
+static int float_z_sort(const void *p1, const void *p2)
+{
 	return (((float *)p1)[2] < ((float *)p2)[2] ?-1:1);
 }
 
@@ -2666,9 +2690,7 @@ static void project_bucket_init(const ProjPaintState *ps, const int thread_index
 			tf = ps->dm_mtface+face_index;
 			if (tpage_last != tf->tpage) {
 				tpage_last = tf->tpage;
-				
-				image_index = -1; /* sanity check */
-				
+
 				for (image_index=0; image_index < ps->image_tot; image_index++) {
 					if (ps->projImages[image_index].ima == tpage_last) {
 						ibuf = ps->projImages[image_index].ibuf;
@@ -3686,7 +3708,8 @@ static void do_projectpaint_draw(ProjPaintState *ps, ProjPixel *projPixel, float
 	}
 }
 
-static void do_projectpaint_draw_f(ProjPaintState *ps, ProjPixel *projPixel, float *rgba, float alpha, float mask, int use_color_correction) {
+static void do_projectpaint_draw_f(ProjPaintState *ps, ProjPixel *projPixel, float *rgba, float alpha, float mask, int use_color_correction)
+{
 	if (ps->is_texbrush) {
 		/* rgba already holds a texture result here from higher level function */
 		float rgba_br[3];
@@ -3702,7 +3725,7 @@ static void do_projectpaint_draw_f(ProjPaintState *ps, ProjPixel *projPixel, flo
 		if(use_color_correction){
 			srgb_to_linearrgb_v3_v3(rgba, ps->brush->rgb);
 		}
- 		else {
+		else {
 			VECCOPY(rgba, ps->brush->rgb);
 		}
 		rgba[3] = 1.0;
@@ -4664,7 +4687,7 @@ static void paint_brush_init_tex(Brush *brush)
 	if(brush) {
 		MTex *mtex= &brush->mtex;
 		if(mtex->tex && mtex->tex->nodetree)
-			ntreeTexBeginExecTree(mtex->tex->nodetree); /* has internal flag to detect it only does it once */
+			ntreeTexBeginExecTree(mtex->tex->nodetree, 1); /* has internal flag to detect it only does it once */
 	}
 	
 }
@@ -4806,7 +4829,7 @@ static void paint_brush_exit_tex(Brush *brush)
 	if(brush) {
 		MTex *mtex= &brush->mtex;
 		if(mtex->tex && mtex->tex->nodetree)
-			ntreeTexEndExecTree(mtex->tex->nodetree->execdata);
+			ntreeTexEndExecTree(mtex->tex->nodetree->execdata, 1);
 	}	
 }
 
@@ -4875,7 +4898,6 @@ static void paint_apply_event(bContext *C, wmOperator *op, wmEvent *event)
 	time= PIL_check_seconds_timer();
 
 	tablet= 0;
-	pressure= 0;
 	pop->s.blend= pop->s.brush->blend;
 
 	if(event->custom == EVT_DATA_TABLET) {
@@ -4886,8 +4908,9 @@ static void paint_apply_event(bContext *C, wmOperator *op, wmEvent *event)
 		if(wmtab->Active == EVT_TABLET_ERASER)
 			pop->s.blend= IMB_BLEND_ERASE_ALPHA;
 	}
-	else /* otherwise airbrush becomes 1.0 pressure instantly */
+	else { /* otherwise airbrush becomes 1.0 pressure instantly */
 		pressure= pop->prev_pressure ? pop->prev_pressure : 1.0f;
+	}
 
 	if(pop->first) {
 		pop->prevmouse[0]= event->mval[0];
@@ -5178,7 +5201,7 @@ void PAINT_OT_grab_clone(wmOperatorType *ot)
 	ot->flag= OPTYPE_REGISTER|OPTYPE_UNDO|OPTYPE_BLOCKING;
 
 	/* properties */
-	RNA_def_float_vector(ot->srna, "delta", 2, NULL, -FLT_MAX, FLT_MAX, "Delta", "Delta offset of clone image in 0.0..1.0 coordinates.", -1.0f, 1.0f);
+	RNA_def_float_vector(ot->srna, "delta", 2, NULL, -FLT_MAX, FLT_MAX, "Delta", "Delta offset of clone image in 0.0..1.0 coordinates", -1.0f, 1.0f);
 }
 
 /******************** sample color operator ********************/
@@ -5259,7 +5282,7 @@ void PAINT_OT_sample_color(wmOperatorType *ot)
 	ot->flag= OPTYPE_REGISTER|OPTYPE_UNDO;
 
 	/* properties */
-	RNA_def_int_vector(ot->srna, "location", 2, NULL, 0, INT_MAX, "Location", "Cursor location in region coordinates.", 0, 16384);
+	RNA_def_int_vector(ot->srna, "location", 2, NULL, 0, INT_MAX, "Location", "Cursor location in region coordinates", 0, 16384);
 }
 
 /******************** set clone cursor operator ********************/
@@ -5309,7 +5332,7 @@ void PAINT_OT_clone_cursor_set(wmOperatorType *ot)
 	ot->flag= OPTYPE_REGISTER|OPTYPE_UNDO;
 
 	/* properties */
-	RNA_def_float_vector(ot->srna, "location", 3, NULL, -FLT_MAX, FLT_MAX, "Location", "Cursor location in world space coordinates.", -10000.0f, 10000.0f);
+	RNA_def_float_vector(ot->srna, "location", 3, NULL, -FLT_MAX, FLT_MAX, "Location", "Cursor location in world space coordinates", -10000.0f, 10000.0f);
 }
 
 /******************** texture paint toggle operator ********************/
@@ -5334,14 +5357,14 @@ static int texture_paint_toggle_exec(bContext *C, wmOperator *op)
 		return OPERATOR_CANCELLED;
 	
 	if (object_data_is_libdata(ob)) {
-		BKE_report(op->reports, RPT_ERROR, "Can't edit external libdata.");
+		BKE_report(op->reports, RPT_ERROR, "Can't edit external libdata");
 		return OPERATOR_CANCELLED;
 	}
 
 	me= get_mesh(ob);
 
 	if(!(ob->mode & OB_MODE_TEXTURE_PAINT) && !me) {
-		BKE_report(op->reports, RPT_ERROR, "Can only enter texture paint mode for mesh objects.");
+		BKE_report(op->reports, RPT_ERROR, "Can only enter texture paint mode for mesh objects");
 		return OPERATOR_CANCELLED;
 	}
 
@@ -5409,6 +5432,15 @@ int facemask_paint_poll(bContext *C)
 	return paint_facesel_test(CTX_data_active_object(C));
 }
 
+int vert_paint_poll(bContext *C)
+{
+	return paint_vertsel_test(CTX_data_active_object(C));
+}
+
+int mask_paint_poll(bContext *C)
+{
+	return paint_facesel_test(CTX_data_active_object(C)) || paint_vertsel_test(CTX_data_active_object(C));
+}
 /* use project paint to re-apply an image */
 static int texture_paint_camera_project_exec(bContext *C, wmOperator *op)
 {
@@ -5422,12 +5454,12 @@ static int texture_paint_camera_project_exec(bContext *C, wmOperator *op)
 	project_state_init(C, OBACT, &ps);
 
 	if(ps.ob==NULL || ps.ob->type != OB_MESH) {
-		BKE_report(op->reports, RPT_ERROR, "No active mesh object.");
+		BKE_report(op->reports, RPT_ERROR, "No active mesh object");
 		return OPERATOR_CANCELLED;
 	}
 
 	if(image==NULL) {
-		BKE_report(op->reports, RPT_ERROR, "Image could not be found.");
+		BKE_report(op->reports, RPT_ERROR, "Image could not be found");
 		return OPERATOR_CANCELLED;
 	}
 
@@ -5435,7 +5467,7 @@ static int texture_paint_camera_project_exec(bContext *C, wmOperator *op)
 	ps.reproject_ibuf= BKE_image_get_ibuf(image, NULL);
 
 	if(ps.reproject_ibuf==NULL || ps.reproject_ibuf->rect==NULL) {
-		BKE_report(op->reports, RPT_ERROR, "Image data could not be found.");
+		BKE_report(op->reports, RPT_ERROR, "Image data could not be found");
 		return OPERATOR_CANCELLED;
 	}
 
@@ -5446,7 +5478,7 @@ static int texture_paint_camera_project_exec(bContext *C, wmOperator *op)
 
 		/* type check to make sure its ok */
 		if(view_data->len != PROJ_VIEW_DATA_SIZE || view_data->subtype != IDP_FLOAT) {
-			BKE_report(op->reports, RPT_ERROR, "Image project data invalid.");
+			BKE_report(op->reports, RPT_ERROR, "Image project data invalid");
 			return OPERATOR_CANCELLED;
 		}
 	}
@@ -5459,7 +5491,7 @@ static int texture_paint_camera_project_exec(bContext *C, wmOperator *op)
 		ps.source= PROJ_SRC_IMAGE_CAM;
 
 		if(scene->camera==NULL) {
-			BKE_report(op->reports, RPT_ERROR, "No active camera set.");
+			BKE_report(op->reports, RPT_ERROR, "No active camera set");
 			return OPERATOR_CANCELLED;
 		}
 	}

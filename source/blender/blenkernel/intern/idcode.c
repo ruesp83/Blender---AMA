@@ -1,5 +1,5 @@
 /*
- * $Id: idcode.c 39792 2011-08-30 09:15:55Z nexyon $
+ * $Id: idcode.c 40641 2011-09-28 05:53:40Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -109,7 +109,8 @@ int BKE_idcode_is_valid(int code)
 	return idtype_from_code(code)?1:0;
 }
 
-int BKE_idcode_is_linkable(int code) {
+int BKE_idcode_is_linkable(int code)
+{
 	IDType *idt= idtype_from_code(code);
 	return idt?(idt->flags&IDTYPE_FLAGS_ISLINKABLE):0;
 }

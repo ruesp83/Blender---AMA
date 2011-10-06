@@ -1,7 +1,7 @@
 /*  displist.c
  * 
  * 
- * $Id: displist.c 39440 2011-08-16 10:31:28Z nazgul $
+ * $Id: displist.c 40641 2011-09-28 05:53:40Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -66,8 +66,6 @@
 #include "BKE_modifier.h"
 
 #include "BLO_sys_types.h" // for intptr_t support
-
-#include "ED_curve.h" /* for BKE_curve_nurbs */
 
 extern Material defmaterial;	/* material.c */
 
@@ -1102,7 +1100,7 @@ void makeDispListSurf(Scene *scene, Object *ob, ListBase *dispbase,
 	float (*deformedVerts)[3];
 
 	if(!forRender && cu->editnurb)
-		nubase= ED_curve_editnurbs(cu);
+		nubase= curve_editnurbs(cu);
 	else
 		nubase= &cu->nurb;
 
@@ -1408,7 +1406,8 @@ void makeDispListCurveTypes_forOrco(struct Scene *scene, struct Object *ob, stru
 }
 
 /* add Orco layer to the displist object which has got derived mesh and return orco */
-float *makeOrcoDispList(Scene *scene, Object *ob, DerivedMesh *derivedFinal, int forRender) {
+float *makeOrcoDispList(Scene *scene, Object *ob, DerivedMesh *derivedFinal, int forRender)
+{
 	float *orco;
 
 	if (derivedFinal == NULL)

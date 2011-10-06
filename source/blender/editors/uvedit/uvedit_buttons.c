@@ -1,5 +1,5 @@
 /*
- * $Id: uvedit_buttons.c 36434 2011-05-02 11:11:57Z blendix $
+ * $Id: uvedit_buttons.c 39991 2011-09-07 06:33:29Z mont29 $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *

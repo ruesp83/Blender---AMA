@@ -1,5 +1,5 @@
 /*
- * $Id: UI_interface.h 39104 2011-08-06 16:00:00Z campbellbarton $
+ * $Id: UI_interface.h 40786 2011-10-04 13:24:48Z blendix $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -34,6 +34,7 @@
 #ifndef UI_INTERFACE_H
 #define UI_INTERFACE_H
 
+#include "BLO_sys_types.h" /* size_t */
 #include "RNA_types.h"
 #include "DNA_userdef_types.h"
 
@@ -576,7 +577,7 @@ void uiButSetFocusOnEnter	(struct wmWindow *win, uiBut *but);
 
 typedef struct AutoComplete AutoComplete;
 
-AutoComplete *autocomplete_begin(const char *startname, int maxlen);
+AutoComplete *autocomplete_begin(const char *startname, size_t maxlen);
 void autocomplete_do_name(AutoComplete *autocpl, const char *name);
 void autocomplete_end(AutoComplete *autocpl, char *autoname);
 
@@ -610,6 +611,7 @@ void UI_remove_popup_handlers(struct ListBase *handlers, uiPopupBlockHandle *pop
 
 void UI_init(void);
 void UI_init_userdef(void);
+void UI_reinit_font(void);
 void UI_exit(void);
 
 /* Layout
@@ -652,6 +654,25 @@ void UI_exit(void);
 /* uiLayoutOperatorButs flags */
 #define UI_LAYOUT_OP_SHOW_TITLE 1
 #define UI_LAYOUT_OP_SHOW_EMPTY 2
+
+/* flags to set which corners will become rounded:
+ *
+ * 1------2
+ * |      |
+ * 8------4 */
+
+enum {
+	UI_CNR_TOP_LEFT= 1,
+	UI_CNR_TOP_RIGHT= 2,
+	UI_CNR_BOTTOM_RIGHT= 4,
+	UI_CNR_BOTTOM_LEFT= 8,
+	/* just for convenience */
+	UI_CNR_NONE= 0,
+	UI_CNR_ALL= (UI_CNR_TOP_LEFT | UI_CNR_TOP_RIGHT | UI_CNR_BOTTOM_RIGHT | UI_CNR_BOTTOM_LEFT)
+};
+
+/* not apart of the corner flags but mixed in some functions  */
+#define UI_RB_ALPHA (UI_CNR_ALL + 1)
 
 uiLayout *uiBlockLayout(uiBlock *block, int dir, int type, int x, int y, int size, int em, struct uiStyle *style);
 void uiBlockSetCurLayout(uiBlock *block, uiLayout *layout);
@@ -728,6 +749,7 @@ void uiTemplateHeader3D(uiLayout *layout, struct bContext *C);
 void uiTemplateEditModeSelection(uiLayout *layout, struct bContext *C);
 void uiTemplateTextureImage(uiLayout *layout, struct bContext *C, struct Tex *tex);
 void uiTemplateReportsBanner(uiLayout *layout, struct bContext *C);
+void uiTemplateKeymapItemProperties(uiLayout *layout, struct PointerRNA *ptr);
 
 void uiTemplateList(uiLayout *layout, struct bContext *C, struct PointerRNA *ptr, const char *propname, struct PointerRNA *activeptr, const char *activeprop, int rows, int maxrows, int type);
 
@@ -766,6 +788,7 @@ void UI_buttons_operatortypes(void);
 
 /* Helpers for Operators */
 void uiContextActiveProperty(const struct bContext *C, struct PointerRNA *ptr, struct PropertyRNA **prop, int *index);
+void uiContextActivePropertyHandle(struct bContext *C);
 void uiContextAnimUpdate(const struct bContext *C);
 void uiFileBrowseContextProperty(const struct bContext *C, struct PointerRNA *ptr, struct PropertyRNA **prop);
 void uiIDContextProperty(struct bContext *C, struct PointerRNA *ptr, struct PropertyRNA **prop);
@@ -780,9 +803,15 @@ void uiStyleFontDrawRotated(struct uiFontStyle *fs, struct rcti *rect, const cha
 int UI_GetStringWidth(const char *str); // XXX temp
 void UI_DrawString(float x, float y, const char *str); // XXX temp
 void UI_DrawTriIcon(float x, float y, char dir);
-
+uiStyle* UI_GetStyle(void);
 /* linker workaround ack! */
 void UI_template_fix_linking(void);
+
+/* translation */
+int UI_translate_iface(void);
+int UI_translate_tooltips(void);
+const char *UI_translate_do_iface(const char *msgid);
+const char *UI_translate_do_tooltip(const char *msgid);
 
 #endif /*  UI_INTERFACE_H */
 

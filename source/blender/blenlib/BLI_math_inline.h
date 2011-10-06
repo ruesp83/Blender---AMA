@@ -1,5 +1,5 @@
 /*
- * $Id: BLI_math_inline.h 39936 2011-09-05 19:27:21Z blendix $
+ * $Id: BLI_math_inline.h 40064 2011-09-09 12:23:45Z jesterking $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -45,7 +45,12 @@ extern "C" {
 #define MALWAYS_INLINE MINLINE
 #else
 #define MINLINE static inline
+#if (defined(__APPLE__) && defined(__ppc__))
+/* static inline __attribute__ here breaks osx ppc gcc42 build */
+#define MALWAYS_INLINE static __attribute__((always_inline))
+#else
 #define MALWAYS_INLINE static inline __attribute__((always_inline))
+#endif
 #endif
 #else
 #define MINLINE

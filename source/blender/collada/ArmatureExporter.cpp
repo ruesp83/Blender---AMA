@@ -1,5 +1,5 @@
 /*
- * $Id: ArmatureExporter.cpp 39898 2011-09-04 00:15:59Z jesterking $
+ * $Id: ArmatureExporter.cpp 40019 2011-09-07 18:23:30Z jesterking $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -49,7 +49,7 @@
 // XXX exporter writes wrong data for shared armatures.  A separate
 // controller should be written for each armature-mesh binding how do
 // we make controller ids then?
-ArmatureExporter::ArmatureExporter(COLLADASW::StreamWriter *sw) : COLLADASW::LibraryControllers(sw) {}
+ArmatureExporter::ArmatureExporter(COLLADASW::StreamWriter *sw, const ExportSettings *export_settings) : COLLADASW::LibraryControllers(sw), export_settings(export_settings) {}
 
 // write bone nodes
 void ArmatureExporter::add_armature_bones(Object *ob_arm, Scene *sce)
@@ -90,14 +90,14 @@ void ArmatureExporter::add_instance_controller(Object *ob)
 	ins.add();
 }
 
-void ArmatureExporter::export_controllers(Scene *sce, bool export_selected)
+void ArmatureExporter::export_controllers(Scene *sce)
 {
 	scene = sce;
 
 	openLibrary();
 
 	GeometryFunctor gf;
-	gf.forEachMeshObjectInScene<ArmatureExporter>(sce, *this, export_selected);
+	gf.forEachMeshObjectInScene<ArmatureExporter>(sce, *this, this->export_settings->selected);
 
 	closeLibrary();
 }

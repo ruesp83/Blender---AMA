@@ -1,5 +1,5 @@
 /*
- * $Id: DNA_actuator_types.h 39792 2011-08-30 09:15:55Z nexyon $ 
+ * $Id: DNA_actuator_types.h 40080 2011-09-09 21:28:56Z ben2610 $ 
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -230,6 +230,20 @@ typedef struct bArmatureActuator {
 	struct Object *subtarget;
 } bArmatureActuator;
 
+typedef struct bSteeringActuator {
+	char pad[5];
+	char flag;
+	short facingaxis;
+	int type;		/* 0=seek, 1=flee, 2=path following */
+	float dist;
+	float velocity;
+	float acceleration;
+	float turnspeed;
+	int updateTime;
+	struct Object *target;
+	struct Object *navmesh;
+} bSteeringActuator;
+
 typedef struct bActuator {
 	struct bActuator *next, *prev, *mynew;
 	short type;
@@ -295,6 +309,7 @@ typedef struct bActuator {
 #define ACT_SHAPEACTION 21
 #define ACT_STATE		22
 #define ACT_ARMATURE	23
+#define ACT_STEERING    24
 
 /* actuator flag */
 #define ACT_SHOW		1
@@ -510,6 +525,16 @@ typedef struct bActuator {
 /* cameraactuator->axis */
 #define ACT_CAMERA_X		(float)'x'
 #define ACT_CAMERA_Y		(float)'y'
+
+/* steeringactuator->type */
+#define ACT_STEERING_SEEK   0
+#define ACT_STEERING_FLEE   1
+#define ACT_STEERING_PATHFOLLOWING   2
+/* steeringactuator->flag */
+#define ACT_STEERING_SELFTERMINATED   1
+#define ACT_STEERING_ENABLEVISUALIZATION   2
+#define ACT_STEERING_AUTOMATICFACING   4
+#define ACT_STEERING_NORMALUP  8
 
 #endif
 

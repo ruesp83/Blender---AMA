@@ -1,5 +1,5 @@
 /*
- * $Id: BKE_DerivedMesh.h 39777 2011-08-29 16:07:44Z nazgul $
+ * $Id: BKE_DerivedMesh.h 40508 2011-09-23 18:29:45Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -257,7 +257,7 @@ struct DerivedMesh {
 	 */
 	void (*drawFacesTex)(DerivedMesh *dm,
 						 int (*setDrawOptions)(struct MTFace *tface,
-						 struct MCol *mcol, int matnr));
+						 int has_mcol, int matnr));
 
 	/* Draw all faces with GLSL materials
 	 *  o setMaterial is called for every different material nr

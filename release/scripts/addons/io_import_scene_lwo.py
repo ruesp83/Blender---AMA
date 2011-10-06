@@ -1082,7 +1082,7 @@ def build_objects(object_layers, object_surfs, object_tags, object_name, add_sub
                 skey= ob.shape_key_add(morph_key)
                 dlist= layer_data.morphs[morph_key]
                 for pdp in dlist:
-                    me.shape_keys.keys[skey.name].data[pdp[0]].co= [pdp[1], pdp[2], pdp[3]]
+                    me.shape_keys.key_blocks[skey.name].data[pdp[0]].co= [pdp[1], pdp[2], pdp[3]]
 
         # Create the Vertex Color maps.
         if len(layer_data.colmaps) > 0:
@@ -1216,7 +1216,7 @@ class IMPORT_OT_lwo(bpy.types.Operator):
     '''Import LWO Operator.'''
     bl_idname= "import_scene.lwo"
     bl_label= "Import LWO"
-    bl_description= "Import a LightWave Object file."
+    bl_description= "Import a LightWave Object file"
     bl_options= {'REGISTER', 'UNDO'}
 
     filepath= StringProperty(name="File Path", description="Filepath used for importing the LWO file", maxlen=1024, default="")

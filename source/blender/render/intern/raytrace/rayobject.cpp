@@ -1,5 +1,5 @@
 /*
- * $Id: rayobject.cpp 35233 2011-02-27 19:31:27Z jesterking $
+ * $Id: rayobject.cpp 40538 2011-09-25 12:31:21Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -441,7 +441,7 @@ int RE_rayobject_intersect(RayObject *r, Isect *i)
 	}
 	else {
 		assert(0);
-    	return 0;
+		return 0;
 	}
 }
 

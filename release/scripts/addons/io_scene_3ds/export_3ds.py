@@ -121,7 +121,7 @@ SZ_INT = 4
 SZ_FLOAT = 4
 
 
-class _3ds_short(object):
+class _3ds_ushort(object):
     '''Class representing a short (2-byte integer) for a 3ds file.
     *** This looks like an unsigned short H is unsigned from the struct docs - Cam***'''
     __slots__ = ("value", )
@@ -139,7 +139,7 @@ class _3ds_short(object):
         return str(self.value)
 
 
-class _3ds_int(object):
+class _3ds_uint(object):
     '''Class representing an int (4-byte integer) for a 3ds file.'''
     __slots__ = ("value", )
 
@@ -258,7 +258,6 @@ class _3ds_rgb_color(object):
 
     def write(self, file):
         file.write(struct.pack('<3B', int(255 * self.r), int(255 * self.g), int(255 * self.b)))
-# 		file.write(struct.pack('<3c', chr(int(255*self.r)), chr(int(255*self.g)), chr(int(255*self.b)) ) )
 
     def __str__(self):
         return '{%f, %f, %f}' % (self.r, self.g, self.b)
@@ -274,6 +273,9 @@ class _3ds_face(object):
     def get_size(self):
         return 4 * SZ_SHORT
 
+    # no need to validate every face vert. the oversized array will
+    # catch this problem
+
     def write(self, file):
         # The last zero is only used by 3d studio
         file.write(struct.pack("<4H", self.vindex[0], self.vindex[1], self.vindex[2], 0))
@@ -285,7 +287,7 @@ class _3ds_face(object):
 class _3ds_array(object):
     '''Class representing an array of variables for a 3ds file.
 
-    Consists of a _3ds_short to indicate the number of items, followed by the items themselves.
+    Consists of a _3ds_ushort to indicate the number of items, followed by the items themselves.
     '''
     __slots__ = "values", "size"
 
@@ -301,9 +303,11 @@ class _3ds_array(object):
     def get_size(self):
         return self.size
 
+    def validate(self):
+        return len(self.values) <= 65535
+
     def write(self, file):
-        _3ds_short(len(self.values)).write(file)
-        #_3ds_int(len(self.values)).write(file)
+        _3ds_ushort(len(self.values)).write(file)
         for value in self.values:
             value.write(file)
 
@@ -334,13 +338,10 @@ class _3ds_named_variable(object):
 
     def dump(self, indent):
         if self.value is not None:
-            spaces = ""
-            for i in range(indent):
-                spaces += "  "
-            if (self.name != ""):
-                print(spaces, self.name, " = ", self.value)
-            else:
-                print(spaces, "[unnamed]", " = ", self.value)
+            print(indent * " ",
+                  self.name if self.name else "[unnamed]",
+                  " = ",
+                  self.value)
 
 
 #the chunk class
@@ -352,8 +353,8 @@ class _3ds_chunk(object):
     __slots__ = "ID", "size", "variables", "subchunks"
 
     def __init__(self, id=0):
-        self.ID = _3ds_short(id)
-        self.size = _3ds_int(0)
+        self.ID = _3ds_ushort(id)
+        self.size = _3ds_uint(0)
         self.variables = []
         self.subchunks = []
 
@@ -379,6 +380,19 @@ class _3ds_chunk(object):
         self.size.value = tmpsize
         return self.size.value
 
+    def validate(self):
+        for var in self.variables:
+            func = getattr(var.value, "validate", None)
+            if (func is not None) and not func():
+                return False
+
+        for chunk in self.subchunks:
+            func = getattr(chunk, "validate", None)
+            if (func is not None) and not func():
+                return False
+
+        return True
+
     def write(self, file):
         '''Write the chunk to a file.
 
@@ -396,10 +410,9 @@ class _3ds_chunk(object):
 
         Dump is used for debugging purposes, to dump the contents of a chunk to the standard output.
         Uses the dump function of the named variables and the subchunks to do the actual work.'''
-        spaces = ""
-        for i in range(indent):
-            spaces += "  "
-        print(spaces, "ID=", hex(self.ID.value), "size=", self.get_size())
+        print(indent * " ",
+              "ID=%r" % hex(self.ID.value),
+              "size=%r" % self.get_size())
         for variable in self.variables:
             variable.dump(indent + 1)
         for subchunk in self.subchunks:
@@ -446,8 +459,7 @@ def make_material_texture_chunk(id, images):
     """
     mat_sub = _3ds_chunk(id)
 
-    def add_image(img):
-        import os
+    def add_image(image):
         import bpy
         filename = bpy.path.basename(image.filepath)
         mat_sub_file = _3ds_chunk(MATMAPFILE)
@@ -474,14 +486,14 @@ def make_material_chunk(material, image):
     material_chunk.add_subchunk(name)
 
     if not material:
-        material_chunk.add_subchunk(make_material_subchunk(MATAMBIENT, (0, 0, 0)))
-        material_chunk.add_subchunk(make_material_subchunk(MATDIFFUSE, (.8, .8, .8)))
-        material_chunk.add_subchunk(make_material_subchunk(MATSPECULAR, (1, 1, 1)))
+        material_chunk.add_subchunk(make_material_subchunk(MATAMBIENT, (0.0, 0.0, 0.0)))
+        material_chunk.add_subchunk(make_material_subchunk(MATDIFFUSE, (0.8, 0.8, 0.8)))
+        material_chunk.add_subchunk(make_material_subchunk(MATSPECULAR, (1.0, 1.0, 1.0)))
 
     else:
-        material_chunk.add_subchunk(make_material_subchunk(MATAMBIENT, [a * material.ambient for a in material.diffuse_color]))
-        material_chunk.add_subchunk(make_material_subchunk(MATDIFFUSE, material.diffuse_color))
-        material_chunk.add_subchunk(make_material_subchunk(MATSPECULAR, material.specular_color))
+        material_chunk.add_subchunk(make_material_subchunk(MATAMBIENT, (material.ambient * material.diffuse_color)[:]))
+        material_chunk.add_subchunk(make_material_subchunk(MATDIFFUSE, material.diffuse_color[:]))
+        material_chunk.add_subchunk(make_material_subchunk(MATSPECULAR, material.specular_color[:]))
 
         images = get_material_images(material)  # can be None
         if image:
@@ -650,8 +662,8 @@ def make_faces_chunk(tri_list, mesh, materialDict):
                 context_mat_face_array = _3ds_array()
                 unique_mats[mat, img] = _3ds_string(sane_name(name_str)), context_mat_face_array
 
-            context_mat_face_array.add(_3ds_short(i))
-            # obj_material_faces[tri.mat].add(_3ds_short(i))
+            context_mat_face_array.add(_3ds_ushort(i))
+            # obj_material_faces[tri.mat].add(_3ds_ushort(i))
 
         face_chunk.add_variable("faces", face_list)
         for mat_name, mat_faces in unique_mats.values():
@@ -673,7 +685,7 @@ def make_faces_chunk(tri_list, mesh, materialDict):
         for i, tri in enumerate(tri_list):
             face_list.add(_3ds_face(tri.vertex_index))
             if (tri.mat < n_materials):
-                obj_material_faces[tri.mat].add(_3ds_short(i))
+                obj_material_faces[tri.mat].add(_3ds_ushort(i))
 
         face_chunk.add_variable("faces", face_list)
         for i in range(n_materials):
@@ -713,8 +725,7 @@ def make_mesh_chunk(mesh, matrix, materialDict):
     # Extract the triangles from the mesh:
     tri_list = extract_triangles(mesh)
 
-    if len(mesh.uv_textures):
-# 	if mesh.faceUV:
+    if mesh.uv_textures:
         # Remove the face UVs and convert it to vertex UV:
         vert_array, uv_array, tri_list = remove_face_uv(mesh.vertices, tri_list)
     else:
@@ -723,13 +734,10 @@ def make_mesh_chunk(mesh, matrix, materialDict):
         for vert in mesh.vertices:
             vert_array.add(_3ds_point_3d(vert.co))
         # If the mesh has vertex UVs, create an array of UVs:
-        if len(mesh.sticky):
-# 		if mesh.vertexUV:
+        if mesh.sticky:
             uv_array = _3ds_array()
             for uv in mesh.sticky:
-# 			for vert in mesh.vertices:
                 uv_array.add(_3ds_point_uv(uv.co))
-# 				uv_array.add(_3ds_point_uv(vert.uvco))
         else:
             # no UV at all:
             uv_array = None
@@ -758,18 +766,18 @@ def make_kfdata(start=0, stop=0, curtime=0):
     kfdata = _3ds_chunk(KFDATA)
 
     kfhdr = _3ds_chunk(KFDATA_KFHDR)
-    kfhdr.add_variable("revision", _3ds_short(0))
+    kfhdr.add_variable("revision", _3ds_ushort(0))
     # Not really sure what filename is used for, but it seems it is usually used
     # to identify the program that generated the .3ds:
     kfhdr.add_variable("filename", _3ds_string("Blender"))
-    kfhdr.add_variable("animlen", _3ds_int(stop-start))
+    kfhdr.add_variable("animlen", _3ds_uint(stop-start))
 
     kfseg = _3ds_chunk(KFDATA_KFSEG)
-    kfseg.add_variable("start", _3ds_int(start))
-    kfseg.add_variable("stop", _3ds_int(stop))
+    kfseg.add_variable("start", _3ds_uint(start))
+    kfseg.add_variable("stop", _3ds_uint(stop))
 
     kfcurtime = _3ds_chunk(KFDATA_KFCURTIME)
-    kfcurtime.add_variable("curtime", _3ds_int(curtime))
+    kfcurtime.add_variable("curtime", _3ds_uint(curtime))
 
     kfdata.add_subchunk(kfhdr)
     kfdata.add_subchunk(kfseg)
@@ -783,13 +791,13 @@ def make_track_chunk(ID, obj):
 
     Depending on the ID, this will construct a position, rotation or scale track.'''
     track_chunk = _3ds_chunk(ID)
-    track_chunk.add_variable("track_flags", _3ds_short())
-    track_chunk.add_variable("unknown", _3ds_int())
-    track_chunk.add_variable("unknown", _3ds_int())
-    track_chunk.add_variable("nkeys", _3ds_int(1))
+    track_chunk.add_variable("track_flags", _3ds_ushort())
+    track_chunk.add_variable("unknown", _3ds_uint())
+    track_chunk.add_variable("unknown", _3ds_uint())
+    track_chunk.add_variable("nkeys", _3ds_uint(1))
     # Next section should be repeated for every keyframe, but for now, animation is not actually supported.
-    track_chunk.add_variable("tcb_frame", _3ds_int(0))
-    track_chunk.add_variable("tcb_flags", _3ds_short())
+    track_chunk.add_variable("tcb_frame", _3ds_uint(0))
+    track_chunk.add_variable("tcb_flags", _3ds_ushort())
     if obj.type=='Empty':
         if ID==POS_TRACK_TAG:
             # position vector:
@@ -830,7 +838,7 @@ def make_kf_obj_node(obj, name_to_id):
     # chunk for the object id:
     obj_id_chunk = _3ds_chunk(OBJECT_NODE_ID)
     # object id is from the name_to_id dictionary:
-    obj_id_chunk.add_variable("node_id", _3ds_short(name_to_id[name]))
+    obj_id_chunk.add_variable("node_id", _3ds_ushort(name_to_id[name]))
 
     # object node header:
     obj_node_header_chunk = _3ds_chunk(OBJECT_NODE_HDR)
@@ -843,18 +851,18 @@ def make_kf_obj_node(obj, name_to_id):
         # Add the name:
         obj_node_header_chunk.add_variable("name", _3ds_string(sane_name(name)))
     # Add Flag variables (not sure what they do):
-    obj_node_header_chunk.add_variable("flags1", _3ds_short(0))
-    obj_node_header_chunk.add_variable("flags2", _3ds_short(0))
+    obj_node_header_chunk.add_variable("flags1", _3ds_ushort(0))
+    obj_node_header_chunk.add_variable("flags2", _3ds_ushort(0))
 
     # Check parent-child relationships:
     parent = obj.parent
     if (parent is None) or (parent.name not in name_to_id):
         # If no parent, or the parents name is not in the name_to_id dictionary,
         # parent id becomes -1:
-        obj_node_header_chunk.add_variable("parent", _3ds_short(-1))
+        obj_node_header_chunk.add_variable("parent", _3ds_ushort(-1))
     else:
         # Get the parent's id from the name_to_id dictionary:
-        obj_node_header_chunk.add_variable("parent", _3ds_short(name_to_id[parent.name]))
+        obj_node_header_chunk.add_variable("parent", _3ds_ushort(name_to_id[parent.name]))
 
     # Add pivot chunk:
     obj_pivot_chunk = _3ds_chunk(OBJECT_PIVOT)
@@ -908,7 +916,7 @@ def save(operator,
     primary = _3ds_chunk(PRIMARY)
     # Add version chunk:
     version_chunk = _3ds_chunk(VERSION)
-    version_chunk.add_variable("version", _3ds_int(3))
+    version_chunk.add_variable("version", _3ds_uint(3))
     primary.add_subchunk(version_chunk)
 
     # init main object info chunk:
@@ -955,8 +963,7 @@ def save(operator,
                 mat_ls_len = len(mat_ls)
 
                 # get material/image tuples.
-                if len(data.uv_textures):
-# 				if data.faceUV:
+                if data.uv_textures:
                     if not mat_ls:
                         mat = mat_name = None
 
@@ -982,9 +989,7 @@ def save(operator,
                     # Why 0 Why!
                     for f in data.faces:
                         if f.material_index >= mat_ls_len:
-# 						if f.mat >= mat_ls_len:
                             f.material_index = 0
-                            # f.mat = 0
 
         if free:
             free_derived_objects(ob)
@@ -1013,7 +1018,14 @@ def save(operator,
 
         # make a mesh chunk out of the mesh:
         object_chunk.add_subchunk(make_mesh_chunk(blender_mesh, matrix, materialDict))
-        object_info.add_subchunk(object_chunk)
+
+        # ensure the mesh has no over sized arrays
+        # skip ones that do!, otherwise we cant write since the array size wont
+        # fit into USHORT.
+        if object_chunk.validate():
+            object_info.add_subchunk(object_chunk)
+        else:
+            operator.report({'WARNING'}, "Object %r can't be written into a 3DS file")
 
         ''' # COMMENTED OUT FOR 2.42 RELEASE!! CRASHES 3DS MAX
         # make a kf object node for the object:

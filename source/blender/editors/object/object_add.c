@@ -1,5 +1,5 @@
 /*
- * $Id: object_add.c 39805 2011-08-30 14:41:23Z dingto $
+ * $Id: object_add.c 40193 2011-09-14 00:37:27Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -400,7 +400,7 @@ static Object *effector_add_type(bContext *C, wmOperator *op, int type)
 		((Curve*)ob->data)->flag |= CU_PATH|CU_3D;
 		ED_object_enter_editmode(C, 0);
 		ED_object_new_primitive_matrix(C, ob, loc, rot, mat);
-		BLI_addtail(curve_get_editcurve(ob), add_nurbs_primitive(C, mat, CU_NURBS|CU_PRIM_PATH, 1));
+		BLI_addtail(object_editcurve_get(ob), add_nurbs_primitive(C, mat, CU_NURBS|CU_PRIM_PATH, 1));
 
 		if(!enter_editmode)
 			ED_object_exit_editmode(C, EM_FREEDATA);

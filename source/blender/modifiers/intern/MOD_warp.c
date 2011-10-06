@@ -1,5 +1,5 @@
 /*
-* $Id: MOD_warp.c 39342 2011-08-12 18:11:22Z blendix $
+* $Id: MOD_warp.c 40581 2011-09-26 18:51:10Z campbellbarton $
 *
 * ***** BEGIN GPL LICENSE BLOCK *****
 *
@@ -23,12 +23,17 @@
 *
 */
 
+/** \file blender/modifiers/intern/MOD_warp.c
+ *  \ingroup modifiers
+ */
+
 #include <string.h>
 
 #include "MEM_guardedalloc.h"
 
 #include "BLI_math.h"
 #include "BLI_utildefines.h"
+#include "BLI_string.h"
 
 #include "BKE_cdderivedmesh.h"
 #include "BKE_modifier.h"
@@ -69,13 +74,13 @@ static void copyData(ModifierData *md, ModifierData *target)
 	twmd->strength = wmd->strength;
 	twmd->falloff_radius = wmd->falloff_radius;
 	twmd->falloff_type = wmd->falloff_type;
-	strncpy(twmd->defgrp_name, wmd->defgrp_name, sizeof(twmd->defgrp_name));
+	BLI_strncpy(twmd->defgrp_name, wmd->defgrp_name, sizeof(twmd->defgrp_name));
 	twmd->curfalloff = curvemapping_copy(wmd->curfalloff);
 
 	/* map info */
 	twmd->texture = wmd->texture;
 	twmd->map_object = wmd->map_object;
-	strncpy(twmd->uvlayer_name, wmd->uvlayer_name, sizeof(twmd->uvlayer_name));
+	BLI_strncpy(twmd->uvlayer_name, wmd->uvlayer_name, sizeof(twmd->uvlayer_name));
 	twmd->texmapping= wmd->texmapping;
 }
 
@@ -232,8 +237,8 @@ static void warpModifier_do(WarpModifierData *wmd, Object *ob,
 				dv = &dvert[i];
 
 				if(dv) {
-					weight = defvert_find_weight(dv, defgrp_index) * wmd->strength;
-					if(weight <= 0.0f)
+					weight = defvert_find_weight(dv, defgrp_index) * strength;
+					if(weight <= 0.0f) /* Should never occure... */
 						continue;
 				}
 			}

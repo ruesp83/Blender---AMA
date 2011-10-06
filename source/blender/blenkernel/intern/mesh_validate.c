@@ -1,5 +1,5 @@
 /*
- * $Id: mesh_validate.c 39893 2011-09-03 15:36:36Z campbellbarton $
+ * $Id: mesh_validate.c 40193 2011-09-14 00:37:27Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -143,7 +143,7 @@ int BKE_mesh_validate_arrays(Mesh *me, MVert *UNUSED(mverts), unsigned int totve
 
 	BLI_assert(!(do_fixes && me == NULL));
 
-	PRINT("ED_mesh_validate: verts(%u), edges(%u), faces(%u)\n", totvert, totedge, totface);
+	PRINT("%s: verts(%u), edges(%u), faces(%u)\n", __func__, totvert, totedge, totface);
 
 	if(totedge == 0 && totface != 0) {
 		PRINT("    locical error, %u faces and 0 edges\n", totface);

@@ -1,5 +1,5 @@
 /*
- * $Id: SHD_dynamic.c 35927 2011-03-31 20:59:55Z lukastoenne $
+ * $Id: node_shader_dynamic.c 39944 2011-09-05 22:04:30Z gsrb3d $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *

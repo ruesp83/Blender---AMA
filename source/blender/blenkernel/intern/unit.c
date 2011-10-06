@@ -1,5 +1,5 @@
 /*
- * $Id: unit.c 39795 2011-08-30 10:07:50Z blendix $
+ * $Id: unit.c 40258 2011-09-16 10:03:08Z nazgul $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -345,7 +345,7 @@ static int unit_as_string(char *str, int len_max, double value, int prec, bUnitC
 
 	/* Convert to a string */
 	{
-		len= BLI_snprintf(str, len_max, "%.*lf", prec, value_conv);
+		len= BLI_snprintf(str, len_max, "%.*f", prec, value_conv);
 
 		if(len >= len_max)
 			len= len_max;

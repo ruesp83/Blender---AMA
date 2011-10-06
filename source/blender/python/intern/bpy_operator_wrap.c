@@ -1,5 +1,5 @@
 /*
- * $Id: bpy_operator_wrap.c 36576 2011-05-09 14:41:44Z campbellbarton $
+ * $Id: bpy_operator_wrap.c 40795 2011-10-05 00:19:33Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -125,7 +125,7 @@ PyObject *PYOP_wrap_macro_define(PyObject *UNUSED(self), PyObject *args)
 
 	otmacro= WM_operatortype_macro_define(ot, opname);
 
-	RNA_pointer_create(NULL, &RNA_OperatorTypeMacro, otmacro, &ptr_otmacro);
+	RNA_pointer_create(NULL, &RNA_OperatorMacro, otmacro, &ptr_otmacro);
 
 	return pyrna_struct_CreatePyObject(&ptr_otmacro);
 }

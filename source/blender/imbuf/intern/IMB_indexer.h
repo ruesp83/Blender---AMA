@@ -1,5 +1,5 @@
 /**
- * $Id: IMB_indexer.h 39759 2011-08-28 21:48:52Z gsrb3d $
+ * $Id: IMB_indexer.h 40340 2011-09-19 06:32:19Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -28,7 +28,7 @@
 #define IMB_INDEXER_H
 
 #ifdef WIN32
-#include <io.h>
+#  include <io.h>
 #endif
 
 #include <stdlib.h>

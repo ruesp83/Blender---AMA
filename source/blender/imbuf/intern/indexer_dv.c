@@ -1,5 +1,5 @@
 /*
- * $Id: indexer_dv.c 39833 2011-09-01 01:48:50Z campbellbarton $
+ * $Id: indexer_dv.c 40641 2011-09-28 05:53:40Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -56,7 +56,8 @@ static unsigned long bitstream_get_bits(indexer_dv_bitstream * This, int num)
 	return rval;
 }
 
-static int parse_num(indexer_dv_bitstream * b, int numbits) {
+static int parse_num(indexer_dv_bitstream * b, int numbits)
+{
 	return bitstream_get_bits(b, numbits);
 }
 

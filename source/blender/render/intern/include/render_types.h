@@ -1,5 +1,5 @@
 /*
- * $Id: render_types.h 37916 2011-06-28 16:25:07Z blendix $
+ * $Id: render_types.h 40675 2011-09-28 19:18:29Z blendix $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -338,7 +338,7 @@ typedef struct ObjectInstanceRen {
 	
 	struct VolumePrecache *volume_precache;
 	
-	float *vectors;
+	float *vectors; /* (RE_WINSPEED_ELEMS * VertRen.index) */
 	int totvector;
 	
 	/* used on makeraytree */
@@ -354,8 +354,8 @@ typedef struct VertRen
 	float co[3];
 	float n[3];
 	float *orco;
-	short clip;
-	unsigned short flag;		/* in use for clipping zbuffer parts, temp setting stuff in convertblender.c */
+	unsigned int flag;	/* in use for clipping zbuffer parts, temp setting stuff in convertblender.c
+						 * only an 'int' because of alignment, could be a char too */
 	float accum;		/* accum for radio weighting, and for strand texco static particles */
 	int index;			/* index allows extending vertren with any property */
 } VertRen;
@@ -485,7 +485,6 @@ typedef struct VolPrecachePart
 	int res[3];
 	float bbmin[3];
 	float voxel[3];
-	int working, done;
 	struct Render *re;
 } VolPrecachePart;
 

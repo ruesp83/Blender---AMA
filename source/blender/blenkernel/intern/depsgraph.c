@@ -1,5 +1,5 @@
 /*
- * $Id: depsgraph.c 39792 2011-08-30 09:15:55Z nexyon $
+ * $Id: depsgraph.c 40727 2011-10-01 01:27:44Z aligorith $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -2028,15 +2028,25 @@ static int object_modifiers_use_time(Object *ob)
 	/* check whether any modifiers are animated */
 	if (ob->adt) {
 		AnimData *adt = ob->adt;
+		FCurve *fcu;
 		
 		/* action - check for F-Curves with paths containing 'modifiers[' */
 		if (adt->action) {
-			FCurve *fcu;
-			
 			for (fcu = adt->action->curves.first; fcu; fcu = fcu->next) {
 				if (fcu->rna_path && strstr(fcu->rna_path, "modifiers["))
 					return 1;
 			}
+		}
+		
+		/* This here allows modifier properties to get driven and still update properly
+		 *
+		 * Workaround to get [#26764] (e.g. subsurf levels not updating when animated/driven)
+		 * working, without the updating problems ([#28525] [#28690] [#28774] [#28777]) caused
+		 * by the RNA updates cache introduced in r.38649
+		 */
+		for (fcu = adt->drivers.first; fcu; fcu = fcu->next) {
+			if (fcu->rna_path && strstr(fcu->rna_path, "modifiers["))
+				return 1;
 		}
 		
 		// XXX: also, should check NLA strips, though for now assume that nobody uses

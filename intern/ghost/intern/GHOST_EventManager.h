@@ -1,5 +1,5 @@
 /*
- * $Id: GHOST_EventManager.h 35152 2011-02-25 11:28:33Z jesterking $
+ * $Id: GHOST_EventManager.h 40538 2011-09-25 12:31:21Z campbellbarton $
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
  * This program is free software; you can redistribute it and/or
@@ -127,9 +127,9 @@ public:
 	 * Removes all events for a window from the stack.
 	 * @param	window	The window to remove events for.
 	 */
-	 	virtual void
-	 removeWindowEvents(
-	 	GHOST_IWindow* window
+		virtual void
+	removeWindowEvents(
+		GHOST_IWindow* window
 	 );
 
 	/**

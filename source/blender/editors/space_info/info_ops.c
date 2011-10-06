@@ -1,5 +1,5 @@
 /*
- * $Id: info_ops.c 39564 2011-08-19 20:25:25Z campbellbarton $
+ * $Id: info_ops.c 40351 2011-09-19 12:26:20Z mont29 $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -151,7 +151,7 @@ static int unpack_all_invoke(bContext *C, wmOperator *op, wmEvent *UNUSED(event)
 	count = countPackedFiles(bmain);
 	
 	if(!count) {
-		BKE_report(op->reports, RPT_WARNING, "No packed files. Autopack disabled.");
+		BKE_report(op->reports, RPT_WARNING, "No packed files. Autopack disabled");
 		G.fileflags &= ~G_AUTOPACK;
 		return OPERATOR_CANCELLED;
 	}
@@ -186,7 +186,7 @@ void FILE_OT_unpack_all(wmOperatorType *ot)
 	ot->flag= OPTYPE_REGISTER|OPTYPE_UNDO;
 
 	/* properties */
-	RNA_def_enum(ot->srna, "method", unpack_all_method_items, PF_USE_LOCAL, "Method", "How to unpack.");
+	RNA_def_enum(ot->srna, "method", unpack_all_method_items, PF_USE_LOCAL, "Method", "How to unpack");
 }
 
 /********************* make paths relative operator *********************/
@@ -196,7 +196,7 @@ static int make_paths_relative_exec(bContext *C, wmOperator *op)
 	Main *bmain= CTX_data_main(C);
 
 	if(!G.relbase_valid) {
-		BKE_report(op->reports, RPT_WARNING, "Can't set relative paths with an unsaved blend file.");
+		BKE_report(op->reports, RPT_WARNING, "Can't set relative paths with an unsaved blend file");
 		return OPERATOR_CANCELLED;
 	}
 
@@ -228,7 +228,7 @@ static int make_paths_absolute_exec(bContext *C, wmOperator *op)
 	Main *bmain= CTX_data_main(C);
 
 	if(!G.relbase_valid) {
-		BKE_report(op->reports, RPT_WARNING, "Can't set absolute paths with an unsaved blend file.");
+		BKE_report(op->reports, RPT_WARNING, "Can't set absolute paths with an unsaved blend file");
 		return OPERATOR_CANCELLED;
 	}
 

@@ -1,5 +1,5 @@
 /*
- * $Id: ED_object.h 39175 2011-08-08 08:22:01Z campbellbarton $
+ * $Id: ED_object.h 40095 2011-09-10 09:38:38Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -136,8 +136,8 @@ void ED_setflagsLatt(struct Object *obedit, int flag);
 /* object_modifier.c */
 enum {
 	MODIFIER_APPLY_DATA=1,
-	MODIFIER_APPLY_SHAPE,
-} eModifier_Apply_Mode;
+	MODIFIER_APPLY_SHAPE
+};
 
 struct ModifierData *ED_object_modifier_add(struct ReportList *reports, struct Main *bmain, struct Scene *scene, struct Object *ob, const char *name, int type);
 int ED_object_modifier_remove(struct ReportList *reports, struct Main *bmain, struct Scene *scene, struct Object *ob, struct ModifierData *md);

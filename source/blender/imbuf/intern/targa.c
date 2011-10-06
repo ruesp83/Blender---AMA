@@ -24,7 +24,7 @@
  * Contributor(s): none yet.
  *
  * ***** END GPL LICENSE BLOCK *****
- * $Id: targa.c 37158 2011-06-04 03:07:56Z campbellbarton $
+ * $Id: targa.c 40641 2011-09-28 05:53:40Z campbellbarton $
  */
 
 /** \file blender/imbuf/intern/targa.c
@@ -338,7 +338,8 @@ static int checktarga(TARGA *tga, unsigned char *mem)
 	return(1);
 }
 
-int imb_is_a_targa(unsigned char *buf) {
+int imb_is_a_targa(unsigned char *buf)
+{
 	TARGA tga;
 	
 	return checktarga(&tga, buf);

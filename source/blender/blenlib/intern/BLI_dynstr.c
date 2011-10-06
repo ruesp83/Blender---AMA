@@ -1,5 +1,5 @@
 /*
- * $Id: BLI_dynstr.c 35246 2011-02-27 20:37:56Z jesterking $
+ * $Id: BLI_dynstr.c 40641 2011-09-28 05:53:40Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -70,7 +70,8 @@ struct DynStr {
 
 /***/
 
-DynStr *BLI_dynstr_new(void) {
+DynStr *BLI_dynstr_new(void)
+{
 	DynStr *ds= MEM_mallocN(sizeof(*ds), "DynStr");
 	ds->elems= ds->last= NULL;
 	ds->curlen= 0;
@@ -78,7 +79,8 @@ DynStr *BLI_dynstr_new(void) {
 	return ds;
 }
 
-void BLI_dynstr_append(DynStr *ds, const char *cstr) {
+void BLI_dynstr_append(DynStr *ds, const char *cstr)
+{
 	DynStrElem *dse= malloc(sizeof(*dse));
 	int cstrlen= strlen(cstr);
 	
@@ -220,7 +222,8 @@ void BLI_dynstr_appendf(DynStr *ds, const char *format, ...)
 	}
 }
 
-int BLI_dynstr_get_len(DynStr *ds) {
+int BLI_dynstr_get_len(DynStr *ds)
+{
 	return ds->curlen;
 }
 

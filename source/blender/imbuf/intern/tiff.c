@@ -1,7 +1,7 @@
 /*
  * tiff.c
  *
- * $Id: tiff.c 39731 2011-08-27 03:25:02Z campbellbarton $
+ * $Id: tiff.c 40340 2011-09-19 06:32:19Z campbellbarton $
  * 
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -44,8 +44,6 @@
  * 8 bits per channel in all cases.  The "deflate" compression algorithm is
  * used to compress images.
  */
-
-#ifdef WITH_TIFF
 
 #include <string.h>
 
@@ -836,5 +834,3 @@ int imb_savetiff(ImBuf *ibuf, const char *name, int flags)
 	if(pixels16) _TIFFfree(pixels16);
 	return (1);
 }
-
-#endif /* WITH_TIFF */

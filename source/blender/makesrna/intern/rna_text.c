@@ -1,5 +1,5 @@
 /*
- * $Id: rna_text.c 35238 2011-02-27 20:20:01Z jesterking $
+ * $Id: rna_text.c 40640 2011-09-28 05:20:14Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -53,7 +53,7 @@ static void rna_Text_filename_get(PointerRNA *ptr, char *value)
 	if(text->name)
 		strcpy(value, text->name);
 	else
-		strcpy(value, "");
+		value[0]= '\0';
 }
 
 static int rna_Text_filename_length(PointerRNA *ptr)
@@ -69,7 +69,7 @@ static void rna_Text_filename_set(PointerRNA *ptr, const char *value)
 	if(text->name)
 		MEM_freeN(text->name);
 
-	if(strlen(value))
+	if(value[0])
 		text->name= BLI_strdup(value);
 	else
 		text->name= NULL;
@@ -88,7 +88,7 @@ static void rna_TextLine_body_get(PointerRNA *ptr, char *value)
 	if(line->line)
 		strcpy(value, line->line);
 	else
-		strcpy(value, "");
+		value[0]= '\0';
 }
 
 static int rna_TextLine_body_length(PointerRNA *ptr)

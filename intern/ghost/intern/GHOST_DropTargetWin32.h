@@ -1,5 +1,5 @@
 /*
- * $Id: GHOST_DropTargetWin32.h 38908 2011-08-02 04:28:05Z merwin $
+ * $Id: GHOST_DropTargetWin32.h 40538 2011-09-25 12:31:21Z campbellbarton $
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
  * This program is free software; you can redistribute it and/or
@@ -53,7 +53,7 @@ public:
 	ULONG	__stdcall Release (void);
 
 	/* IDropTarget implementation
- 	 + The IDropTarget interface is one of the interfaces you implement to 
+	 + The IDropTarget interface is one of the interfaces you implement to
 	 provide drag-and-drop operations in your application. It contains methods 
 	 used in any application that can be a target for data during a 
 	 drag-and-drop operation. A drop-target application is responsible for:

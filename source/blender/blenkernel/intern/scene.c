@@ -1,7 +1,7 @@
 /*  scene.c
  *  
  * 
- * $Id: scene.c 39792 2011-08-30 09:15:55Z nexyon $
+ * $Id: scene.c 40701 2011-09-29 21:38:57Z ben2610 $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -56,6 +56,7 @@
 #include "BLI_math.h"
 #include "BLI_blenlib.h"
 #include "BLI_utildefines.h"
+#include "BLI_callbacks.h"
 
 #include "BKE_anim.h"
 #include "BKE_animsys.h"
@@ -428,7 +429,7 @@ Scene *add_scene(const char *name)
 	sce->toolsettings->skgen_resolution = 100;
 	sce->toolsettings->skgen_threshold_internal 	= 0.01f;
 	sce->toolsettings->skgen_threshold_external 	= 0.01f;
-	sce->toolsettings->skgen_angle_limit	 		= 45.0f;
+	sce->toolsettings->skgen_angle_limit			= 45.0f;
 	sce->toolsettings->skgen_length_ratio			= 1.3f;
 	sce->toolsettings->skgen_length_limit			= 1.5f;
 	sce->toolsettings->skgen_correlation_limit		= 0.98f;
@@ -513,6 +514,23 @@ Scene *add_scene(const char *name)
 
 	sce->gm.flag = GAME_DISPLAY_LISTS;
 	sce->gm.matmode = GAME_MAT_MULTITEX;
+
+	sce->gm.obstacleSimulation= OBSTSIMULATION_NONE;
+	sce->gm.levelHeight = 2.f;
+
+	sce->gm.recastData.cellsize = 0.3f;
+	sce->gm.recastData.cellheight = 0.2f;
+	sce->gm.recastData.agentmaxslope = M_PI/2;
+	sce->gm.recastData.agentmaxclimb = 0.9f;
+	sce->gm.recastData.agentheight = 2.0f;
+	sce->gm.recastData.agentradius = 0.6f;
+	sce->gm.recastData.edgemaxlen = 12.0f;
+	sce->gm.recastData.edgemaxerror = 1.3f;
+	sce->gm.recastData.regionminsize = 8.f;
+	sce->gm.recastData.regionmergesize = 20.f;
+	sce->gm.recastData.vertsperpoly = 6;
+	sce->gm.recastData.detailsampledist = 6.0f;
+	sce->gm.recastData.detailsamplemaxerror = 1.0f;
 
 	sound_create_scene(sce);
 
@@ -1005,6 +1023,9 @@ void scene_update_for_newframe(Main *bmain, Scene *sce, unsigned int lay)
 	float ctime = BKE_curframe(sce);
 	Scene *sce_iter;
 
+	/* keep this first */
+	BLI_exec_cb(bmain, (ID *)sce, BLI_CB_EVT_FRAME_CHANGE_PRE);
+
 	sound_set_cfra(sce->r.cfra);
 	
 	/* clear animation overrides */
@@ -1031,6 +1052,9 @@ void scene_update_for_newframe(Main *bmain, Scene *sce, unsigned int lay)
 
 	/* object_handle_update() on all objects, groups and sets */
 	scene_update_tagged_recursive(bmain, sce, sce);
+
+	/* keep this last */
+	BLI_exec_cb(bmain, (ID *)sce, BLI_CB_EVT_FRAME_CHANGE_POST);
 }
 
 /* return default layer, also used to patch old files */

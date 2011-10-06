@@ -1,5 +1,5 @@
 /*
- * $Id: ED_armature.h 36644 2011-05-12 16:47:36Z campbellbarton $
+ * $Id: ED_armature.h 40197 2011-09-14 01:48:55Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -148,7 +148,6 @@ void ED_armature_bone_rename(struct bArmature *arm, char *oldnamep, char *newnam
 void undo_push_armature(struct bContext *C, const char *name);
 
 /* poseobject.c */
-struct Object *ED_object_pose_armature(struct Object *ob);
 void ED_armature_exit_posemode(struct bContext *C, struct Base *base);
 void ED_armature_enter_posemode(struct bContext *C, struct Base *base);
 int ED_pose_channel_in_IK_chain(struct Object *ob, struct bPoseChannel *pchan);

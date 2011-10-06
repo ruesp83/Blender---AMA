@@ -1,5 +1,5 @@
 /*
- * $Id: creator.c 39618 2011-08-22 16:54:26Z campbellbarton $
+ * $Id: creator.c 40581 2011-09-26 18:51:10Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -45,12 +45,6 @@
 #include <stdlib.h>
 #include <stddef.h>
 #include <string.h>
-
-/* for setuid / getuid */
-#ifdef __sgi
-#include <sys/types.h>
-#include <unistd.h>
-#endif
 
 /* This little block needed for linking to Blender... */
 
@@ -156,7 +150,7 @@ char btempdir[FILE_MAX];
 static void setCallbacks(void); 
 
 /* set breakpoints here when running in debug mode, useful to catch floating point errors */
-#if defined(__sgi) || defined(__linux__) || defined(_WIN32) || defined(OSX_SSE_FPE)
+#if defined(__linux__) || defined(_WIN32) || defined(OSX_SSE_FPE)
 static void fpe_handler(int UNUSED(sig))
 {
 	// printf("SIGFPE trapped\n");
@@ -365,7 +359,7 @@ static int debug_mode(int UNUSED(argc), const char **UNUSED(argv), void *data)
 
 static int set_fpe(int UNUSED(argc), const char **UNUSED(argv), void *UNUSED(data))
 {
-#if defined(__sgi) || defined(__linux__) || defined(_WIN32) || defined(OSX_SSE_FPE)
+#if defined(__linux__) || defined(_WIN32) || defined(OSX_SSE_FPE)
 	/* zealous but makes float issues a heck of a lot easier to find!
 	 * set breakpoints on fpe_handler */
 	signal(SIGFPE, fpe_handler);
@@ -489,7 +483,7 @@ static int no_joystick(int UNUSED(argc), const char **UNUSED(argv), void *data)
 	SYS_SystemHandle *syshandle = data;
 
 	/**
-	 	don't initialize joysticks if user doesn't want to use joysticks
+		don't initialize joysticks if user doesn't want to use joysticks
 		failed joystick initialization delays over 5 seconds, before game engine start
 	*/
 	SYS_WriteCommandLineInt(*syshandle, "nojoystick",1);
@@ -526,8 +520,8 @@ static int set_output(int argc, const char **argv, void *data)
 {
 	bContext *C = data;
 	if (argc >= 1){
-		if (CTX_data_scene(C)) {
-			Scene *scene= CTX_data_scene(C);
+		Scene *scene= CTX_data_scene(C);
+		if (scene) {
 			BLI_strncpy(scene->r.pic, argv[1], sizeof(scene->r.pic));
 		} else {
 			printf("\nError: no blend loaded. cannot use '-o / --render-output'.\n");
@@ -542,31 +536,26 @@ static int set_output(int argc, const char **argv, void *data)
 static int set_engine(int argc, const char **argv, void *data)
 {
 	bContext *C = data;
-	if (argc >= 1)
-	{
-		if (!strcmp(argv[1],"help"))
-		{
+	if (argc >= 2) {
+		if (!strcmp(argv[1], "help")) {
 			RenderEngineType *type = NULL;
-
-			for( type = R_engines.first; type; type = type->next )
-			{
+			printf("Blender Engine Listing:\n");
+			for( type = R_engines.first; type; type = type->next ) {
 				printf("\t%s\n", type->idname);
 			}
 			exit(0);
 		}
-		else
-		{
-			if (CTX_data_scene(C)==NULL)
-			{
-				printf("\nError: no blend loaded. order the arguments so '-E  / --engine ' is after a blend is loaded.\n");
-			}
-			else {
-				Scene *scene= CTX_data_scene(C);
+		else {
+			Scene *scene= CTX_data_scene(C);
+			if (scene) {
 				RenderData *rd = &scene->r;
 
 				if(BLI_findstring(&R_engines, argv[1], offsetof(RenderEngineType, idname))) {
-					BLI_strncpy(rd->engine, argv[1], sizeof(rd->engine));
+					BLI_strncpy_utf8(rd->engine, argv[1], sizeof(rd->engine));
 				}
+			}
+			else {
+				printf("\nError: no blend loaded. order the arguments so '-E  / --engine ' is after a blend is loaded.\n");
 			}
 		}
 
@@ -574,7 +563,7 @@ static int set_engine(int argc, const char **argv, void *data)
 	}
 	else
 	{
-		printf("\nEngine not specified.\n");
+		printf("\nEngine not specified, give 'help' for a list of available engines.\n");
 		return 0;
 	}
 }
@@ -584,10 +573,8 @@ static int set_image_type(int argc, const char **argv, void *data)
 	bContext *C = data;
 	if (argc >= 1){
 		const char *imtype = argv[1];
-		if (CTX_data_scene(C)==NULL) {
-			printf("\nError: no blend loaded. order the arguments so '-F  / --render-format' is after the blend is loaded.\n");
-		} else {
-			Scene *scene= CTX_data_scene(C);
+		Scene *scene= CTX_data_scene(C);
+		if (scene) {
 			if      (!strcmp(imtype,"TGA")) scene->r.imtype = R_TARGA;
 			else if (!strcmp(imtype,"IRIS")) scene->r.imtype = R_IRIS;
 #ifdef WITH_DDS
@@ -623,6 +610,9 @@ static int set_image_type(int argc, const char **argv, void *data)
 #endif
 			else printf("\nError: Format from '-F / --render-format' not known or not compiled in this release.\n");
 		}
+		else {
+			printf("\nError: no blend loaded. order the arguments so '-F  / --render-format' is after the blend is loaded.\n");
+		}
 		return 1;
 	} else {
 		printf("\nError: you must specify a format after '-F  / --render-foramt'.\n");
@@ -649,8 +639,8 @@ static int set_extension(int argc, const char **argv, void *data)
 {
 	bContext *C = data;
 	if (argc >= 1) {
-		if (CTX_data_scene(C)) {
-			Scene *scene= CTX_data_scene(C);
+		Scene *scene= CTX_data_scene(C);
+		if (scene) {
 			if (argv[1][0] == '0') {
 				scene->r.scemode &= ~R_EXTENSION;
 			} else if (argv[1][0] == '1') {
@@ -732,9 +722,9 @@ example:
 static int render_frame(int argc, const char **argv, void *data)
 {
 	bContext *C = data;
-	if (CTX_data_scene(C)) {
+	Scene *scene= CTX_data_scene(C);
+	if (scene) {
 		Main *bmain= CTX_data_main(C);
-		Scene *scene= CTX_data_scene(C);
 
 		if (argc > 1) {
 			Render *re = RE_NewRender(scene->id.name);
@@ -774,9 +764,9 @@ static int render_frame(int argc, const char **argv, void *data)
 static int render_animation(int UNUSED(argc), const char **UNUSED(argv), void *data)
 {
 	bContext *C = data;
-	if (CTX_data_scene(C)) {
+	Scene *scene= CTX_data_scene(C);
+	if (scene) {
 		Main *bmain= CTX_data_main(C);
-		Scene *scene= CTX_data_scene(C);
 		Render *re= RE_NewRender(scene->id.name);
 		ReportList reports;
 		BKE_reports_init(&reports, RPT_PRINT);
@@ -793,9 +783,9 @@ static int set_scene(int argc, const char **argv, void *data)
 {
 	if(argc > 1) {
 		bContext *C= data;
-		Scene *sce= set_scene_name(CTX_data_main(C), argv[1]);
-		if(sce) {
-			CTX_data_scene_set(C, sce);
+		Scene *scene= set_scene_name(CTX_data_main(C), argv[1]);
+		if(scene) {
+			CTX_data_scene_set(C, scene);
 		}
 		return 1;
 	} else {
@@ -807,8 +797,8 @@ static int set_scene(int argc, const char **argv, void *data)
 static int set_start_frame(int argc, const char **argv, void *data)
 {
 	bContext *C = data;
-	if (CTX_data_scene(C)) {
-		Scene *scene= CTX_data_scene(C);
+	Scene *scene= CTX_data_scene(C);
+	if (scene) {
 		if (argc > 1) {
 			int frame = atoi(argv[1]);
 			(scene->r.sfra) = CLAMPIS(frame, MINFRAME, MAXFRAME);
@@ -826,8 +816,8 @@ static int set_start_frame(int argc, const char **argv, void *data)
 static int set_end_frame(int argc, const char **argv, void *data)
 {
 	bContext *C = data;
-	if (CTX_data_scene(C)) {
-		Scene *scene= CTX_data_scene(C);
+	Scene *scene= CTX_data_scene(C);
+	if (scene) {
 		if (argc > 1) {
 			int frame = atoi(argv[1]);
 			(scene->r.efra) = CLAMPIS(frame, MINFRAME, MAXFRAME);
@@ -845,8 +835,8 @@ static int set_end_frame(int argc, const char **argv, void *data)
 static int set_skip_frame(int argc, const char **argv, void *data)
 {
 	bContext *C = data;
-	if (CTX_data_scene(C)) {
-		Scene *scene= CTX_data_scene(C);
+	Scene *scene= CTX_data_scene(C);
+	if (scene) {
 		if (argc > 1) {
 			int frame = atoi(argv[1]);
 			(scene->r.frame_step) = CLAMPIS(frame, 1, MAXFRAME);
@@ -1197,10 +1187,6 @@ int main(int argc, const char **argv)
 	setupArguments(C, ba, &syshandle);
 
 	BLI_argsParse(ba, 1, NULL, NULL);
-
-#ifdef __sgi
-	setuid(getuid()); /* end superuser */
-#endif
 
 #if defined(WITH_PYTHON_MODULE) || defined(WITH_HEADLESS)
 	G.background= 1; /* python module mode ALWAYS runs in background mode (for now) */

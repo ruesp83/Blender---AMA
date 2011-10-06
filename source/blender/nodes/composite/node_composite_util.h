@@ -1,5 +1,5 @@
 /*
- * $Id: CMP_util.h 35562 2011-03-15 20:10:32Z lukastoenne $
+ * $Id: node_composite_util.h 40378 2011-09-20 04:38:59Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -78,6 +78,10 @@
 #include "RE_pipeline.h"
 #include "RE_shader_ext.h"
 #include "RE_render_ext.h"
+
+/* only for forward declarations */
+#include "NOD_composite.h"
+
 
 /* *************************** operations support *************************** */
 

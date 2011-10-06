@@ -1,5 +1,5 @@
 /*
- * $Id: object_transform.c 39340 2011-08-12 18:06:05Z blendix $
+ * $Id: object_transform.c 40351 2011-09-19 12:26:20Z mont29 $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -399,13 +399,13 @@ static int apply_objects_internal(bContext *C, ReportList *reports, int apply_lo
 
 		if(ob->type==OB_MESH) {
 			if(ID_REAL_USERS(ob->data) > 1) {
-				BKE_report(reports, RPT_ERROR, "Can't apply to a multi user mesh, doing nothing.");
+				BKE_report(reports, RPT_ERROR, "Can't apply to a multi user mesh, doing nothing");
 				return OPERATOR_CANCELLED;
 			}
 		}
 		else if(ob->type==OB_ARMATURE) {
 			if(ID_REAL_USERS(ob->data) > 1) {
-				BKE_report(reports, RPT_ERROR, "Can't apply to a multi user armature, doing nothing.");
+				BKE_report(reports, RPT_ERROR, "Can't apply to a multi user armature, doing nothing");
 				return OPERATOR_CANCELLED;
 			}
 		}
@@ -413,18 +413,18 @@ static int apply_objects_internal(bContext *C, ReportList *reports, int apply_lo
 			Curve *cu;
 
 			if(ID_REAL_USERS(ob->data) > 1) {
-				BKE_report(reports, RPT_ERROR, "Can't apply to a multi user curve, doing nothing.");
+				BKE_report(reports, RPT_ERROR, "Can't apply to a multi user curve, doing nothing");
 				return OPERATOR_CANCELLED;
 			}
 
 			cu= ob->data;
 
 			if(!(cu->flag & CU_3D) && (apply_rot || apply_loc)) {
-				BKE_report(reports, RPT_ERROR, "Neither rotation nor location could be applied to a 2d curve, doing nothing.");
+				BKE_report(reports, RPT_ERROR, "Neither rotation nor location could be applied to a 2d curve, doing nothing");
 				return OPERATOR_CANCELLED;
 			}
 			if(cu->key) {
-				BKE_report(reports, RPT_ERROR, "Can't apply to a curve with vertex keys, doing nothing.");
+				BKE_report(reports, RPT_ERROR, "Can't apply to a curve with vertex keys, doing nothing");
 				return OPERATOR_CANCELLED;
 			}
 		}

@@ -1,5 +1,5 @@
 /*
- * $Id: reeb.c 36276 2011-04-21 15:53:30Z campbellbarton $
+ * $Id: reeb.c 40567 2011-09-26 13:24:42Z mont29 $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -1353,11 +1353,11 @@ static int joinSubgraphsEnds(ReebGraph *rg, float threshold, int nb_subgraphs)
 		
 		if (end_node && start_node)
 		{
-			ReebArc *start_arc, *end_arc;
+			ReebArc *start_arc /* , *end_arc */ /* UNUSED */;
 			int merging = 0;
 			
 			start_arc = start_node->arcs[0];
-			end_arc = end_node->arcs[0];
+			/* end_arc = end_node->arcs[0]; */ /* UNUSED */
 			
 			if (start_arc->tail == start_node)
 			{

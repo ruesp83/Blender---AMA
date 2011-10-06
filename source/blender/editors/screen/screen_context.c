@@ -1,5 +1,5 @@
 /*
- * $Id: screen_context.c 36001 2011-04-04 15:13:37Z campbellbarton $
+ * $Id: screen_context.c 40197 2011-09-14 01:48:55Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -238,7 +238,7 @@ int ed_screen_context(const bContext *C, const char *member, bContextDataResult 
 		}
 	}
 	else if(CTX_data_equals(member, "visible_pose_bones")) {
-		Object *obpose= ED_object_pose_armature(obact);
+		Object *obpose= object_pose_armature_get(obact);
 		bArmature *arm= (obpose) ? obpose->data : NULL;
 		bPoseChannel *pchan;
 		
@@ -254,7 +254,7 @@ int ed_screen_context(const bContext *C, const char *member, bContextDataResult 
 		}
 	}
 	else if(CTX_data_equals(member, "selected_pose_bones")) {
-		Object *obpose= ED_object_pose_armature(obact);
+		Object *obpose= object_pose_armature_get(obact);
 		bArmature *arm= (obpose) ? obpose->data : NULL;
 		bPoseChannel *pchan;
 		
@@ -289,7 +289,7 @@ int ed_screen_context(const bContext *C, const char *member, bContextDataResult 
 	}
 	else if(CTX_data_equals(member, "active_pose_bone")) {
 		bPoseChannel *pchan;
-		Object *obpose= ED_object_pose_armature(obact);
+		Object *obpose= object_pose_armature_get(obact);
 		
 		pchan= get_active_posechannel(obpose);
 		if (pchan) {

@@ -1,5 +1,5 @@
 /*
- * $Id: KX_KetsjiEngine.cpp 39851 2011-09-01 19:53:14Z moguri $
+ * $Id: KX_KetsjiEngine.cpp 40538 2011-09-25 12:31:21Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -83,6 +83,8 @@
 #include "RAS_FramingManager.h"
 #include "DNA_world_types.h"
 #include "DNA_scene_types.h"
+
+#include "KX_NavMeshObject.h"
 
 // If define: little test for Nzc: guarded drawing. If the canvas is
 // not valid, skip rendering this frame.
@@ -325,6 +327,8 @@ void KX_KetsjiEngine::RenderDome()
 		
 				// do the rendering
 				m_dome->RenderDomeFrame(scene,cam, i);
+				//render all the font objects for this scene
+				RenderFonts(scene);
 			}
 			
 			list<class KX_Camera*>* cameras = scene->GetCameras();
@@ -342,6 +346,8 @@ void KX_KetsjiEngine::RenderDome()
 			
 					// do the rendering
 					m_dome->RenderDomeFrame(scene, (*it),i);
+					//render all the font objects for this scene
+					RenderFonts(scene);
 				}
 				
 				it++;
@@ -759,12 +765,12 @@ else
 				m_logger->StartLog(tc_scenegraph, m_kxsystem->GetTimeInSeconds(), true);
 				SG_SetActiveStage(SG_STAGE_ACTUATOR);
 				scene->UpdateParents(m_clockTime);
-				 
- 				scene->setSuspendedTime(0.0);
+
+				scene->setSuspendedTime(0.0);
 			} // suspended
- 			else
- 				if(scene->getSuspendedTime()==0.0)
- 					scene->setSuspendedTime(m_clockTime);
+			else
+				if(scene->getSuspendedTime()==0.0)
+					scene->setSuspendedTime(m_clockTime);
 
 			m_logger->StartLog(tc_services, m_kxsystem->GetTimeInSeconds(), true);
 		}
@@ -1343,7 +1349,7 @@ void KX_KetsjiEngine::PostRenderScene(KX_Scene* scene)
 #ifdef WITH_PYTHON
 	scene->RunDrawingCallbacks(scene->GetPostDrawCB());	
 #endif
-	m_rasterizer->FlushDebugLines();
+	m_rasterizer->FlushDebugShapes();
 }
 
 void KX_KetsjiEngine::StopEngine()
@@ -1934,4 +1940,14 @@ void KX_KetsjiEngine::GetOverrideFrameColor(float& r, float& g, float& b) const
 	b = m_overrideFrameColorB;
 }
 
+void KX_KetsjiEngine::SetGlobalSettings(GlobalSettings* gs)
+{
+	m_globalsettings.matmode = gs->matmode;
+	m_globalsettings.glslflag = gs->glslflag;
+}
+
+GlobalSettings* KX_KetsjiEngine::GetGlobalSettings(void)
+{
+	return &m_globalsettings;
+}
 

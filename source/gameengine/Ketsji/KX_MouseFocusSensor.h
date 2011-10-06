@@ -1,5 +1,5 @@
 /*
- * $Id: KX_MouseFocusSensor.h 35063 2011-02-22 10:33:14Z jesterking $
+ * $Id: KX_MouseFocusSensor.h 40538 2011-09-25 12:31:21Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -140,7 +140,7 @@ class KX_MouseFocusSensor : public SCA_MouseSensor
 	 */
 	bool m_positive_event;
 
- 	/**
+	/**
 	 * Tests whether the object is in mouse focus for this camera
 	 */
 	bool ParentObjectHasFocusCamera(KX_Camera *cam);

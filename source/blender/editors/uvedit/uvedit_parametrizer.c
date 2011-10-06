@@ -2624,7 +2624,7 @@ static PBool p_chart_abf_solve(PChart *chart)
 	PEdge *e, *e1, *e2, *e3;
 	PAbfSystem sys;
 	int i;
-	float lastnorm, limit = (chart->nfaces > 100)? 1.0f: 0.001f;
+	float /* lastnorm, */ /* UNUSED */ limit = (chart->nfaces > 100)? 1.0f: 0.001f;
 
 	/* setup id's */
 	sys.ninterior = sys.nfaces = sys.nangles = 0;
@@ -2703,18 +2703,18 @@ static PBool p_chart_abf_solve(PChart *chart)
 		p_abf_compute_sines(&sys);
 
 		/* iteration */
-		lastnorm = 1e10;
+		/* lastnorm = 1e10; */ /* UNUSED */
 
 		for (i = 0; i < ABF_MAX_ITER; i++) {
 			float norm = p_abf_compute_gradient(&sys, chart);
 
-			lastnorm = norm;
+			/* lastnorm = norm; */ /* UNUSED */
 
 			if (norm < limit)
 				break;
 
 			if (!p_abf_matrix_invert(&sys, chart)) {
-				param_warning("ABF failed to invert matrix.");
+				param_warning("ABF failed to invert matrix");
 				p_abf_free_system(&sys);
 				return P_FALSE;
 			}
@@ -2723,7 +2723,7 @@ static PBool p_chart_abf_solve(PChart *chart)
 		}
 
 		if (i == ABF_MAX_ITER) {
-			param_warning("ABF maximum iterations reached.");
+			param_warning("ABF maximum iterations reached");
 			p_abf_free_system(&sys);
 			return P_FALSE;
 		}
@@ -3609,7 +3609,7 @@ static SmoothNode *p_node_new(MemArena *arena, SmoothTriangle **tri, int ntri, f
 {
 	SmoothNode *node = BLI_memarena_alloc(arena, sizeof *node);
 	int axis, i, t1size = 0, t2size = 0;
-	float split, mi, mx;
+	float split, /* mi, */ /* UNUSED */ mx;
 	SmoothTriangle **t1, **t2, *t;
 
 	node->tri = tri;
@@ -3650,7 +3650,7 @@ static SmoothNode *p_node_new(MemArena *arena, SmoothTriangle **tri, int ntri, f
 	node->axis = axis;
 	node->split = split;
 
-	mi = bmin[axis];
+	/* mi = bmin[axis]; */ /* UNUSED */
 	mx = bmax[axis];
 	bmax[axis] = split;
 	node->c1 = p_node_new(arena, t1, t1size, bmin, bmax, depth+1);
@@ -3831,7 +3831,7 @@ static void p_smooth(PChart *chart)
 		if (hedges) MEM_freeN(hedges);
 		if (vedges) MEM_freeN(vedges);
 
-		// printf("Not enough memory for area smoothing grid.");
+		// printf("Not enough memory for area smoothing grid");
 		return;
 	}
 
@@ -3981,7 +3981,7 @@ static void p_smooth(PChart *chart)
 		if (triangles) MEM_freeN(triangles);
 		if (tri) MEM_freeN(tri);
 
-		// printf("Not enough memory for area smoothing grid.");
+		// printf("Not enough memory for area smoothing grid");
 		return;
 	}
 

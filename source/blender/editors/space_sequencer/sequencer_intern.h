@@ -1,5 +1,5 @@
 /*
- * $Id: sequencer_intern.h 39749 2011-08-28 14:46:03Z schlaile $
+ * $Id: sequencer_intern.h 40658 2011-09-28 14:12:27Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -134,7 +134,7 @@ void SEQUENCER_OT_select_handles(struct wmOperatorType *ot);
 void SEQUENCER_OT_select_active_side(struct wmOperatorType *ot);
 void SEQUENCER_OT_select_border(struct wmOperatorType *ot);
 void SEQUENCER_OT_select_inverse(struct wmOperatorType *ot);
-
+void SEQUENCER_OT_select_grouped(struct wmOperatorType *ot);
 
 /* sequencer_select.c */
 void SEQUENCER_OT_scene_strip_add(struct wmOperatorType *ot);

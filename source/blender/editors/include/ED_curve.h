@@ -1,5 +1,5 @@
 /*
- * $Id: ED_curve.h 38111 2011-07-05 08:57:11Z blendix $
+ * $Id: ED_curve.h 40193 2011-09-14 00:37:27Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -58,7 +58,7 @@ void CU_select_swap(struct Object *obedit);
 
 
 void	undo_push_curve	(struct bContext *C, const char *name);
-ListBase *curve_get_editcurve(struct Object *ob);
+ListBase *object_editcurve_get(struct Object *ob);
 
 void	load_editNurb	(struct Object *obedit);
 void	make_editNurb	(struct Object *obedit);

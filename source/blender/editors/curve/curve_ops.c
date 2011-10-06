@@ -1,5 +1,5 @@
 /*
- * $Id: curve_ops.c 35883 2011-03-29 16:52:26Z campbellbarton $
+ * $Id: curve_ops.c 40255 2011-09-16 08:20:21Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -52,7 +52,6 @@
 #include "ED_transform.h"
 
 #include "curve_intern.h"
-
 
 /************************* registration ****************************/
 

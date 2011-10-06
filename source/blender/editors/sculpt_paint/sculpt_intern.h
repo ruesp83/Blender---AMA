@@ -1,5 +1,5 @@
 /*
- * $Id: sculpt_intern.h 36485 2011-05-04 13:15:42Z nazgul $
+ * $Id: sculpt_intern.h 40193 2011-09-14 00:37:27Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -67,7 +67,7 @@ int sculpt_poll(struct bContext *C);
 void sculpt_update_mesh_elements(struct Scene *scene, struct Sculpt *sd, struct Object *ob, int need_fmap);
 
 /* Deformed mesh sculpt */
-void sculpt_free_deformMats(struct SculptSession *ss);
+void free_sculptsession_deformMats(struct SculptSession *ss);
 
 /* Stroke */
 struct SculptStroke *sculpt_stroke_new(const int max);

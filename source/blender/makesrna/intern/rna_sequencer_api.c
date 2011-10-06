@@ -1,5 +1,5 @@
 /*
- * $Id: rna_sequencer_api.c 36972 2011-05-28 09:59:34Z lmg $
+ * $Id: rna_sequencer_api.c 40354 2011-09-19 13:23:58Z mont29 $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -65,8 +65,9 @@ void RNA_api_sequence_strip(StructRNA *srna)
 	PropertyRNA *parm;
 
 	func= RNA_def_function(srna, "getStripElem", "give_stripelem");
-	RNA_def_function_ui_description(func, "Return the strip element from a given frame or None.");
-	parm= RNA_def_int(func, "frame", 0, -MAXFRAME, MAXFRAME, "Frame", "The frame to get the strip element from", -MAXFRAME, MAXFRAME);
+	RNA_def_function_ui_description(func, "Return the strip element from a given frame or None");
+	parm= RNA_def_int(func, "frame", 0, -MAXFRAME, MAXFRAME, "Frame",
+	                  "The frame to get the strip element from", -MAXFRAME, MAXFRAME);
 	RNA_def_property_flag(parm, PROP_REQUIRED);
 	RNA_def_function_return(func, RNA_def_pointer(func, "elem", "SequenceElement", "", "strip element of the current frame"));
 

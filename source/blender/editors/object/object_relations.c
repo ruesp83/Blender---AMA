@@ -1,5 +1,5 @@
 /*
- * $Id: object_relations.c 39922 2011-09-05 08:20:11Z nazgul $
+ * $Id: object_relations.c 40776 2011-10-03 17:29:43Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -95,6 +95,7 @@
 #include "ED_object.h"
 #include "ED_screen.h"
 #include "ED_view3d.h"
+#include "ED_mesh.h"
 
 #include "object_intern.h"
 
@@ -122,7 +123,12 @@ static int vertex_parent_set_exec(bContext *C, wmOperator *op)
 	
 	if(obedit->type==OB_MESH) {
 		Mesh *me= obedit->data;
-		EditMesh *em = BKE_mesh_get_editmesh(me);
+		EditMesh *em;
+
+		load_editMesh(scene, obedit);
+		make_editMesh(scene, obedit);
+
+		em = BKE_mesh_get_editmesh(me);
 
 		eve= em->verts.first;
 		while(eve) {
@@ -140,7 +146,7 @@ static int vertex_parent_set_exec(bContext *C, wmOperator *op)
 		BKE_mesh_end_editmesh(me, em);
 	}
 	else if(ELEM(obedit->type, OB_SURF, OB_CURVE)) {
-		ListBase *editnurb= curve_get_editcurve(obedit);
+		ListBase *editnurb= object_editcurve_get(obedit);
 		
 		cu= obedit->data;
 
@@ -404,7 +410,7 @@ void OBJECT_OT_proxy_make (wmOperatorType *ot)
 	ot->flag= OPTYPE_REGISTER|OPTYPE_UNDO;
 	
 	/* properties */
-	RNA_def_string(ot->srna, "object", "", MAX_ID_NAME-2, "Proxy Object", "Name of lib-linked/grouped object to make a proxy for.");
+	RNA_def_string(ot->srna, "object", "", MAX_ID_NAME-2, "Proxy Object", "Name of lib-linked/grouped object to make a proxy for");
 	prop= RNA_def_enum(ot->srna, "type", DummyRNA_DEFAULT_items, 0, "Type", "Group object"); /* XXX, relies on hard coded ID at the moment */
 	RNA_def_enum_funcs(prop, proxy_group_object_itemf);
 	ot->prop= prop;
@@ -1237,9 +1243,11 @@ static int allow_make_links_data(int ev, Object *ob, Object *obt)
 				return 1;
 			break;
 		case MAKE_LINKS_MATERIALS:
-			if (ELEM5(ob->type, OB_MESH, OB_CURVE, OB_FONT, OB_SURF, OB_MBALL) &&
-				ELEM5(obt->type, OB_MESH, OB_CURVE, OB_FONT, OB_SURF, OB_MBALL))
+			if (OB_TYPE_SUPPORT_MATERIAL(ob->type) &&
+				OB_TYPE_SUPPORT_MATERIAL(obt->type))
+			{
 				return 1;
+			}
 			break;
 		case MAKE_LINKS_ANIMDATA:
 		case MAKE_LINKS_DUPLIGROUP:
@@ -1921,5 +1929,5 @@ void OBJECT_OT_drop_named_material(wmOperatorType *ot)
 	ot->flag= OPTYPE_UNDO;
 	
 	/* properties */
-	RNA_def_string(ot->srna, "name", "Material", 24, "Name", "Material name to assign.");
+	RNA_def_string(ot->srna, "name", "Material", 24, "Name", "Material name to assign");
 }

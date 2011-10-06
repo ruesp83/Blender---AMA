@@ -1,5 +1,5 @@
 /*
- * $Id: DNA_ID.h 39792 2011-08-30 09:15:55Z nexyon $
+ * $Id: DNA_ID.h 40719 2011-09-30 15:22:13Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -125,7 +125,7 @@ typedef struct Library {
 
 enum eIconSizes {
 	ICON_SIZE_ICON,
-	ICON_SIZE_PREVIEW,
+	ICON_SIZE_PREVIEW
 };
 #define NUM_ICON_SIZES (ICON_SIZE_PREVIEW + 1)
 
@@ -146,16 +146,16 @@ typedef struct PreviewImage {
  *
  **/
 
-#if defined(__sgi) || defined(__sparc) || defined(__sparc__) || defined (__PPC__) || defined (__ppc__)  || defined (__hppa__) || defined (__BIG_ENDIAN__)
-/* big endian */
-#define MAKE_ID2(c, d)		( (c)<<8 | (d) )
-#define MOST_SIG_BYTE				0
-#define BBIG_ENDIAN
+#ifdef __BIG_ENDIAN__
+   /* big endian */
+#  define MAKE_ID2(c, d)		( (c)<<8 | (d) )
+#  define MOST_SIG_BYTE			0
+#  define BBIG_ENDIAN
 #else
-/* little endian  */
-#define MAKE_ID2(c, d)		( (d)<<8 | (c) )
-#define MOST_SIG_BYTE				1
-#define BLITTLE_ENDIAN
+   /* little endian  */
+#  define MAKE_ID2(c, d)		( (d)<<8 | (c) )
+#  define MOST_SIG_BYTE			1
+#  define BLITTLE_ENDIAN
 #endif
 
 /* ID from database */
@@ -203,6 +203,8 @@ typedef struct PreviewImage {
 #define ID_FLUIDSIM	MAKE_ID2('F', 'S')
 
 #define ID_REAL_USERS(id) (((ID *)id)->us - ((((ID *)id)->flag & LIB_FAKEUSER) ? 1:0))
+
+#define ID_CHECK_UNDO(id) ((GS((id)->name) != ID_SCR) && (GS((id)->name) != ID_WM))
 
 #ifdef GS
 #undef GS

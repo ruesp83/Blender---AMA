@@ -1,5 +1,5 @@
 /*
- * $Id: KX_ParentActuator.h 36523 2011-05-06 20:18:42Z blendix $
+ * $Id: KX_ParentActuator.h 40538 2011-09-25 12:31:21Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -56,8 +56,8 @@ class KX_ParentActuator : public SCA_IActuator
 	
 	
 
- public:
- 	enum KX_PARENTACT_MODE
+public:
+	enum KX_PARENTACT_MODE
 	{
 		KX_PARENT_NODEF = 0,
 		KX_PARENT_SET,
@@ -65,7 +65,7 @@ class KX_ParentActuator : public SCA_IActuator
 		KX_PARENT_MAX
 
 	};
- 
+
 	KX_ParentActuator(class SCA_IObject* gameobj,
 						int mode,
 						bool addToCompound,

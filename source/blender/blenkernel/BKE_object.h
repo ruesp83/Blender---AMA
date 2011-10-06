@@ -1,5 +1,5 @@
 /*
- * $Id: BKE_object.h 36772 2011-05-19 11:21:37Z blendix $
+ * $Id: BKE_object.h 40684 2011-09-29 08:23:52Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -108,6 +108,7 @@ void object_to_mat4(struct Object *ob, float mat[][4]);
 void object_apply_mat4(struct Object *ob, float mat[][4], const short use_compat, const short use_parent);
 
 void set_no_parent_ipo(int val);
+struct Object *object_pose_armature_get(struct Object *ob);
 
 void where_is_object_time(struct Scene *scene, struct Object *ob, float ctime);
 void where_is_object(struct Scene *scene, struct Object *ob);
@@ -128,6 +129,7 @@ void *object_tfm_backup(struct Object *ob);
 void object_tfm_restore(struct Object *ob, void *obtfm_pt);
 
 void object_handle_update(struct Scene *scene, struct Object *ob);
+void object_sculpt_modifiers_changed(struct Object *ob);
 
 float give_timeoffset(struct Object *ob);
 int give_obdata_texspace(struct Object *ob, short **texflag, float **loc, float **size, float **rot);
@@ -143,6 +145,11 @@ void object_camera_matrix(
 		struct RenderData *rd, struct Object *camera, int winx, int winy, short field_second,
 		float winmat[][4], struct rctf *viewplane, float *clipsta, float *clipend, float *lens, float *ycor,
 		float *viewdx, float *viewdy);
+
+void camera_view_frame_ex(struct Scene *scene, struct Camera *camera, float drawsize, const short do_clip, const float scale[3],
+                          float r_asp[2], float r_shift[2], float *r_drawsize, float r_vec[4][3]);
+
+void camera_view_frame(struct Scene *scene, struct Camera *camera, float r_vec[4][3]);
 
 void object_relink(struct Object *ob);
 

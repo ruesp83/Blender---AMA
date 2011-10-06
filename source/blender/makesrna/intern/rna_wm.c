@@ -1,5 +1,5 @@
 /*
- * $Id: rna_wm.c 39937 2011-09-05 19:34:27Z blendix $
+ * $Id: rna_wm.c 40795 2011-10-05 00:19:33Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -348,20 +348,20 @@ EnumPropertyItem keymap_modifiers_items[] = {
 		{0, NULL, 0, NULL, NULL}};
 
 EnumPropertyItem operator_flag_items[] = {
-		{OPTYPE_REGISTER, "REGISTER", 0, "Register", ""},
-		{OPTYPE_UNDO, "UNDO", 0, "Undo", ""},
-		{OPTYPE_BLOCKING, "BLOCKING", 0, "Blocking", ""},
-		{OPTYPE_MACRO, "MACRO", 0, "Macro", ""},
-		{OPTYPE_GRAB_POINTER, "GRAB_POINTER", 0, "Grab Pointer", ""},
-		{OPTYPE_PRESET, "PRESET", 0, "Preset", ""},
-		{OPTYPE_INTERNAL, "INTERNAL", 0, "Internal", ""},
+		{OPTYPE_REGISTER, "REGISTER", 0, "Register", "Display in the info window and support the redo toolbar panel"},
+		{OPTYPE_UNDO, "UNDO", 0, "Undo", "Push an undo event (needed for operator redo)"},
+		{OPTYPE_BLOCKING, "BLOCKING", 0, "Blocking", "Block anything else from using the cursor"},
+		{OPTYPE_MACRO, "MACRO", 0, "Macro", "Use to check if an operator is a macro"},
+		{OPTYPE_GRAB_POINTER, "GRAB_POINTER", 0, "Grab Pointer", "Use so the operator grabs the mouse focus, enables wrapping when continuous grab is enabled"},
+		{OPTYPE_PRESET, "PRESET", 0, "Preset", "Display a preset button with the operators settings"},
+		{OPTYPE_INTERNAL, "INTERNAL", 0, "Internal", "Removes the operator from search results"},
 		{0, NULL, 0, NULL, NULL}};
 
 EnumPropertyItem operator_return_items[] = {
-		{OPERATOR_RUNNING_MODAL, "RUNNING_MODAL", 0, "Running Modal", ""},
-		{OPERATOR_CANCELLED, "CANCELLED", 0, "Cancelled", ""},
-		{OPERATOR_FINISHED, "FINISHED", 0, "Finished", ""},
-		{OPERATOR_PASS_THROUGH, "PASS_THROUGH", 0, "Pass Through", ""}, // used as a flag
+		{OPERATOR_RUNNING_MODAL, "RUNNING_MODAL", 0, "Running Modal", "Keep the operator running with blender"},
+		{OPERATOR_CANCELLED, "CANCELLED", 0, "Cancelled", "When no action has been taken, operator exits"},
+		{OPERATOR_FINISHED, "FINISHED", 0, "Finished", "When the operator is complete, operator exits"},
+		{OPERATOR_PASS_THROUGH, "PASS_THROUGH", 0, "Pass Through", "Do nothing and pass the event on"}, // used as a flag
 		{0, NULL, 0, NULL, NULL}};
 
 /* flag/enum */
@@ -451,7 +451,7 @@ static PointerRNA rna_Operator_properties_get(PointerRNA *ptr)
 	return rna_pointer_inherit_refine(ptr, op->type->srna, op->properties);
 }
 
-static PointerRNA rna_OperatorTypeMacro_properties_get(PointerRNA *ptr)
+static PointerRNA rna_OperatorMacro_properties_get(PointerRNA *ptr)
 {
 	wmOperatorTypeMacro *otmacro= (wmOperatorTypeMacro*)ptr->data;
 	wmOperatorType *ot = WM_operatortype_find(otmacro->idname, TRUE);
@@ -482,13 +482,14 @@ static void rna_Window_screen_set(PointerRNA *ptr, PointerRNA value)
 	win->newscreen= value.data;
 }
 
-static void rna_Window_screen_update(Main *UNUSED(bmain), Scene *UNUSED(scene), PointerRNA *ptr)
+static void rna_Window_screen_update(bContext *C, PointerRNA *ptr)
 {
 	wmWindow *win= (wmWindow*)ptr->data;
 
-	/* exception: can't set screens inside of area/region handers */
+	/* exception: can't set screens inside of area/region handers, and must
+	   use context so notifier gets to the right window */
 	if(win->newscreen) {
-		WM_main_add_notifier(NC_SCREEN|ND_SCREENBROWSE, win->newscreen);
+		WM_event_add_notifier(C, NC_SCREEN|ND_SCREENBROWSE, win->newscreen);
 		win->newscreen= NULL;
 	}
 }
@@ -969,12 +970,15 @@ static StructRNA *rna_Operator_register(Main *bmain, ReportList *reports, void *
 			}
 
 			if(i > ((int)sizeof(dummyop.idname)) - 3) {
-				BKE_reportf(reports, RPT_ERROR, "registering operator class: '%s', invalid bl_idname '%s', is too long, maximum length is %d.", identifier, _operator_idname, (int)sizeof(dummyop.idname) - 3);
+				BKE_reportf(reports, RPT_ERROR, "registering operator class: '%s', invalid bl_idname '%s', "
+				            "is too long, maximum length is %d", identifier, _operator_idname,
+				                                                  (int)sizeof(dummyop.idname) - 3);
 				return NULL;
 			}
 
 			if(dot != 1) {
-				BKE_reportf(reports, RPT_ERROR, "registering operator class: '%s', invalid bl_idname '%s', must contain 1 '.' character", identifier, _operator_idname);
+				BKE_reportf(reports, RPT_ERROR, "registering operator class: '%s', invalid bl_idname '%s', "
+				            "must contain 1 '.' character", identifier, _operator_idname);
 				return NULL;
 			}
 		}
@@ -1068,7 +1072,8 @@ static StructRNA *rna_MacroOperator_register(Main *bmain, ReportList *reports, v
 	}
 
 	if(strlen(identifier) >= sizeof(dummyop.idname)) {
-		BKE_reportf(reports, RPT_ERROR, "registering operator class: '%s' is too long, maximum length is %d.", identifier, (int)sizeof(dummyop.idname));
+		BKE_reportf(reports, RPT_ERROR, "registering operator class: '%s' is too long, maximum length is %d",
+		            identifier, (int)sizeof(dummyop.idname));
 		return NULL;
 	}
 
@@ -1190,7 +1195,7 @@ static void rna_def_operator(BlenderRNA *brna)
 	// RNA_def_property_clear_flag(prop, PROP_EDITABLE);
 	RNA_def_property_flag(prop, PROP_REGISTER);
 
-	prop= RNA_def_property(srna, "bl_description", PROP_STRING, PROP_NONE);
+	prop= RNA_def_property(srna, "bl_description", PROP_STRING, PROP_TRANSLATE);
 	RNA_def_property_string_sdna(prop, NULL, "type->description");
 	RNA_def_property_string_maxlength(prop, 1024); /* else it uses the pointer size! */
 	RNA_def_property_string_funcs(prop, NULL, NULL, "rna_Operator_bl_description_set");
@@ -1244,14 +1249,14 @@ static void rna_def_macro_operator(BlenderRNA *brna)
 	RNA_def_property_flag(prop, PROP_REGISTER|PROP_NEVER_CLAMP);
 	RNA_def_struct_name_property(srna, prop);
 
-	prop= RNA_def_property(srna, "bl_label", PROP_STRING, PROP_NONE);
+	prop= RNA_def_property(srna, "bl_label", PROP_STRING, PROP_TRANSLATE);
 	RNA_def_property_string_sdna(prop, NULL, "type->name");
 	RNA_def_property_string_maxlength(prop, 1024); /* else it uses the pointer size! */
 	RNA_def_property_string_funcs(prop, NULL, NULL, "rna_Operator_bl_label_set");
 	// RNA_def_property_clear_flag(prop, PROP_EDITABLE);
 	RNA_def_property_flag(prop, PROP_REGISTER);
 
-	prop= RNA_def_property(srna, "bl_description", PROP_STRING, PROP_NONE);
+	prop= RNA_def_property(srna, "bl_description", PROP_STRING, PROP_TRANSLATE);
 	RNA_def_property_string_sdna(prop, NULL, "type->description");
 	RNA_def_property_string_maxlength(prop, 1024); /* else it uses the pointer size! */
 	RNA_def_property_string_funcs(prop, NULL, NULL, "rna_Operator_bl_description_set");
@@ -1272,8 +1277,8 @@ static void rna_def_operator_type_macro(BlenderRNA *brna)
 	StructRNA *srna;
 	PropertyRNA *prop;
 
-	srna= RNA_def_struct(brna, "OperatorTypeMacro", NULL);
-	RNA_def_struct_ui_text(srna, "OperatorTypeMacro", "Storage of a sub operator in a macro after it has been added");
+	srna= RNA_def_struct(brna, "OperatorMacro", NULL);
+	RNA_def_struct_ui_text(srna, "Operator Macro", "Storage of a sub operator in a macro after it has been added");
 	RNA_def_struct_sdna(srna, "wmOperatorTypeMacro");
 
 //	prop= RNA_def_property(srna, "name", PROP_STRING, PROP_NONE);
@@ -1286,7 +1291,7 @@ static void rna_def_operator_type_macro(BlenderRNA *brna)
 	RNA_def_property_flag(prop, PROP_NEVER_NULL);
 	RNA_def_property_struct_type(prop, "OperatorProperties");
 	RNA_def_property_ui_text(prop, "Properties", "");
-	RNA_def_property_pointer_funcs(prop, "rna_OperatorTypeMacro_properties_get", NULL, NULL, NULL);
+	RNA_def_property_pointer_funcs(prop, "rna_OperatorMacro_properties_get", NULL, NULL, NULL);
 }
 
 static void rna_def_operator_utils(BlenderRNA *brna)
@@ -1454,6 +1459,7 @@ static void rna_def_window(BlenderRNA *brna)
 	RNA_def_property_ui_text(prop, "Screen", "Active screen showing in the window");
 	RNA_def_property_flag(prop, PROP_EDITABLE);
 	RNA_def_property_pointer_funcs(prop, NULL, "rna_Window_screen_set", NULL, NULL);
+	RNA_def_property_flag(prop, PROP_CONTEXT_UPDATE);
 	RNA_def_property_update(prop, 0, "rna_Window_screen_update");
 }
 

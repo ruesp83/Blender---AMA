@@ -1,4 +1,4 @@
-# $Id: CMakeLists.txt 39792 2011-08-30 09:15:55Z nexyon $
+# $Id: CMakeLists.txt 40610 2011-09-27 12:08:35Z campbellbarton $
 # ***** BEGIN GPL LICENSE BLOCK *****
 #
 # This program is free software; you can redistribute it and/or
@@ -35,7 +35,6 @@ set(INC
 	../blenfont
 	../blenlib
 	../blenloader
-	../editors/include
 	../gpu
 	../ikplugin
 	../imbuf
@@ -182,7 +181,6 @@ set(SRC
 	BKE_depsgraph.h
 	BKE_displist.h
 	BKE_effect.h
-	BKE_endian.h
 	BKE_fcurve.h
 	BKE_fluidsim.h
 	BKE_font.h
@@ -355,8 +353,19 @@ if(WITH_LZMA)
 	add_definitions(-DWITH_LZMA)
 endif()
 
-if(MSVC)
-	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /WX")
+if(WITH_GAMEENGINE)
+	list(APPEND INC_SYS
+	../../../extern/recastnavigation
+	)
+	list(APPEND SRC
+		intern/navmesh_conversion.c
+		BKE_navmesh_conversion.h
+	)
 endif()
+
+## Warnings as errors, this is too strict!
+#if(MSVC)
+#	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /WX")
+#endif()
 
 blender_add_lib(bf_blenkernel "${SRC}" "${INC}" "${INC_SYS}")

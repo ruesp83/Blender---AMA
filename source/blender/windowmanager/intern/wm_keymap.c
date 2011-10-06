@@ -1,5 +1,5 @@
 /*
- * $Id: wm_keymap.c 39744 2011-08-28 05:06:30Z campbellbarton $
+ * $Id: wm_keymap.c 40043 2011-09-08 13:22:26Z blendix $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -47,6 +47,7 @@
 #include "BKE_blender.h"
 #include "BKE_context.h"
 #include "BKE_idprop.h"
+#include "BKE_global.h"
 #include "BKE_library.h"
 #include "BKE_main.h"
 #include "BKE_screen.h"
@@ -680,6 +681,17 @@ wmKeyMap *WM_modalkeymap_add(wmKeyConfig *keyconf, const char *idname, EnumPrope
 	wmKeyMap *km= WM_keymap_find(keyconf, idname, 0, 0);
 	km->flag |= KEYMAP_MODAL;
 	km->modal_items= items;
+
+	if(!items) {
+		/* init modal items from default config */
+		wmWindowManager *wm = G.main->wm.first;
+		wmKeyMap *defaultkm= WM_keymap_list_find(&wm->defaultconf->keymaps, km->idname, 0, 0);
+
+		if(defaultkm) {
+			km->modal_items = defaultkm->modal_items;
+			km->poll = defaultkm->poll;
+		}
+	}
 	
 	return km;
 }

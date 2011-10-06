@@ -1,5 +1,5 @@
 /*
- * $Id: rna_sound.c 39792 2011-08-30 09:15:55Z nexyon $
+ * $Id: rna_sound.c 40528 2011-09-25 02:49:46Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -94,9 +94,9 @@ static void rna_def_sound(BlenderRNA *brna)
 	RNA_def_property_ui_text(prop, "Caching", "The sound file is decoded and loaded into RAM");
 	RNA_def_property_update(prop, 0, "rna_Sound_caching_update");
 
-	prop= RNA_def_property(srna, "mono", PROP_BOOLEAN, PROP_NONE);
+	prop= RNA_def_property(srna, "use_mono", PROP_BOOLEAN, PROP_NONE);
 	RNA_def_property_boolean_sdna(prop, NULL, "flags", SOUND_FLAGS_MONO);
-	RNA_def_property_ui_text(prop, "Mono", "If the file contains multiple audio channels they are rendered to a single one.");
+	RNA_def_property_ui_text(prop, "Mono", "If the file contains multiple audio channels they are rendered to a single one");
 	RNA_def_property_update(prop, 0, "rna_Sound_update");
 }
 

@@ -1,5 +1,5 @@
 /*
- * $Id: paint_undo.c 35242 2011-02-27 20:29:51Z jesterking $
+ * $Id: paint_undo.c 40581 2011-09-26 18:51:10Z campbellbarton $
  *
  * Undo system for painting and sculpting.
  * 
@@ -34,6 +34,7 @@
 
 #include "BLI_listbase.h"
 #include "BLI_utildefines.h"
+#include "BLI_string.h"
 
 #include "DNA_userdef_types.h"
 
@@ -106,7 +107,7 @@ static void undo_stack_push_begin(UndoStack *stack, const char *name, UndoRestor
 	BLI_addtail(&stack->elems, uel);
 
 	/* name can be a dynamic string */
-	strncpy(uel->name, name, MAXUNDONAME-1);
+	BLI_strncpy(uel->name, name, sizeof(uel->name));
 	
 	/* limit amount to the maximum amount*/
 	nr= 0;

@@ -1198,7 +1198,7 @@ Render *RE_NewRender(const char *name)
 		/* new render data struct */
 		re= MEM_callocN(sizeof(Render), "new render");
 		BLI_addtail(&RenderGlobal.renderlist, re);
-		strncpy(re->name, name, RE_MAXNAME);
+		BLI_strncpy(re->name, name, RE_MAXNAME);
 		BLI_rw_mutex_init(&re->resultmutex);
 	}
 	
@@ -1452,10 +1452,12 @@ void RE_test_break_cb(Render *re, void *handle, int (*f)(void *handle))
 
 /* object is considered fully prepared on correct time etc */
 /* includes lights */
+#if 0
 void RE_AddObject(Render *UNUSED(re), Object *UNUSED(ob))
 {
 	
 }
+#endif
 
 /* *************************************** */
 

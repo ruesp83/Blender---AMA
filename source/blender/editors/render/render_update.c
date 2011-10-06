@@ -1,5 +1,5 @@
 /*
- * $Id: render_update.c 39415 2011-08-15 12:07:52Z blendix $
+ * $Id: render_update.c 39991 2011-09-07 06:33:29Z mont29 $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *

@@ -1,5 +1,5 @@
 /*
- * $Id: space_console.c 39795 2011-08-30 10:07:50Z blendix $
+ * $Id: space_console.c 40539 2011-09-25 12:33:51Z ender79 $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -138,7 +138,16 @@ static void console_main_area_init(wmWindowManager *wm, ARegion *ar)
 	wmKeyMap *keymap;
 	ListBase *lb;
 
+	const float prev_y_min= ar->v2d.cur.ymin; /* so resizing keeps the cursor visible */
+
 	UI_view2d_region_reinit(&ar->v2d, V2D_COMMONVIEW_CUSTOM, ar->winx, ar->winy);
+
+	/* always keep the bottom part of the view aligned, less annoying */
+	if(prev_y_min != ar->v2d.cur.ymin) {
+		const float cur_y_range= ar->v2d.cur.ymax - ar->v2d.cur.ymin;
+		ar->v2d.cur.ymin= prev_y_min;
+		ar->v2d.cur.ymax= prev_y_min + cur_y_range;
+	}
 
 	/* own keymap */
 	keymap= WM_keymap_find(wm->defaultconf, "Console", SPACE_CONSOLE, 0);

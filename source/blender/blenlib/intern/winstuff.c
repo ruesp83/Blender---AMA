@@ -1,5 +1,5 @@
 /*
- * $Id: winstuff.c 36426 2011-05-02 08:07:24Z jesterking $
+ * $Id: winstuff.c 40587 2011-09-27 01:32:27Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -301,7 +301,7 @@ char* dirname(char *path)
 {
 	char *p;
 	if( path == NULL || *path == '\0' )
-	return ".";
+		return ".";
 	p = path + strlen(path) - 1;
 	while( *p == '/' ) {
 		if( p == path )
@@ -309,11 +309,11 @@ char* dirname(char *path)
 		*p-- = '\0';
 	}
 	while( p >= path && *p != '/' )
-	p--;
+		p--;
 	return
-	p < path ? "." :
-	p == path ? "/" :
-	(*p = '\0', path);
+		p < path ? "." :
+		p == path ? "/" :
+		(*p = '\0', path);
 }
 /* End of copied part */
 

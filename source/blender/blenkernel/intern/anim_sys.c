@@ -1160,6 +1160,8 @@ static short animsys_write_rna_setting (PointerRNA *ptr, char *path, int array_i
 					return 0;
 			}
 			
+			/* RNA property update disabled for now - [#28525] [#28690] [#28774] [#28777] */
+#if 0
 			/* buffer property update for later flushing */
 			if (RNA_property_update_check(prop)) {
 				short skip_updates_hack = 0;
@@ -1176,6 +1178,7 @@ static short animsys_write_rna_setting (PointerRNA *ptr, char *path, int array_i
 				if (skip_updates_hack == 0)
 					RNA_property_update_cache_add(&new_ptr, prop);
 			}
+#endif
 		}
 		
 		/* successful */
@@ -1557,7 +1560,7 @@ static NlaEvalChannel *nlaevalchan_verify (PointerRNA *ptr, ListBase *channels, 
 	PropertyRNA *prop;
 	PointerRNA new_ptr;
 	char *path = NULL;
-	short free_path=0;
+	/* short free_path=0; */
 	
 	/* sanity checks */
 	if (channels == NULL)
@@ -1565,7 +1568,7 @@ static NlaEvalChannel *nlaevalchan_verify (PointerRNA *ptr, ListBase *channels, 
 	
 	/* get RNA pointer+property info from F-Curve for more convenient handling */
 		/* get path, remapped as appropriate to work in its new environment */
-	free_path= animsys_remap_path(strip->remap, fcu->rna_path, &path);
+	/* free_path= */ /* UNUSED */ animsys_remap_path(strip->remap, fcu->rna_path, &path);
 	
 		/* a valid property must be available, and it must be animateable */
 	if (RNA_path_resolve(ptr, path, &new_ptr, &prop) == 0) {

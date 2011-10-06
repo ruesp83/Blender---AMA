@@ -1,5 +1,5 @@
 /*
- * $Id: graph_ops.c 39937 2011-09-05 19:34:27Z blendix $
+ * $Id: graph_ops.c 40458 2011-09-22 15:35:25Z blendix $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -277,6 +277,7 @@ void ED_operatormacros_graph(void)
 	
 	ot= WM_operatortype_append_macro("GRAPH_OT_duplicate_move", "Duplicate", OPTYPE_UNDO|OPTYPE_REGISTER);
 	if (ot) {
+		ot->description= "Make a copy of all selected keyframes and move them";
 		WM_operatortype_macro_define(ot, "GRAPH_OT_duplicate");
 		otmacro= WM_operatortype_macro_define(ot, "TRANSFORM_OT_transform");
 		RNA_enum_set(otmacro->ptr, "mode", TFM_TIME_DUPLICATE);

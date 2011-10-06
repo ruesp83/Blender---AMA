@@ -62,6 +62,7 @@
 #include "UI_view2d.h"
 
 #include "BLF_api.h"
+#include "BLF_translation.h"
 
 #include "ED_screen.h"
 
@@ -83,7 +84,7 @@ typedef struct MenuEntry {
 } MenuEntry;
 
 typedef struct MenuData {
-	char *instr;
+	const char *instr;
 	const char *title;
 	int titleicon;
 	
@@ -91,7 +92,7 @@ typedef struct MenuData {
 	int nitems, itemssize;
 } MenuData;
 
-static MenuData *menudata_new(char *instr)
+static MenuData *menudata_new(const char *instr)
 {
 	MenuData *md= MEM_mallocN(sizeof(*md), "MenuData");
 
@@ -136,7 +137,7 @@ static void menudata_add_item(MenuData *md, const char *str, int retval, int ico
 
 static void menudata_free(MenuData *md)
 {
-	MEM_freeN(md->instr);
+	MEM_freeN((void *)md->instr);
 	if (md->items)
 		MEM_freeN(md->items);
 	MEM_freeN(md);
@@ -155,7 +156,7 @@ static void menudata_free(MenuData *md)
 	 * @param str String to be parsed.
 	 * @retval new menudata structure, free with menudata_free()
 	 */
-static MenuData *decompose_menu_string(char *str) 
+static MenuData *decompose_menu_string(const char *str)
 {
 	char *instr= BLI_strdup(str);
 	MenuData *md= menudata_new(instr);
@@ -173,7 +174,7 @@ static MenuData *decompose_menu_string(char *str)
 				*s= '\0';
 				s++;
 			} else if (s[1]=='t') {
-				nitem_is_title= 1;
+				nitem_is_title= (s != instr); /* check for empty title */
 
 				*s= '\0';
 				s++;
@@ -212,11 +213,13 @@ static MenuData *decompose_menu_string(char *str)
 				nicon= 0;
 			}
 			
-			if (c=='\0')
+			if (c=='\0') {
 				break;
-		} else if (!nitem)
+			}
+		} else if (!nitem) {
 			nitem= s;
-		
+		}
+
 		s++;
 	}
 	
@@ -229,9 +232,12 @@ void ui_set_name_menu(uiBut *but, int value)
 	int i;
 	
 	md= decompose_menu_string(but->str);
-	for (i=0; i<md->nitems; i++)
-		if (md->items[i].retval==value)
-			strcpy(but->drawstr, md->items[i].str);
+	for (i=0; i<md->nitems; i++) {
+		if (md->items[i].retval==value) {
+			BLI_strncpy(but->drawstr, md->items[i].str, sizeof(but->drawstr));
+			break;
+		}
+	}
 	
 	menudata_free(md);
 }
@@ -318,7 +324,7 @@ static void ui_tooltip_region_draw_cb(const bContext *UNUSED(C), ARegion *ar)
 	rcti bbox= data->bbox;
 	int a;
 	
-	ui_draw_menu_back(U.uistyles.first, NULL, &data->bbox);
+	ui_draw_menu_back(UI_GetStyle(), NULL, &data->bbox);
 	
 	/* draw text */
 	uiStyleFontSet(&data->fstyle);
@@ -343,9 +349,10 @@ static void ui_tooltip_region_free_cb(ARegion *ar)
 	ar->regiondata= NULL;
 }
 
+#define TIP_(msgid) UI_translate_do_tooltip(msgid)
 ARegion *ui_tooltip_create(bContext *C, ARegion *butregion, uiBut *but)
 {
-	uiStyle *style= U.uistyles.first;	// XXX pass on as arg
+	uiStyle *style= UI_GetStyle();
 	static ARegionType type;
 	ARegion *ar;
 	uiTooltipData *data;
@@ -374,7 +381,7 @@ ARegion *ui_tooltip_create(bContext *C, ARegion *butregion, uiBut *but)
 			EnumPropertyItem *item;
 			int i, totitem, free;
 
-			RNA_property_enum_items(C, &but->rnapoin, but->rnaprop, &item, &totitem, &free);
+			RNA_property_enum_items_gettexted(C, &but->rnapoin, but->rnaprop, &item, &totitem, &free);
 
 			for(i=0; i<totitem; i++) {
 				if(item[i].identifier[0] && item[i].value == (int)but->hardmax) {
@@ -403,7 +410,7 @@ ARegion *ui_tooltip_create(bContext *C, ARegion *butregion, uiBut *but)
 		prop= (but->opptr)? but->opptr->data: NULL;
 
 		if(WM_key_event_operator_string(C, but->optype->idname, but->opcontext, prop, buf, sizeof(buf))) {
-			BLI_snprintf(data->lines[data->totline], sizeof(data->lines[0]), "Shortcut: %s", buf);
+			BLI_snprintf(data->lines[data->totline], sizeof(data->lines[0]), TIP_(N_("Shortcut: %s")), buf);
 			data->color[data->totline]= 0x888888;
 			data->totline++;
 		}
@@ -413,7 +420,7 @@ ARegion *ui_tooltip_create(bContext *C, ARegion *butregion, uiBut *but)
 		/* full string */
 		ui_get_but_string(but, buf, sizeof(buf));
 		if(buf[0]) {
-			BLI_snprintf(data->lines[data->totline], sizeof(data->lines[0]), "Value: %s", buf);
+			BLI_snprintf(data->lines[data->totline], sizeof(data->lines[0]), TIP_(N_("Value: %s")), buf);
 			data->color[data->totline]= 0x888888;
 			data->totline++;
 		}
@@ -425,7 +432,7 @@ ARegion *ui_tooltip_create(bContext *C, ARegion *butregion, uiBut *but)
 		if (unit_type == PROP_UNIT_ROTATION) {
 			if (RNA_property_type(but->rnaprop) == PROP_FLOAT) {
 				float value= RNA_property_array_check(but->rnaprop) ? RNA_property_float_get_index(&but->rnapoin, but->rnaprop, but->rnaindex) : RNA_property_float_get(&but->rnapoin, but->rnaprop);
-				BLI_snprintf(data->lines[data->totline], sizeof(data->lines[0]), "Radians: %f", value);
+				BLI_snprintf(data->lines[data->totline], sizeof(data->lines[0]), TIP_(N_("Radians: %f")), value);
 				data->color[data->totline]= 0x888888;
 				data->totline++;
 			}
@@ -434,7 +441,7 @@ ARegion *ui_tooltip_create(bContext *C, ARegion *butregion, uiBut *but)
 		if(but->flag & UI_BUT_DRIVEN) {
 			if(ui_but_anim_expression_get(but, buf, sizeof(buf))) {
 				/* expression */
-				BLI_snprintf(data->lines[data->totline], sizeof(data->lines[0]), "Expression: %s", buf);
+				BLI_snprintf(data->lines[data->totline], sizeof(data->lines[0]), TIP_(N_("Expression: %s")), buf);
 				data->color[data->totline]= 0x888888;
 				data->totline++;
 			}
@@ -442,7 +449,7 @@ ARegion *ui_tooltip_create(bContext *C, ARegion *butregion, uiBut *but)
 
 		/* rna info */
 		if ((U.flag & USER_TOOLTIPS_PYTHON) == 0) {
-			BLI_snprintf(data->lines[data->totline], sizeof(data->lines[0]), "Python: %s.%s", RNA_struct_identifier(but->rnapoin.type), RNA_property_identifier(but->rnaprop));
+			BLI_snprintf(data->lines[data->totline], sizeof(data->lines[0]), TIP_(N_("Python: %s.%s")), RNA_struct_identifier(but->rnapoin.type), RNA_property_identifier(but->rnaprop));
 			data->color[data->totline]= 0x888888;
 			data->totline++;
 		}
@@ -450,7 +457,7 @@ ARegion *ui_tooltip_create(bContext *C, ARegion *butregion, uiBut *but)
 		if(but->rnapoin.id.data) {
 			ID *id= but->rnapoin.id.data;
 			if(id->lib && id->lib->name) {
-				BLI_snprintf(data->lines[data->totline], sizeof(data->lines[0]), "Library: %s", id->lib->name);
+				BLI_snprintf(data->lines[data->totline], sizeof(data->lines[0]), TIP_(N_("Library: %s")), id->lib->name);
 				data->color[data->totline]= 0x888888;
 				data->totline++;
 			}
@@ -465,7 +472,7 @@ ARegion *ui_tooltip_create(bContext *C, ARegion *butregion, uiBut *but)
 
 		/* operator info */
 		if ((U.flag & USER_TOOLTIPS_PYTHON) == 0) {
-			BLI_snprintf(data->lines[data->totline], sizeof(data->lines[0]), "Python: %s", str);
+			BLI_snprintf(data->lines[data->totline], sizeof(data->lines[0]), TIP_(N_("Python: %s")), str);
 			data->color[data->totline]= 0x888888;
 			data->totline++;
 		}
@@ -479,7 +486,7 @@ ARegion *ui_tooltip_create(bContext *C, ARegion *butregion, uiBut *but)
 			WM_operator_poll_context(C, but->optype, but->opcontext);
 			poll_msg= CTX_wm_operator_poll_msg_get(C);
 			if(poll_msg) {
-				BLI_snprintf(data->lines[data->totline], sizeof(data->lines[0]), "Disabled: %s", poll_msg);
+				BLI_snprintf(data->lines[data->totline], sizeof(data->lines[0]), TIP_(N_("Disabled: %s")), poll_msg);
 				data->color[data->totline]= 0x6666ff; /* alert */
 				data->totline++;			
 			}
@@ -489,7 +496,7 @@ ARegion *ui_tooltip_create(bContext *C, ARegion *butregion, uiBut *but)
 		if ((U.flag & USER_TOOLTIPS_PYTHON) == 0) {
 			if(but->menu_create_func && WM_menutype_contains((MenuType *)but->poin)) {
 				MenuType *mt= (MenuType *)but->poin;
-				BLI_snprintf(data->lines[data->totline], sizeof(data->lines[0]), "Python: %s", mt->idname);
+				BLI_snprintf(data->lines[data->totline], sizeof(data->lines[0]), TIP_(N_("Python: %s")), mt->idname);
 				data->color[data->totline]= 0x888888;
 				data->totline++;
 			}
@@ -608,6 +615,7 @@ ARegion *ui_tooltip_create(bContext *C, ARegion *butregion, uiBut *but)
 
 	return ar;
 }
+#undef TIP_
 
 void ui_tooltip_free(bContext *C, ARegion *ar)
 {
@@ -985,7 +993,7 @@ static void ui_searchbox_region_free_cb(ARegion *ar)
 
 ARegion *ui_searchbox_create(bContext *C, ARegion *butregion, uiBut *but)
 {
-	uiStyle *style= U.uistyles.first;	// XXX pass on as arg
+	uiStyle *style= UI_GetStyle();
 	static ARegionType type;
 	ARegion *ar;
 	uiSearchboxData *data;
@@ -1235,7 +1243,7 @@ static void ui_block_position(wmWindow *window, ARegion *butregion, uiBut *but, 
 	ysize= block->maxy - block->miny+4;
 	/*aspect/= (float)xsize;*/ /*UNUSED*/
 
-	if(but) {
+	{
 		int left=0, right=0, top=0, down=0;
 		int winx, winy;
 		// int offscreen;
@@ -1608,7 +1616,7 @@ static void ui_block_func_MENUSTR(bContext *UNUSED(C), uiLayout *layout, void *a
 	uiBut *bt;
 	MenuData *md;
 	MenuEntry *entry;
-	char *instr= arg_str;
+	const char *instr= arg_str;
 	int columns, rows, a, b;
 
 	uiBlockSetFlag(block, UI_BLOCK_MOVEMOUSE_QUIT);
@@ -1642,11 +1650,12 @@ static void ui_block_func_MENUSTR(bContext *UNUSED(C), uiLayout *layout, void *a
 	}
 
 	/* inconsistent, but menus with labels do not look good flipped */
-	for(a=0, b=0; a<md->nitems; a++, b++) {
-		entry= &md->items[a];
-
-		if(entry->sepr && entry->str[0])
+	entry= md->items;
+	for(a=0; a<md->nitems; a++, entry++) {
+		if(entry->sepr && entry->str[0]) {
 			block->flag |= UI_BLOCK_NO_FLIP;
+			break;
+		}
 	}
 
 	/* create items */
@@ -1795,7 +1804,7 @@ static void ui_update_block_buts_rgb(uiBlock *block, float *rgb)
 			if (rgb_gamma[1] > 1.0f) rgb_gamma[1] = modf(rgb_gamma[1], &intpart);
 			if (rgb_gamma[2] > 1.0f) rgb_gamma[2] = modf(rgb_gamma[2], &intpart);
 
-			sprintf(col, "%02X%02X%02X", FTOCHAR(rgb_gamma[0]), FTOCHAR(rgb_gamma[1]), FTOCHAR(rgb_gamma[2]));
+			BLI_snprintf(col, sizeof(col), "%02X%02X%02X", FTOCHAR(rgb_gamma[0]), FTOCHAR(rgb_gamma[1]), FTOCHAR(rgb_gamma[2]));
 			
 			strcpy(bt->poin, col);
 		}
@@ -1983,10 +1992,10 @@ static void uiBlockPicker(uiBlock *block, float *rgb, PointerRNA *ptr, PropertyR
 	
 	/* existence of profile means storage is in linear color space, with display correction */
 	if (block->color_profile == BLI_PR_NONE) {
-		sprintf(tip, "Value in Display Color Space");
+		BLI_strncpy(tip, "Value in Display Color Space", sizeof(tip));
 		copy_v3_v3(rgb_gamma, rgb);
 	} else {
-		sprintf(tip, "Value in Linear RGB Color Space");
+		BLI_strncpy(tip, "Value in Linear RGB Color Space", sizeof(tip));
 		/* make an sRGB version, for Hex code */
 		linearrgb_to_srgb_v3_v3(rgb_gamma, rgb);
 	}
@@ -2055,7 +2064,7 @@ static void uiBlockPicker(uiBlock *block, float *rgb, PointerRNA *ptr, PropertyR
 		rgb[3]= 1.0f;
 	}
 
-	sprintf(hexcol, "%02X%02X%02X", FTOCHAR(rgb_gamma[0]), FTOCHAR(rgb_gamma[1]), FTOCHAR(rgb_gamma[2]));
+	BLI_snprintf(hexcol, sizeof(hexcol), "%02X%02X%02X", FTOCHAR(rgb_gamma[0]), FTOCHAR(rgb_gamma[1]), FTOCHAR(rgb_gamma[2]));
 
 	bt= uiDefBut(block, TEX, 0, "Hex: ", 0, -60, butwidth, UI_UNIT_Y, hexcol, 0, 8, 0, 0, "Hex triplet for color (#RRGGBB)");
 	uiButSetFunc(bt, do_hex_rna_cb, bt, hexcol);
@@ -2149,7 +2158,7 @@ static int ui_popup_string_hash(char *str)
 	return hash;
 }
 
-static int ui_popup_menu_hash(char *str)
+static int ui_popup_menu_hash(const char *str)
 {
 	return BLI_ghashutil_strhash(str);
 }
@@ -2199,8 +2208,6 @@ static uiBlock *ui_block_func_POPUP(bContext *C, uiPopupBlockHandle *handle, voi
 {
 	uiBlock *block;
 	uiBut *bt;
-	ScrArea *sa;
-	ARegion *ar;
 	uiPopupMenu *pup= arg_pup;
 	int offset[2], direction, minwidth, width, height, flip;
 
@@ -2272,10 +2279,9 @@ static uiBlock *ui_block_func_POPUP(bContext *C, uiPopupBlockHandle *handle, voi
 	else {
 		/* for a header menu we set the direction automatic */
 		if(!pup->slideout && flip) {
-			sa= CTX_wm_area(C);
-			ar= CTX_wm_region(C);
-
+			ScrArea *sa= CTX_wm_area(C);
 			if(sa && sa->headertype==HEADERDOWN) {
+				ARegion *ar= CTX_wm_region(C);
 				if(ar && ar->regiontype == RGN_TYPE_HEADER) {
 					uiBlockSetDirection(block, UI_TOP);
 					uiBlockFlipOrder(block);
@@ -2299,10 +2305,9 @@ static uiBlock *ui_block_func_POPUP(bContext *C, uiPopupBlockHandle *handle, voi
 uiPopupBlockHandle *ui_popup_menu_create(bContext *C, ARegion *butregion, uiBut *but, uiMenuCreateFunc menu_func, void *arg, char *str)
 {
 	wmWindow *window= CTX_wm_window(C);
-	uiStyle *style= U.uistyles.first;
+	uiStyle *style= UI_GetStyle();
 	uiPopupBlockHandle *handle;
 	uiPopupMenu *pup;
-	
 	pup= MEM_callocN(sizeof(uiPopupMenu), "menu dummy");
 	pup->block= uiBeginBlock(C, NULL, "ui_button_menu_create", UI_EMBOSSP);
 	pup->layout= uiBlockLayout(pup->block, UI_LAYOUT_VERTICAL, UI_LAYOUT_MENU, 0, 0, 200, 0, style);
@@ -2317,6 +2322,19 @@ uiPopupBlockHandle *ui_popup_menu_create(bContext *C, ARegion *butregion, uiBut 
 		pup->popup= 1;
 		pup->block->flag |= UI_BLOCK_NO_FLIP;
 	}
+	/* some enums reversing is strange, currently we have no good way to
+	 * reverse some enum's but not others, so reverse all so the first menu
+	 * items are always close to the mouse cursor */
+#if 0
+	else {
+		/* if this is an rna button then we can assume its an enum
+		 * flipping enums is generally not good since the order can be
+		 * important [#28786] */
+		if(but->rnaprop && RNA_property_type(but->rnaprop) == PROP_ENUM) {
+			pup->block->flag |= UI_BLOCK_NO_FLIP;
+		}
+	}
+#endif
 
 	if(str) {
 		/* menu is created from a string */
@@ -2348,7 +2366,7 @@ uiPopupBlockHandle *ui_popup_menu_create(bContext *C, ARegion *butregion, uiBut 
 /* only return handler, and set optional title */
 uiPopupMenu *uiPupMenuBegin(bContext *C, const char *title, int icon)
 {
-	uiStyle *style= U.uistyles.first;
+	uiStyle *style= UI_GetStyle();
 	uiPopupMenu *pup= MEM_callocN(sizeof(uiPopupMenu), "popup menu");
 	uiBut *but;
 	
@@ -2366,7 +2384,7 @@ uiPopupMenu *uiPupMenuBegin(bContext *C, const char *title, int icon)
 		char titlestr[256];
 		
 		if(icon) {
-			sprintf(titlestr, " %s", title);
+			BLI_snprintf(titlestr, sizeof(titlestr), " %s", title);
 			uiDefIconTextBut(pup->block, LABEL, 0, icon, titlestr, 0, 0, 200, UI_UNIT_Y, NULL, 0.0, 0.0, 0, 0, "");
 		}
 		else {
@@ -2464,7 +2482,7 @@ void uiPupMenuOkee(bContext *C, const char *opname, const char *str, ...)
 	va_list ap;
 	char titlestr[256];
 
-	sprintf(titlestr, "OK? %%i%d", ICON_QUESTION);
+	BLI_snprintf(titlestr, sizeof(titlestr), "OK? %%i%d", ICON_QUESTION);
 
 	va_start(ap, str);
 	vconfirm_opname(C, opname, titlestr, str, ap);
@@ -2504,9 +2522,9 @@ void uiPupMenuError(bContext *C, const char *str, ...)
 	char nfmt[256];
 	char titlestr[256];
 
-	sprintf(titlestr, "Error %%i%d", ICON_ERROR);
+	BLI_snprintf(titlestr, sizeof(titlestr), "Error %%i%d", ICON_ERROR);
 
-	sprintf(nfmt, "%s", str);
+	BLI_strncpy(nfmt, str, sizeof(nfmt));
 
 	va_start(ap, str);
 	vconfirm_opname(C, NULL, titlestr, nfmt, ap);
@@ -2553,7 +2571,7 @@ void uiPupMenuInvoke(bContext *C, const char *idname)
 	MenuType *mt= WM_menutype_find(idname, TRUE);
 
 	if(mt==NULL) {
-		printf("uiPupMenuInvoke: named menu \"%s\" not found\n", idname);
+		printf("%s: named menu \"%s\" not found\n", __func__, idname);
 		return;
 	}
 

@@ -1,5 +1,5 @@
 /*
- * $Id: ED_view3d.h 39739 2011-08-27 11:52:59Z campbellbarton $
+ * $Id: ED_view3d.h 40368 2011-09-19 16:13:34Z jason_hays22 $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -53,6 +53,7 @@ struct Scene;
 struct View3D;
 struct ViewContext;
 struct wmWindow;
+struct MVert;
 
 
 /* for derivedmesh drawing callbacks, for view3d_select, .... */

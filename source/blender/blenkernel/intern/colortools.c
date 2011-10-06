@@ -1,5 +1,5 @@
 /* 
- * $Id: colortools.c 36715 2011-05-16 13:34:42Z blendix $
+ * $Id: colortools.c 40680 2011-09-29 06:15:33Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -167,14 +167,14 @@ CurveMapping *curvemapping_copy(CurveMapping *cumap)
 	return NULL;
 }
 
-void curvemapping_set_black_white(CurveMapping *cumap, float *black, float *white)
+void curvemapping_set_black_white(CurveMapping *cumap, const float black[3], const float white[3])
 {
 	int a;
 	
 	if(white)
-		VECCOPY(cumap->white, white);
+		copy_v3_v3(cumap->white, white);
 	if(black)
-		VECCOPY(cumap->black, black);
+		copy_v3_v3(cumap->black, black);
 	
 	for(a=0; a<3; a++) {
 		if(cumap->white[a]==cumap->black[a])
@@ -361,78 +361,76 @@ void curvemap_sethandle(CurveMap *cuma, int type)
 static void calchandle_curvemap(BezTriple *bezt, BezTriple *prev, BezTriple *next, int UNUSED(mode))
 {
 	float *p1,*p2,*p3,pt[3];
-	float dx1,dy1, dx,dy, vx,vy, len,len1,len2;
-	
-	if(bezt->h1==0 && bezt->h2==0) return;
+	float len,len_a, len_b;
+	float dvec_a[2], dvec_b[2];
+
+	if(bezt->h1==0 && bezt->h2==0) {
+		return;
+	}
 	
 	p2= bezt->vec[1];
 	
 	if(prev==NULL) {
 		p3= next->vec[1];
-		pt[0]= 2*p2[0]- p3[0];
-		pt[1]= 2*p2[1]- p3[1];
+		pt[0]= 2.0f*p2[0] - p3[0];
+		pt[1]= 2.0f*p2[1] - p3[1];
 		p1= pt;
 	}
-	else p1= prev->vec[1];
+	else {
+		p1= prev->vec[1];
+	}
 	
 	if(next==NULL) {
 		p1= prev->vec[1];
-		pt[0]= 2*p2[0]- p1[0];
-		pt[1]= 2*p2[1]- p1[1];
+		pt[0]= 2.0f*p2[0] - p1[0];
+		pt[1]= 2.0f*p2[1] - p1[1];
 		p3= pt;
 	}
-	else p3= next->vec[1];
-	
-	dx= p2[0]- p1[0];
-	dy= p2[1]- p1[1];
+	else {
+		p3= next->vec[1];
+	}
 
-	len1= (float)sqrt(dx*dx+dy*dy);
-	
-	dx1= p3[0]- p2[0];
-	dy1= p3[1]- p2[1];
+	sub_v2_v2v2(dvec_a, p2, p1);
+	sub_v2_v2v2(dvec_b, p3, p2);
 
-	len2= (float)sqrt(dx1*dx1+dy1*dy1);
-	
-	if(len1==0.0f) len1=1.0f;
-	if(len2==0.0f) len2=1.0f;
-	
-	if(bezt->h1==HD_AUTO || bezt->h2==HD_AUTO) {    /* auto */
-		vx= dx1/len2 + dx/len1;
-		vy= dy1/len2 + dy/len1;
-		
-		len= 2.5614f*(float)sqrt(vx*vx + vy*vy);
+	len_a= len_v2(dvec_a);
+	len_b= len_v2(dvec_b);
+
+	if(len_a==0.0f) len_a=1.0f;
+	if(len_b==0.0f) len_b=1.0f;
+
+	if(bezt->h1==HD_AUTO || bezt->h2==HD_AUTO) { /* auto */
+		float tvec[2];
+		tvec[0]= dvec_b[0]/len_b + dvec_a[0]/len_a;
+		tvec[1]= dvec_b[1]/len_b + dvec_a[1]/len_a;
+
+		len= len_v2(tvec) * 2.5614f;
 		if(len!=0.0f) {
 			
 			if(bezt->h1==HD_AUTO) {
-				len1/=len;
-				*(p2-3)= *p2-vx*len1;
-				*(p2-2)= *(p2+1)-vy*len1;
+				len_a/=len;
+				madd_v2_v2v2fl(p2-3, p2, tvec, -len_a);
 			}
 			if(bezt->h2==HD_AUTO) {
-				len2/=len;
-				*(p2+3)= *p2+vx*len2;
-				*(p2+4)= *(p2+1)+vy*len2;
+				len_b/=len;
+				madd_v2_v2v2fl(p2+3, p2, tvec,  len_b);
 			}
 		}
 	}
 
 	if(bezt->h1==HD_VECT) {	/* vector */
-		dx/=3.0f;
-		dy/=3.0f;
-		*(p2-3)= *p2-dx;
-		*(p2-2)= *(p2+1)-dy;
+		mul_v2_fl(dvec_a, 1.0f/3.0f);
+		sub_v2_v2v2(p2-3, p2, dvec_a);
 	}
 	if(bezt->h2==HD_VECT) {
-		dx1/=3.0f;
-		dy1/=3.0f;
-		*(p2+3)= *p2+dx1;
-		*(p2+4)= *(p2+1)+dy1;
+		mul_v2_fl(dvec_b, 1.0f/3.0f);
+		sub_v2_v2v2(p2+3, p2, dvec_b);
 	}
 }
 
 /* in X, out Y. 
    X is presumed to be outside first or last */
-static float curvemap_calc_extend(CurveMap *cuma, float x, float *first, float *last)
+static float curvemap_calc_extend(CurveMap *cuma, float x, const float first[2], const float last[2])
 {
 	if(x <= first[0]) {
 		if((cuma->flag & CUMA_EXTEND_EXTRAPOLATE)==0) {
@@ -753,7 +751,7 @@ float curvemapping_evaluateF(CurveMapping *cumap, int cur, float value)
 }
 
 /* vector case */
-void curvemapping_evaluate3F(CurveMapping *cumap, float *vecout, const float *vecin)
+void curvemapping_evaluate3F(CurveMapping *cumap, float vecout[3], const float vecin[3])
 {
 	vecout[0]= curvemapping_evaluateF(cumap, 0, vecin[0]);
 	vecout[1]= curvemapping_evaluateF(cumap, 1, vecin[1]);
@@ -761,7 +759,7 @@ void curvemapping_evaluate3F(CurveMapping *cumap, float *vecout, const float *ve
 }
 
 /* RGB case, no black/white points, no premult */
-void curvemapping_evaluateRGBF(CurveMapping *cumap, float *vecout, const float *vecin)
+void curvemapping_evaluateRGBF(CurveMapping *cumap, float vecout[3], const float vecin[3])
 {
 	vecout[0]= curvemapping_evaluateF(cumap, 0, curvemapping_evaluateF(cumap, 3, vecin[0]));
 	vecout[1]= curvemapping_evaluateF(cumap, 1, curvemapping_evaluateF(cumap, 3, vecin[1]));
@@ -770,7 +768,7 @@ void curvemapping_evaluateRGBF(CurveMapping *cumap, float *vecout, const float *
 
 
 /* RGB with black/white points and premult. tables are checked */
-void curvemapping_evaluate_premulRGBF(CurveMapping *cumap, float *vecout, const float *vecin)
+void curvemapping_evaluate_premulRGBF(CurveMapping *cumap, float vecout[3], const float vecin[3])
 {
 	float fac;
 	

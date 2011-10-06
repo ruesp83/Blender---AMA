@@ -1,5 +1,5 @@
 /*
- * $Id: node_state.c 39941 2011-09-05 21:01:50Z lukastoenne $
+ * $Id: node_state.c 40390 2011-09-20 08:48:48Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -214,12 +214,11 @@ void NODE_OT_visibility_toggle(wmOperatorType *ot)
 static void snode_home(ScrArea *UNUSED(sa), ARegion *ar, SpaceNode* snode)
 {
 	bNode *node;
-	rctf *cur, *tot;
+	rctf *cur;
 	float oldwidth, oldheight, width, height;
 	int first= 1;
 	
 	cur= &ar->v2d.cur;
-	tot= &ar->v2d.tot;
 	
 	oldwidth= cur->xmax - cur->xmin;
 	oldheight= cur->ymax - cur->ymin;

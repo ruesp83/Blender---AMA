@@ -1,5 +1,5 @@
 /*
- * $Id: BKE_fcurve.h 39792 2011-08-30 09:15:55Z nexyon $
+ * $Id: BKE_fcurve.h 40678 2011-09-29 05:03:21Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -231,7 +231,7 @@ short fcurve_is_keyframable(struct FCurve *fcu);
 /* -------- Curve Sanity --------  */
 
 void calchandles_fcurve(struct FCurve *fcu);
-void testhandles_fcurve(struct FCurve *fcu);
+void testhandles_fcurve(struct FCurve *fcu, const short use_handle);
 void sort_time_fcurve(struct FCurve *fcu);
 short test_time_fcurve(struct FCurve *fcu);
 

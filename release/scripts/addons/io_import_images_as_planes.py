@@ -145,9 +145,9 @@ def create_image_plane(self, context, material):
     plane.data.uv_textures.new()
     plane.data.materials.append(material)
     plane.data.uv_textures[0].data[0].image = img
-    plane.data.uv_textures[0].data[0].use_image = True
-    plane.data.uv_textures[0].data[0].blend_type = 'ALPHA'
-    plane.data.uv_textures[0].data[0].use_twoside = True
+
+    material.game_settings.use_backface_culling = False
+    material.game_settings.alpha_blend = 'ALPHA'
     return plane
 
 def generate_paths(self):
@@ -219,7 +219,7 @@ def import_images(self, context):
     for plane in planes:
         plane.select = True
         
-    self.report(type='INFO',
+    self.report(type={'INFO'},
                 message='Added %i Image Plane(s)' %len(planes))
 
 ##### OPERATOR #####
@@ -228,14 +228,14 @@ class IMPORT_OT_image_to_plane(bpy.types.Operator, ImportHelper, AddObjectHelper
     bl_idname = "import.image_to_plane"
     bl_label = "Import Images as Planes"
     bl_description = "Create mesh plane(s) from image files" \
-        " with the appropiate aspect ratio."
+                     " with the appropiate aspect ratio"
     bl_options = {'REGISTER', 'UNDO'}
 
     ## OPTIONS ##
     all_in_directory = BoolProperty(
             name="All in directory",
             description=("Import all image files (of the selected type) "
-                         "in this directory."),
+                         "in this directory"),
             default=False,
             )
     align = BoolProperty(
@@ -271,13 +271,13 @@ class IMPORT_OT_image_to_plane(bpy.types.Operator, ImportHelper, AddObjectHelper
         )
     extension = EnumProperty(
             name="Extension",
-            description="Only import files of this type.",
+            description="Only import files of this type",
             items=extEnum)
     use_dimension = BoolProperty(name="Use image dimensions",
-            description="Use the images pixels to derive the size of the plane.",
+            description="Use the images pixels to derive the size of the plane",
             default=False)
     factor = IntProperty(name="Pixels/BU",
-            description="Number of pixels per Blenderunit.",
+            description="Number of pixels per Blenderunit",
             min=1,
             default=500,
             )
@@ -290,7 +290,7 @@ class IMPORT_OT_image_to_plane(bpy.types.Operator, ImportHelper, AddObjectHelper
             )
     use_transparency = BoolProperty(
             name="Use alpha",
-            description="Use alphachannel for transparency.",
+            description="Use alphachannel for transparency",
             default=False,
             )
     tEnum = (

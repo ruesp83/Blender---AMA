@@ -18,7 +18,7 @@
 
 # <pep8 compliant>
 import bpy
-from bpy.types import Header, Menu, Operator, Panel
+from bpy.types import Header, Menu, Panel
 
 
 class VIEW3D_HT_header(Header):
@@ -721,11 +721,14 @@ class VIEW3D_MT_object(Menu):
 
         layout.separator()
 
+        layout.menu("VIEW3D_MT_object_quick_effects")
+
+        layout.separator()
+
         layout.menu("VIEW3D_MT_object_game")
 
         layout.separator()
 
-        layout.operator("object.join_uvs")
         layout.operator("object.join")
 
         layout.separator()
@@ -879,8 +882,8 @@ class VIEW3D_MT_object_parent(Menu):
     def draw(self, context):
         layout = self.layout
 
-        layout.operator("object.parent_set", text="Set")
-        layout.operator("object.parent_clear", text="Clear")
+        layout.operator_menu_enum("object.parent_set", "type", text="Set")
+        layout.operator_menu_enum("object.parent_clear", "type", text="Clear")
 
 
 class VIEW3D_MT_object_track(Menu):
@@ -889,8 +892,8 @@ class VIEW3D_MT_object_track(Menu):
     def draw(self, context):
         layout = self.layout
 
-        layout.operator("object.track_set", text="Set")
-        layout.operator("object.track_clear", text="Clear")
+        layout.operator_menu_enum("object.track_set", "type", text="Set")
+        layout.operator_menu_enum("object.track_clear", "type", text="Clear")
 
 
 class VIEW3D_MT_object_group(Menu):
@@ -917,6 +920,18 @@ class VIEW3D_MT_object_constraints(Menu):
         layout.operator("object.constraint_add_with_targets")
         layout.operator("object.constraints_copy")
         layout.operator("object.constraints_clear")
+
+
+class VIEW3D_MT_object_quick_effects(Menu):
+    bl_label = "Quick Effects"
+
+    def draw(self, context):
+        layout = self.layout
+
+        layout.operator("object.quick_fur")
+        layout.operator("object.quick_explode")
+        layout.operator("object.quick_smoke")
+        layout.operator("object.quick_fluid")
 
 
 class VIEW3D_MT_object_showhide(Menu):
@@ -968,6 +983,7 @@ class VIEW3D_MT_make_links(Menu):
 
         layout.operator_enum("object.make_links_data", "type")  # inline
 
+        layout.operator("object.join_uvs")  # stupid place to add this!
 
 class VIEW3D_MT_object_game(Menu):
     bl_label = "Game"
@@ -1072,6 +1088,7 @@ class VIEW3D_MT_paint_weight(Menu):
         layout.operator("object.vertex_group_invert", text="Invert")
         layout.operator("object.vertex_group_clean", text="Clean")
         layout.operator("object.vertex_group_levels", text="Levels")
+        layout.operator("object.vertex_group_fix", text="Fix Deforms")
 
         layout.separator()
 
@@ -1548,61 +1565,6 @@ class VIEW3D_MT_edit_mesh_extrude(Menu):
 
         for menu_id in self.extrude_options(context):
             self._extrude_funcs[menu_id](layout)
-
-
-class VIEW3D_OT_edit_mesh_extrude_individual_move(Operator):
-    "Extrude individual elements and move"
-    bl_label = "Extrude Individual and Move"
-    bl_idname = "view3d.edit_mesh_extrude_individual_move"
-
-    def execute(self, context):
-        mesh = context.object.data
-        select_mode = context.tool_settings.mesh_select_mode
-
-        totface = mesh.total_face_sel
-        totedge = mesh.total_edge_sel
-        # totvert = mesh.total_vert_sel
-
-        if select_mode[2] and totface == 1:
-            bpy.ops.mesh.extrude_region_move('INVOKE_REGION_WIN', TRANSFORM_OT_translate={"constraint_orientation": 'NORMAL', "constraint_axis": (False, False, True)})
-        elif select_mode[2] and totface > 1:
-            bpy.ops.mesh.extrude_faces_move('INVOKE_REGION_WIN')
-        elif select_mode[1] and totedge >= 1:
-            bpy.ops.mesh.extrude_edges_move('INVOKE_REGION_WIN')
-        else:
-            bpy.ops.mesh.extrude_vertices_move('INVOKE_REGION_WIN')
-
-        # ignore return from operators above because they are 'RUNNING_MODAL', and cause this one not to be freed. [#24671]
-        return {'FINISHED'}
-
-    def invoke(self, context, event):
-        return self.execute(context)
-
-
-class VIEW3D_OT_edit_mesh_extrude_move(Operator):
-    "Extrude and move along normals"
-    bl_label = "Extrude and Move on Normals"
-    bl_idname = "view3d.edit_mesh_extrude_move_normal"
-
-    def execute(self, context):
-        mesh = context.object.data
-
-        totface = mesh.total_face_sel
-        totedge = mesh.total_edge_sel
-        # totvert = mesh.total_vert_sel
-
-        if totface >= 1:
-            bpy.ops.mesh.extrude_region_move('INVOKE_REGION_WIN', TRANSFORM_OT_translate={"constraint_orientation": 'NORMAL', "constraint_axis": (False, False, True)})
-        elif totedge == 1:
-            bpy.ops.mesh.extrude_region_move('INVOKE_REGION_WIN', TRANSFORM_OT_translate={"constraint_orientation": 'NORMAL', "constraint_axis": (True, True, False)})
-        else:
-            bpy.ops.mesh.extrude_region_move('INVOKE_REGION_WIN')
-
-        # ignore return from operators above because they are 'RUNNING_MODAL', and cause this one not to be freed. [#24671]
-        return {'FINISHED'}
-
-    def invoke(self, context, event):
-        return self.execute(context)
 
 
 class VIEW3D_MT_edit_mesh_vertices(Menu):

@@ -746,8 +746,8 @@ static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 		"arrayModifier_doArray vert_map");
 		if (amd->cont_mid_cap>=amd->count)
 			amd->cont_mid_cap = amd->count -1;
+		origindex = result->getVertDataArray(result, CD_ORIGINDEX);
 		for(j=0; j < amd->cont_mid_cap; j++) {
-			origindex = result->getVertDataArray(result, CD_ORIGINDEX);
 			for(i = 0; i < capVerts; i++) {
 				MVert *mv = &cap_mvert[i];
 				short merged = 0;

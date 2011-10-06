@@ -1,5 +1,5 @@
 /*
- * $Id: AnimationImporter.cpp 39936 2011-09-05 19:27:21Z blendix $
+ * $Id: AnimationImporter.cpp 40641 2011-09-28 05:53:40Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -170,9 +170,9 @@ void AnimationImporter::fcurve_deg_to_rad(FCurve *cu)
 {
 	for (unsigned int i = 0; i < cu->totvert; i++) {
 		// TODO convert handles too
-		cu->bezt[i].vec[1][1] *= M_PI / 180.0f;
-		cu->bezt[i].vec[0][1] *= M_PI / 180.0f;
-		cu->bezt[i].vec[2][1] *= M_PI / 180.0f;
+		cu->bezt[i].vec[1][1] *= DEG2RADF(1.0f);
+		cu->bezt[i].vec[0][1] *= DEG2RADF(1.0f);
+		cu->bezt[i].vec[2][1] *= DEG2RADF(1.0f);
 	}
 }
 
@@ -426,7 +426,7 @@ virtual void AnimationImporter::change_eul_to_quat(Object *ob, bAction *act)
 
 
 //sets the rna_path and array index to curve
-void AnimationImporter::modify_fcurve(std::vector<FCurve*>* curves , char* rna_path , int array_index )
+void AnimationImporter::modify_fcurve(std::vector<FCurve*>* curves , const char* rna_path , int array_index )
 {
 	std::vector<FCurve*>::iterator it;
 	int i;
@@ -603,7 +603,7 @@ void AnimationImporter:: Assign_color_animations(const COLLADAFW::UniqueId& list
 		for (iter = animcurves.begin(); iter != animcurves.end(); iter++) {
 			FCurve * fcu = *iter;
 			BLI_addtail(AnimCurves, fcu);	
-		}	 			
+		}
 	}
 
 
@@ -621,16 +621,16 @@ void AnimationImporter:: Assign_float_animations(const COLLADAFW::UniqueId& list
 		//all the curves belonging to the current binding
 		std::vector<FCurve*> animcurves;
 		for (unsigned int j = 0; j < bindings.getCount(); j++) {
-			 animcurves = curve_map[bindings[j].animation];
-		
-			 BLI_strncpy(rna_path, anim_type , sizeof(rna_path));
-			 modify_fcurve(&animcurves, rna_path, 0 );
-			 std::vector<FCurve*>::iterator iter;
-				//Add the curves of the current animation to the object
-				for (iter = animcurves.begin(); iter != animcurves.end(); iter++) {
-					FCurve * fcu = *iter;
-					BLI_addtail(AnimCurves, fcu);	
-				}	 			
+			animcurves = curve_map[bindings[j].animation];
+
+			BLI_strncpy(rna_path, anim_type , sizeof(rna_path));
+			modify_fcurve(&animcurves, rna_path, 0 );
+			std::vector<FCurve*>::iterator iter;
+			//Add the curves of the current animation to the object
+			for (iter = animcurves.begin(); iter != animcurves.end(); iter++) {
+				FCurve * fcu = *iter;
+				BLI_addtail(AnimCurves, fcu);
+			}
 		}
 	}
 	
@@ -741,7 +741,7 @@ void AnimationImporter::apply_matrix_curves( Object * ob, std::vector<FCurve*>& 
 		mat4_to_quat(rot, mat);
 		/*for ( int i = 0 ; i < 4  ;  i ++ )
 		{
-		rot[i] = rot[i] * (180 / M_PI); 
+		rot[i] = RAD2DEGF(rot[i]);
 		}*/
 		copy_v3_v3(loc, mat[3]);
 		mat4_to_size(scale, mat);

@@ -1,5 +1,5 @@
 /*
- * $Id: bpy_app_handlers.c 39821 2011-08-31 10:43:22Z campbellbarton $
+ * $Id: bpy_app_handlers.c 40605 2011-09-27 10:43:45Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -40,6 +40,8 @@ void bpy_app_generic_callback(struct Main *main, struct ID *id, void *arg);
 static PyTypeObject BlenderAppCbType;
 
 static PyStructSequence_Field app_cb_info_fields[]= {
+    {(char *)"frame_change_pre", NULL},
+	{(char *)"frame_change_post", NULL},
 	{(char *)"render_pre", NULL},
 	{(char *)"render_post", NULL},
 	{(char *)"render_stats", NULL},
@@ -63,7 +65,7 @@ static PyStructSequence_Desc app_cb_info_desc= {
 #endif
 */
 
-static PyObject *py_cb_array[BLI_CB_EVT_TOT]= {0};
+static PyObject *py_cb_array[BLI_CB_EVT_TOT]= {NULL};
 
 static PyObject *make_app_cb_info(void)
 {
@@ -102,7 +104,7 @@ PyObject *BPY_app_handlers_struct(void)
 
 	/* assign the C callbacks */
 	if(ret) {
-		static bCallbackFuncStore funcstore_array[BLI_CB_EVT_TOT]= {{0}};
+		static bCallbackFuncStore funcstore_array[BLI_CB_EVT_TOT]= {{NULL}};
 		bCallbackFuncStore *funcstore;
 		int pos= 0;
 

@@ -1,5 +1,5 @@
 /*
- * $Id: undo.c 38725 2011-07-26 13:05:22Z campbellbarton $
+ * $Id: undo.c 40567 2011-09-26 13:24:42Z mont29 $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -54,6 +54,7 @@
 #include "ED_armature.h"
 #include "ED_particle.h"
 #include "ED_curve.h"
+#include "ED_gpencil.h"
 #include "ED_mball.h"
 #include "ED_mesh.h"
 #include "ED_object.h"
@@ -125,6 +126,11 @@ static int ed_undo_step(bContext *C, int step, const char *undoname)
 	Object *obedit= CTX_data_edit_object(C);
 	Object *obact= CTX_data_active_object(C);
 	ScrArea *sa= CTX_wm_area(C);
+
+	/* grease pencil can be can be used in plenty of spaces, so check it first */
+	if(ED_gpencil_session_active()) {
+		return ED_undo_gpencil_step(C, step, undoname);
+	}
 
 	if(sa && sa->spacetype==SPACE_IMAGE) {
 		SpaceImage *sima= (SpaceImage *)sa->spacedata.first;
@@ -465,7 +471,7 @@ static int undo_history_invoke(bContext *C, wmOperator *op, wmEvent *UNUSED(even
 		if(totitem > 0) {
 			uiPopupMenu *pup= uiPupMenuBegin(C, op->type->name, ICON_NONE);
 			uiLayout *layout= uiPupMenuLayout(pup);
-			uiLayout *split= uiLayoutSplit(layout, 0, 0), *column;
+			uiLayout *split= uiLayoutSplit(layout, 0, 0), *column = NULL;
 			int i, c;
 			
 			for(c=0, i=totitem-1; i >= 0; i--, c++) {

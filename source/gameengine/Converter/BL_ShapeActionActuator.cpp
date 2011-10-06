@@ -1,5 +1,5 @@
 /*
-* $Id: BL_ShapeActionActuator.cpp 39792 2011-08-30 09:15:55Z nexyon $
+* $Id: BL_ShapeActionActuator.cpp 40419 2011-09-21 08:40:30Z campbellbarton $
 *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -32,11 +32,7 @@
  */
 
 
-#if defined (__sgi)
-#include <math.h>
-#else
 #include <cmath>
-#endif
 
 #include "SCA_LogicManager.h"
 #include "BL_ShapeActionActuator.h"

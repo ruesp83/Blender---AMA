@@ -1,5 +1,5 @@
 /*
- * $Id: CMP_blur.c 35562 2011-03-15 20:10:32Z lukastoenne $
+ * $Id: node_shader_common.c 39975 2011-09-06 16:32:51Z lukastoenne $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -76,7 +76,7 @@ static void *group_initexec(bNode *node)
 	bNodeTreeExec *exec;
 	
 	/* initialize the internal node tree execution */
-	exec = ntreeShaderBeginExecTree(ngroup);
+	exec = ntreeShaderBeginExecTree(ngroup, 0);
 	
 	return exec;
 }
@@ -85,7 +85,7 @@ static void group_freeexec(bNode *UNUSED(node), void *nodedata)
 {
 	bNodeTreeExec*gexec= (bNodeTreeExec*)nodedata;
 	
-	ntreeShaderEndExecTree(gexec);
+	ntreeShaderEndExecTree(gexec, 0);
 }
 
 /* Copy inputs to the internal stack.

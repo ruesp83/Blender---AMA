@@ -1,5 +1,5 @@
 /**
- * $Id: GHOST_WindowCocoa.mm 37861 2011-06-27 13:57:27Z blendix $
+ * $Id: GHOST_WindowCocoa.mm 40538 2011-09-25 12:31:21Z campbellbarton $
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
  * This program is free software; you can redistribute it and/or
@@ -1009,7 +1009,7 @@ GHOST_TSuccess GHOST_WindowCocoa::installDrawingContext(GHOST_TDrawingContextTyp
 	switch (type) {
 		case GHOST_kDrawingContextTypeOpenGL:
 			if (!getValid()) break;
-            				
+
 			pixelFormat = [m_openGLView pixelFormat];
 			tmpOpenGLContext = [[NSOpenGLContext alloc] initWithFormat:pixelFormat
 															  shareContext:s_firstOpenGLcontext];
@@ -1332,7 +1332,7 @@ GHOST_TSuccess GHOST_WindowCocoa::setWindowCustomCursorShape(GHOST_TUns8 *bitmap
 	
 
 	cursorImageRep = [[NSBitmapImageRep alloc] initWithBitmapDataPlanes:nil
-														  	 pixelsWide:sizex
+															 pixelsWide:sizex
 															 pixelsHigh:sizey
 														  bitsPerSample:1 
 														samplesPerPixel:2

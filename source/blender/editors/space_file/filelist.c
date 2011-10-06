@@ -1,5 +1,5 @@
 /*
- * $Id: filelist.c 39792 2011-08-30 09:15:55Z nexyon $
+ * $Id: filelist.c 40641 2011-09-28 05:53:40Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -244,7 +244,8 @@ static int compare_size(const void *a1, const void *a2)
 	else return BLI_natstrcmp(entry1->relname,entry2->relname);
 }
 
-static int compare_extension(const void *a1, const void *a2) {
+static int compare_extension(const void *a1, const void *a2)
+{
 	const struct direntry *entry1=a1, *entry2=a2;
 	const char *sufix1, *sufix2;
 	const char *nil="";
@@ -1158,8 +1159,8 @@ void filelist_from_main(struct FileList *filelist)
 		
 		/* XXXXX TODO: if databrowse F4 or append/link filelist->hide_parent has to be set */
 		if (!filelist->hide_parent) filelist->numfiles+= 1;
-		filelist->filelist= (struct direntry *)malloc(filelist->numfiles * sizeof(struct direntry));
-		
+		filelist->filelist= filelist->numfiles > 0 ? (struct direntry *)malloc(filelist->numfiles * sizeof(struct direntry)) : NULL;
+
 		files = filelist->filelist;
 		
 		if (!filelist->hide_parent) {

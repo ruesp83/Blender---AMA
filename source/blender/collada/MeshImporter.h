@@ -1,5 +1,5 @@
 /*
- * $Id: MeshImporter.h 38169 2011-07-06 21:37:31Z jesterking $
+ * $Id: MeshImporter.h 40382 2011-09-20 06:25:15Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -141,7 +141,7 @@ public:
 									std::map<COLLADAFW::UniqueId, Material*>& uid_material_map,
 									Object *ob, const COLLADAFW::UniqueId *geom_uid, 
 									MTex **color_texture, char *layername, MTFace *texture_face,
-									std::map<Material*, TexIndexTextureArrayMap>& material_texture_mapping_map, int mat_index);
+									std::map<Material*, TexIndexTextureArrayMap>& material_texture_mapping_map, short mat_index);
 	
 	
 	Object *create_mesh_object(COLLADAFW::Node *node, COLLADAFW::InstanceGeometry *geom,

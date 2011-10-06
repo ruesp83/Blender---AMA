@@ -1,5 +1,5 @@
 /*
- * $Id: multires.c 39647 2011-08-23 11:46:16Z campbellbarton $
+ * $Id: multires.c 40693 2011-09-29 15:28:22Z mont29 $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -1029,7 +1029,7 @@ static void old_mdisps_convert(MFace *mface, MDisps *mdisp)
 	int nvert = (mface->v4)? 4: 3;
 	int newtotdisp = multires_grid_tot[newlvl]*nvert;
 	int x, y, S;
-	float (*disps)[3], (*out)[3], u, v;
+	float (*disps)[3], (*out)[3], u = 0.0f, v = 0.0f; /* Quite gcc barking. */
 
 	disps = MEM_callocN(sizeof(float) * 3 * newtotdisp, "multires disps");
 
@@ -1408,7 +1408,7 @@ static void multires_load_old_dm(DerivedMesh *dm, Mesh *me, int totlvl)
 		}
 
 		/* Interior face verts */
-		lvl = lvl1->next->next;
+		/* lvl = lvl1->next->next; */ /* UNUSED */
 		dst = 0;
 		for(j = 0; j < lvl1->totface; ++j) {
 			int sides = lvl1->faces[j].v[3] ? 4 : 3;

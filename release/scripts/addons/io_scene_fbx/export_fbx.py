@@ -20,11 +20,6 @@
 
 # Script copyright (C) Campbell Barton
 
-"""
-This script is an exporter to the FBX file format.
-
-http://wiki.blender.org/index.php/Scripts/Manual/Export/autodesk_fbx
-"""
 
 import os
 import time
@@ -461,11 +456,11 @@ def save_single(operator, scene, filepath="",
             loc = tuple(loc)
             rot = tuple(rot.to_euler())  # quat -> euler
             scale = tuple(scale)
-                
+
             # Essential for XNA to use the original matrix not rotated nor scaled (JCB)
             if use_rotate_workaround:
                 matrix = ob.matrix_local
-            
+
         else:
             # This is bad because we need the parent relative matrix from the fbx parent (if we have one), dont use anymore
             #if ob and not matrix: matrix = ob.matrix_world * global_matrix
@@ -1042,7 +1037,7 @@ def save_single(operator, scene, filepath="",
             poseMatrix = write_object_props()[3]
 
         pose_items.append((fbxName, poseMatrix))
-        
+
         fw('\n\t\t}'
            '\n\t\tMultiLayer: 0'
            '\n\t\tMultiTake: 1'
@@ -1325,6 +1320,7 @@ def save_single(operator, scene, filepath="",
         do_materials = bool(my_mesh.blenMaterials)
         do_textures = bool(my_mesh.blenTextures)
         do_uvs = bool(me.uv_textures)
+        do_shapekeys = bool(my_mesh.blenObject.data.shape_keys and len(my_mesh.blenObject.data.vertices) == len(me.vertices))
 
         fw('\n\tModel: "Model::%s", "Mesh" {' % my_mesh.fbxName)
         fw('\n\t\tVersion: 232')  # newline is added in write_object_props
@@ -1336,6 +1332,10 @@ def save_single(operator, scene, filepath="",
 
         poseMatrix = write_object_props(my_mesh.blenObject, None, my_mesh.parRelMatrix())[3]
         pose_items.append((my_mesh.fbxName, poseMatrix))
+
+        if do_shapekeys:
+            for kb in my_mesh.blenObject.data.shape_keys.key_blocks[1:]:
+                fw('\n\t\t\tProperty: "%s", "Number", "AN",0' % kb.name)
 
         fw('\n\t\t}')
 
@@ -1779,6 +1779,67 @@ def save_single(operator, scene, filepath="",
                 fw('\n\t\t\t\tTypedIndex: %i' % i)
                 fw('\n\t\t\t}')
                 fw('\n\t\t}')
+        
+        if do_shapekeys:
+            key_blocks = my_mesh.blenObject.data.shape_keys.key_blocks[:]
+            for kb in key_blocks[1:]:
+
+                fw('\n\t\tShape: "%s" {' % kb.name)
+                fw('\n\t\t\tIndexes: ')
+
+                basis_verts = key_blocks[0].data
+                range_verts = []
+                delta_verts = []
+                i = -1
+                for j, kv in enumerate(kb.data):
+                    delta = kv.co - basis_verts[j].co
+                    if delta.length > 0.000001:
+                        if i == -1:
+                            fw('%d' % j)
+                        else:
+                            if i == 7:
+                                fw('\n\t\t\t')
+                                i = 0
+                            fw(',%d' % j)
+                        delta_verts.append(delta[:])
+                        i += 1
+
+                fw('\n\t\t\tVertices: ')
+                i = -1
+                for dv in delta_verts:
+                    if i == -1:
+                        fw("%.6f,%.6f,%.6f" % dv)
+                    else:
+                        if i == 4:
+                            fw('\n\t\t\t')
+                            i = 0
+                        fw(",%.6f,%.6f,%.6f" % dv)
+                    i += 1
+
+                # all zero, why? - campbell
+                fw('\n\t\t\tNormals: ')
+                for j in range(len(delta_verts)):
+                    if i == -1:
+                        fw("0,0,0")
+                    else:
+                        if i == 4:
+                            fw('\n\t\t\t')
+                            i = 0
+                        fw(",0,0,0")
+                    i += 1
+                fw('\n\t\t}')
+
+        for v in me_vertices:
+            if i == -1:
+                fw('%.6f,%.6f,%.6f' % v.co[:])
+                i = 0
+            else:
+                if i == 7:
+                    fw('\n\t\t')
+                    i = 0
+                fw(',%.6f,%.6f,%.6f' % v.co[:])
+            i += 1
+        
         fw('\n\t}')
 
     def write_group(name):
@@ -1941,7 +2002,9 @@ def save_single(operator, scene, filepath="",
 
                         # Warning for scaled, mesh objects with armatures
                         if abs(ob.scale[0] - 1.0) > 0.05 or abs(ob.scale[1] - 1.0) > 0.05 or abs(ob.scale[1] - 1.0) > 0.05:
-                            operator.report('WARNING', "Object '%s' has a scale of (%.3f, %.3f, %.3f), Armature deformation will not work as expected!, Apply Scale to fix." % ((ob.name,) + tuple(ob.scale)))
+                            operator.report({'WARNING'}, "Object '%s' has a scale of (%.3f, %.3f, %.3f), " \
+                                                         "Armature deformation will not work as expected " \
+                                                         "(apply Scale to fix)" % ((ob.name,) + tuple(ob.scale)))
 
                     else:
                         blenParentBoneName = armob = None
@@ -2080,7 +2143,7 @@ def save_single(operator, scene, filepath="",
 
     del tmp_obmapping
     # Finished finding groups we use
-    
+
     # == WRITE OBJECTS TO THE FILE ==
     # == From now on we are building the FBX file from the information collected above (JCB)
 
@@ -2445,7 +2508,6 @@ Connections:  {''')
             for ob_base in ob_generic:
                 for fbxGroupName in ob_base.fbxGroupNames:
                     fw('\n\tConnect: "OO", "Model::%s", "GroupSelection::%s"' % (ob_base.fbxName, fbxGroupName))
-
 
     # I think the following always duplicates the armature connection because it is also in ob_all_typegroups above! (JCB)
     # for my_arm in ob_arms:
@@ -2951,7 +3013,7 @@ def save(operator, context,
 # Typical settings for XNA export
 #   No Cameras, No Lamps, No Edges, No face smoothing, No Default_Take, Armature as bone, Disable rotation
 
-# NOTE TO Campbell - 
+# NOTE TO Campbell -
 #   Can any or all of the following notes be removed because some have been here for a long time? (JCB 27 July 2011)
 # NOTES (all line numbers correspond to original export_fbx.py (under release/scripts)
 # - get rid of bpy.path.clean_name somehow

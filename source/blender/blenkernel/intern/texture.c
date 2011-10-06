@@ -1,7 +1,7 @@
 /* texture.c
  *
  *
- * $Id: texture.c 39941 2011-09-05 21:01:50Z lukastoenne $
+ * $Id: texture.c 40714 2011-09-30 09:55:21Z nazgul $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -640,7 +640,11 @@ void default_mtex(MTex *mtex)
 	mtex->size[1]= 1.0;
 	mtex->size[2]= 1.0;
 	mtex->tex= NULL;
-	mtex->texflag= MTEX_3TAP_BUMP | MTEX_BUMP_OBJECTSPACE;
+
+	/* MTEX_BUMP_FLIPPED is temporary before 2.61 release to prevent flipping normals
+	   when creating file in 2.60, opening it in 2.59, saving and opening in 2.60 again */
+	mtex->texflag= MTEX_3TAP_BUMP | MTEX_BUMP_OBJECTSPACE | MTEX_BUMP_FLIPPED;
+
 	mtex->colormodel= 0;
 	mtex->r= 1.0;
 	mtex->g= 0.0;
@@ -767,7 +771,7 @@ Tex *copy_texture(Tex *tex)
 
 	if(tex->nodetree) {
 		if (tex->nodetree->execdata) {
-			ntreeTexEndExecTree(tex->nodetree->execdata);
+			ntreeTexEndExecTree(tex->nodetree->execdata, 1);
 		}
 		texn->nodetree= ntreeCopyTree(tex->nodetree); 
 	}

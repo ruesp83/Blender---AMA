@@ -1,5 +1,5 @@
 /*
- * $Id: node_util.h 39941 2011-09-05 21:01:50Z lukastoenne $
+ * $Id: node_util.h 40419 2011-09-21 08:40:30Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -66,8 +66,6 @@ const char *node_filter_label(struct bNode *node);
 // this is needed for inlining behaviour
 #if defined _WIN32
 #   define DO_INLINE __inline
-#elif defined (__sgi)
-#   define DO_INLINE
 #elif defined (__sun) || defined (__sun__)
 #   define DO_INLINE
 #else

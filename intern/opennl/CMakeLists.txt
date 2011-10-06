@@ -1,4 +1,4 @@
-# $Id: CMakeLists.txt 37030 2011-05-31 01:15:44Z campbellbarton $
+# $Id: CMakeLists.txt 39946 2011-09-05 23:40:52Z campbellbarton $
 # ***** BEGIN GPL LICENSE BLOCK *****
 #
 # This program is free software; you can redistribute it and/or
@@ -30,6 +30,13 @@ remove_strict_flags()
 # remove debug flag here since this is not a blender maintained library
 # and debug gives a lot of prints on UV unwrapping. developers can enable if they need to.
 remove_flag("-DDEBUG")
+
+
+# quiet compiler warnings about undefined defines
+add_definitions(
+	-DDEBUGlevel=0
+	-DPRNTlevel=0
+)
 
 set(INC
 	extern

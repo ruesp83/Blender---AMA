@@ -1,5 +1,5 @@
 /*
- * $Id: space_view3d.c 37327 2011-06-09 03:56:32Z campbellbarton $
+ * $Id: space_view3d.c 40368 2011-09-19 16:13:34Z jason_hays22 $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -371,6 +371,10 @@ static void view3d_main_area_init(wmWindowManager *wm, ARegion *ar)
 	keymap= WM_keymap_find(wm->defaultconf, "Face Mask", 0, 0);
 	WM_event_add_keymap_handler(&ar->handlers, keymap);
 	
+	
+	keymap= WM_keymap_find(wm->defaultconf, "Weight Paint Vertex Selection", 0, 0);
+	WM_event_add_keymap_handler(&ar->handlers, keymap);
+
 	/* pose is not modal, operator poll checks for this */
 	keymap= WM_keymap_find(wm->defaultconf, "Pose", 0, 0);
 	WM_event_add_keymap_handler(&ar->handlers, keymap);

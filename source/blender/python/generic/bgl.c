@@ -1,5 +1,5 @@
 /* 
- * $Id: bgl.c 39833 2011-09-01 01:48:50Z campbellbarton $
+ * $Id: bgl.c 40590 2011-09-27 05:28:06Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -61,9 +61,9 @@ static PySequenceMethods Buffer_SeqMethods = {
 	(binaryfunc) NULL,							/*sq_concat */
 	(ssizeargfunc) NULL,						/*sq_repeat */
 	(ssizeargfunc) Buffer_item,					/*sq_item */
-	(ssizessizeargfunc) Buffer_slice,			/*sq_slice, deprecated TODO, replace */
+	(ssizessizeargfunc) NULL,					/*sq_slice, deprecated, handled in Buffer_item */
 	(ssizeobjargproc) Buffer_ass_item,			/*sq_ass_item */
-	(ssizessizeobjargproc) Buffer_ass_slice,	/*sq_ass_slice, deprecated TODO, replace */
+	(ssizessizeobjargproc) NULL,				/*sq_ass_slice, deprecated handled in Buffer_ass_item */
 	(objobjproc) NULL,							/* sq_contains */
 	(binaryfunc) NULL,							/* sq_inplace_concat */
 	(ssizeargfunc) NULL,						/* sq_inplace_repeat */
@@ -112,13 +112,6 @@ static PyObject *Buffer_to_list_recursive(Buffer *self)
 	return list;
 }
 
-/* *DEPRECATED* 2011/7/17 bgl.Buffer.list */
-static PyObject *Buffer_list(Buffer *self, void *UNUSED(arg))
-{
-	fprintf(stderr, "Warning: 'Buffer.list' deprecated, use '[:]' instead\n");
-	return Buffer_to_list(self);
-}
-
 static PyObject *Buffer_dimensions(Buffer *self, void *UNUSED(arg))
 {
 	PyObject *list= PyList_New(self->ndimensions);
@@ -138,7 +131,6 @@ static PyMethodDef Buffer_methods[] = {
 };
 
 static PyGetSetDef Buffer_getseters[] = {
-	{(char *)"list", (getter)Buffer_list, NULL, NULL, NULL},
 	{(char *)"dimensions", (getter)Buffer_dimensions, NULL, NULL, NULL},
 	 {NULL, NULL, NULL, NULL, NULL}
 };
@@ -294,8 +286,8 @@ static PyObject *Buffer_new(PyTypeObject *UNUSED(type), PyObject *args, PyObject
 	Buffer *buffer;
 	int dimensions[MAX_DIMENSIONS];
 	
-	int i, type;
-	int ndimensions = 0;
+	int type;
+	Py_ssize_t i, ndimensions = 0;
 
 	if(kwds && PyDict_Size(kwds)) {
 		PyErr_SetString(PyExc_TypeError,

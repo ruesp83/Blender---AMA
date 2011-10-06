@@ -1,5 +1,5 @@
 /*
- * $Id: DNA_scene_types.h 39792 2011-08-30 09:15:55Z nexyon $ 
+ * $Id: DNA_scene_types.h 40790 2011-10-04 18:15:28Z dfelinto $ 
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -236,8 +236,8 @@ typedef struct RenderData {
 	short stereomode;	/* standalone player stereo settings */  //  XXX deprecated since 2.5
 	
 	short dimensionspreset;		/* for the dimensions presets menu */
- 	
-	 short filtertype;	/* filter is box, tent, gauss, mitch, etc */
+
+	short filtertype;	/* filter is box, tent, gauss, mitch, etc */
 
 	short size, maximsize;	/* size in %, max in Kb */
 	/* from buttons: */
@@ -426,7 +426,37 @@ typedef struct GameFraming {
 #define SCE_GAMEFRAMING_EXTEND 1
 #define SCE_GAMEFRAMING_SCALE  2
 
+typedef struct RecastData
+{
+	float cellsize;
+	float cellheight;
+	float agentmaxslope;
+	float agentmaxclimb;
+	float agentheight;
+	float agentradius;
+	float edgemaxlen;
+	float edgemaxerror;
+	float regionminsize;
+	float regionmergesize;
+	int vertsperpoly;
+	float detailsampledist;
+	float detailsamplemaxerror;
+} RecastData;
+
 typedef struct GameData {
+
+	/*  standalone player */
+	struct GameFraming framing;
+	short fullscreen, xplay, yplay, freqplay;
+	short depth, attrib, rt1, rt2;
+
+	/* stereo/dome mode */
+	struct GameDome dome;
+	short stereoflag, stereomode;
+	short pad2, pad3;
+	float eyeseparation, pad1;
+	RecastData recastData;
+
 
 	/* physics (it was in world)*/
 	float gravity; /*Gravitation constant for the game world*/
@@ -440,26 +470,18 @@ typedef struct GameData {
 	 * bit 3: (gameengine): Activity culling is enabled.
 	 * bit 5: (gameengine) : enable Bullet DBVT tree for view frustrum culling
 	*/
-	short mode, flag, matmode, pad[3];
+	int flag;
+	short mode, matmode, pad;
 	short occlusionRes;		/* resolution of occlusion Z buffer in pixel */
 	short physicsEngine;
 	short ticrate, maxlogicstep, physubstep, maxphystep;
-
-	/*  standalone player */
-	struct GameFraming framing;
-	short fullscreen, xplay, yplay, freqplay;
-	short depth, attrib, rt1, rt2;
-
-	/* stereo/dome mode */
-	struct GameDome dome;
-	short stereoflag, stereomode;
-	short pad2, pad3;
-	float eyeseparation, pad1;
+	short obstacleSimulation;
+	float levelHeight;
 } GameData;
 
 #define STEREO_NOSTEREO		1
-#define STEREO_ENABLED 		2
-#define STEREO_DOME	 		3
+#define STEREO_ENABLED		2
+#define STEREO_DOME			3
 
 //#define STEREO_NOSTEREO		 1
 #define STEREO_QUADBUFFERED 2
@@ -478,6 +500,11 @@ typedef struct GameData {
 #define WOPHY_ODE		4
 #define WOPHY_BULLET	5
 
+/* obstacleSimulation */
+#define OBSTSIMULATION_NONE		0
+#define OBSTSIMULATION_TOI_rays		1
+#define OBSTSIMULATION_TOI_cells	2
+
 /* GameData.flag */
 #define GAME_RESTRICT_ANIM_UPDATES			(1 << 0)
 #define GAME_ENABLE_ALL_FRAMES				(1 << 1)
@@ -495,7 +522,8 @@ typedef struct GameData {
 #define GAME_ENABLE_ANIMATION_RECORD		(1 << 13)
 #define GAME_SHOW_MOUSE						(1 << 14)
 #define GAME_GLSL_NO_COLOR_MANAGEMENT		(1 << 15)
-/* Note: GameData.flag is a short (max 16 flags). To add more flags, GameData.flag needs to be an int */
+#define GAME_SHOW_OBSTACLE_SIMULATION		(1 << 16)
+/* Note: GameData.flag is now an int (max 32 flags). A short could only take 16 flags */
 
 /* GameData.matmode */
 #define GAME_MAT_TEXFACE	0
@@ -732,9 +760,10 @@ typedef struct ToolSettings {
 	short snap_flag, snap_target;
 	short proportional, prop_mode;
 	char proportional_objects; /* proportional edit, object mode */
-	char pad[3];
+	char pad[5];
 
-	int auto_normalize; /*auto normalizing mode in wpaint*/
+	char auto_normalize; /*auto normalizing mode in wpaint*/
+	char multipaint; /* paint multiple bones in wpaint */
 
 	short sculpt_paint_settings; /* user preferences for sculpt and paint */
 	short pad1;
@@ -810,7 +839,7 @@ typedef struct Scene {
 	void *sound_scrub_handle;
 	void *speaker_handles;
 	
-	void *fps_info;	 				/* (runtime) info/cache used for presenting playback framerate info to the user */
+	void *fps_info;					/* (runtime) info/cache used for presenting playback framerate info to the user */
 	
 	/* none of the dependancy graph  vars is mean to be saved */
 	struct  DagForest *theDag;

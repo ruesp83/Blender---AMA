@@ -1,5 +1,5 @@
 /*
- * $Id: rayobject_vbvh.cpp 35477 2011-03-11 22:27:06Z blendix $
+ * $Id: rayobject_vbvh.cpp 40538 2011-09-25 12:31:21Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -154,8 +154,8 @@ void bvh_hint_bb(Tree *tree, LCTSHint *hint, float *min, float *max)
 {
 	//TODO renable hint support
 	{
-	 	hint->size = 0;
-	 	hint->stack[hint->size++] = (RayObject*)tree->root;
+		hint->size = 0;
+		hint->stack[hint->size++] = (RayObject*)tree->root;
 	}
 }
 

@@ -1,5 +1,5 @@
 /*
- * $Id: AUD_SequencerHandle.cpp 39792 2011-08-30 09:15:55Z nexyon $
+ * $Id: AUD_SequencerHandle.cpp 40124 2011-09-11 12:24:11Z nexyon $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -66,7 +66,7 @@ void AUD_SequencerHandle::stop()
 		m_handle->stop();
 }
 
-void AUD_SequencerHandle::update(float position, float frame)
+void AUD_SequencerHandle::update(float position, float frame, float fps)
 {
 	if(!m_handle.isNull())
 	{
@@ -132,7 +132,7 @@ void AUD_SequencerHandle::update(float position, float frame)
 		m_3dhandle->setSourceLocation(v);
 		m_entry->m_location.read(frame + 1, v2.get());
 		v2 -= v;
-		m_3dhandle->setSourceVelocity(v2);
+		m_3dhandle->setSourceVelocity(v2 * fps);
 
 		if(m_entry->m_muted)
 			m_handle->setVolume(0);

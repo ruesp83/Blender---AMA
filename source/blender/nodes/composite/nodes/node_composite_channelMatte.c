@@ -1,5 +1,5 @@
 /*
- * $Id: CMP_channelMatte.c 36536 2011-05-07 13:27:27Z lukastoenne $
+ * $Id: node_composite_channelMatte.c 39944 2011-09-05 22:04:30Z gsrb3d $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *

@@ -2167,7 +2167,7 @@ static void actcon_get_tarmat (bConstraint *con, bConstraintOb *cob, bConstraint
 		if (data->type < 10) {
 			/* extract rotation (is in whatever space target should be in) */
 			mat4_to_eul(vec, tempmat);
-			mul_v3_fl(vec, (float)(180.0/M_PI)); /* rad -> deg */
+			mul_v3_fl(vec, RAD2DEGF(1.0f)); /* rad -> deg */
 			axis= data->type;
 		}
 		else if (data->type < 20) {
@@ -3325,7 +3325,7 @@ static void transform_evaluate (bConstraint *con, bConstraintOb *cob, ListBase *
 				break;
 			case 1: /* rotation (convert to degrees first) */
 				mat4_to_eulO(dvec, cob->rotOrder, ct->matrix);
-				mul_v3_fl(dvec, (float)(180.0/M_PI)); /* rad -> deg */
+				mul_v3_fl(dvec, RAD2DEGF(1.0f)); /* rad -> deg */
 				break;
 			default: /* location */
 				copy_v3_v3(dvec, ct->matrix[3]);
@@ -3937,7 +3937,8 @@ static bConstraintTypeInfo *constraintsTypeInfo[NUM_CONSTRAINT_TYPES];
 static short CTI_INIT= 1; /* when non-zero, the list needs to be updated */
 
 /* This function only gets called when CTI_INIT is non-zero */
-static void constraints_init_typeinfo (void) {
+static void constraints_init_typeinfo (void)
+{
 	constraintsTypeInfo[0]=  NULL; 					/* 'Null' Constraint */
 	constraintsTypeInfo[1]=  &CTI_CHILDOF; 			/* ChildOf Constraint */
 	constraintsTypeInfo[2]=  &CTI_TRACKTO;			/* TrackTo Constraint */

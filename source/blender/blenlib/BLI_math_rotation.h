@@ -1,5 +1,5 @@
 /*
- * $Id: BLI_math_rotation.h 39724 2011-08-27 01:42:49Z campbellbarton $
+ * $Id: BLI_math_rotation.h 40352 2011-09-19 13:08:01Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -101,6 +101,8 @@ void axis_angle_to_mat4(float R[4][4], const float axis[3], const float angle);
 void quat_to_axis_angle(float axis[3], float *angle, const float q[4]);
 void mat3_to_axis_angle(float axis[3], float *angle, float M[3][3]);
 void mat4_to_axis_angle(float axis[3], float *angle, float M[4][4]);
+
+void single_axis_angle_to_mat3(float R[3][3], const char axis, const float angle);
 
 /****************************** Vector/Rotation ******************************/
 /* old axis angle code                                                       */

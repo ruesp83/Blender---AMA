@@ -1,5 +1,5 @@
 /*
- * $Id: rna_camera.c 37457 2011-06-13 20:21:48Z dingto $
+ * $Id: rna_camera.c 40684 2011-09-29 08:23:52Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -209,6 +209,9 @@ void RNA_def_camera(BlenderRNA *brna)
 	RNA_def_property_flag(prop, PROP_EDITABLE);
 	RNA_def_property_ui_text(prop, "DOF Object", "Use this object to define the depth of field focal point");
 	RNA_def_property_update(prop, NC_OBJECT|ND_DRAW, NULL);
+
+	/* Camera API */
+	RNA_api_camera(srna);
 }
 
 #endif

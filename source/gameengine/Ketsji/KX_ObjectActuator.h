@@ -1,5 +1,5 @@
 /*
- * $Id: KX_ObjectActuator.h 36523 2011-05-06 20:18:42Z blendix $
+ * $Id: KX_ObjectActuator.h 40538 2011-09-25 12:31:21Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -100,7 +100,7 @@ class KX_ObjectActuator : public SCA_IActuator
 	// used in servo control
 	MT_Vector3		m_previous_error;
 	MT_Vector3		m_error_accumulator;
-  	KX_LocalFlags	m_bitLocalFlag;
+	KX_LocalFlags	m_bitLocalFlag;
 	KX_GameObject*  m_reference;
 	// A hack bool -- oh no sorry everyone
 	// This bool is used to check if we have informed 

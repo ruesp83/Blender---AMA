@@ -1,5 +1,5 @@
 /* 
- * $Id: bpy_internal_import.c 37088 2011-06-02 08:29:16Z campbellbarton $
+ * $Id: bpy_internal_import.c 40581 2011-09-26 18:51:10Z campbellbarton $
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
  * This program is free software; you can redistribute it and/or
@@ -120,7 +120,7 @@ PyObject *bpy_text_import(Text *text)
 	}
 
 	len= strlen(text->id.name+2);
-	strncpy(modulename, text->id.name+2, len);
+	BLI_strncpy(modulename, text->id.name+2, len);
 	modulename[len - 3]= '\0'; /* remove .py */
 	return PyImport_ExecCodeModule(modulename, text->compiled);
 }
@@ -344,7 +344,7 @@ void bpy_text_clear_modules(int clear_all)
 	
 	/* looping over the dict */
 	PyObject *key, *value;
-	int pos= 0;
+	Py_ssize_t pos= 0;
 	
 	/* new list */
 	PyObject *list;
@@ -374,7 +374,7 @@ void bpy_text_clear_modules(int clear_all)
 	}
 	
 	/* remove all our modules */
-	for(pos=0; pos < PyList_Size(list); pos++) {
+	for(pos=0; pos < PyList_GET_SIZE(list); pos++) {
 		/* PyObject_Print(key, stderr, 0); */
 		key= PyList_GET_ITEM(list, pos);
 		PyDict_DelItem(modules, key);

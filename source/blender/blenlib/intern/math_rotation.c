@@ -1,5 +1,5 @@
 /*
- * $Id: math_rotation.c 39724 2011-08-27 01:42:49Z campbellbarton $
+ * $Id: math_rotation.c 40352 2011-09-19 13:08:01Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -769,6 +769,52 @@ void mat4_to_axis_angle(float axis[3], float *angle,float mat[4][4])
 	// TODO: it would be nicer to go straight there...
 	mat4_to_quat(q,mat);
 	quat_to_axis_angle(axis, angle,q);
+}
+
+
+
+void single_axis_angle_to_mat3(float mat[3][3], const char axis, const float angle)
+{
+	const float angle_cos= cosf(angle);
+	const float angle_sin= sinf(angle);
+
+	switch(axis) {
+	case 'X': /* rotation around X */
+		mat[0][0] =  1.0f;
+		mat[0][1] =  0.0f;
+		mat[0][2] =  0.0f;
+		mat[1][0] =  0.0f;
+		mat[1][1] =  angle_cos;
+		mat[1][2] =  angle_sin;
+		mat[2][0] =  0.0f;
+		mat[2][1] = -angle_sin;
+		mat[2][2] =  angle_cos;
+		break;
+	case 'Y': /* rotation around Y */
+		mat[0][0] =  angle_cos;
+		mat[0][1] =  0.0f;
+		mat[0][2] = -angle_sin;
+		mat[1][0] =  0.0f;
+		mat[1][1] =  1.0f;
+		mat[1][2] =  0.0f;
+		mat[2][0] =  angle_sin;
+		mat[2][1] =  0.0f;
+		mat[2][2] =  angle_cos;
+		break;
+	case 'Z': /* rotation around Z */
+		mat[0][0] =  angle_cos;
+		mat[0][1] =  angle_sin;
+		mat[0][2] =  0.0f;
+		mat[1][0] = -angle_sin;
+		mat[1][1] =  angle_cos;
+		mat[1][2] =  0.0f;
+		mat[2][0] =  0.0f;
+		mat[2][1] =  0.0f;
+		mat[2][2] =  1.0f;
+		break;
+	default:
+		assert("invalid axis");
+	}
 }
 
 /****************************** Vector/Rotation ******************************/

@@ -1,5 +1,5 @@
 /*
- * $Id: gpu_buffers.c 38866 2011-07-31 02:24:06Z nicholasbishop $
+ * $Id: gpu_buffers.c 40641 2011-09-28 05:53:40Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -240,7 +240,7 @@ GPUBuffer *GPU_buffer_alloc(int size)
 		   size */
 		glGenBuffersARB(1, &buf->id);
 		glBindBufferARB(GL_ARRAY_BUFFER_ARB, buf->id);
-		glBufferDataARB(GL_ARRAY_BUFFER_ARB, size, 0, GL_STATIC_DRAW_ARB);
+		glBufferDataARB(GL_ARRAY_BUFFER_ARB, size, NULL, GL_STATIC_DRAW_ARB);
 		glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
 	}
 	else {
@@ -493,7 +493,7 @@ static GPUBuffer *gpu_buffer_setup(DerivedMesh *dm, GPUDrawObject *object,
 
 	/* nothing to do for legacy mode */
 	if(dm->drawObject->legacy)
-		return 0;
+		return NULL;
 
 	cur_index_per_mat = MEM_mallocN(sizeof(int)*object->totmaterial,
 					"GPU_buffer_setup.cur_index_per_mat");
@@ -513,7 +513,7 @@ static GPUBuffer *gpu_buffer_setup(DerivedMesh *dm, GPUDrawObject *object,
 			/* bind the buffer and discard previous data,
 			   avoids stalling gpu */
 			glBindBufferARB(target, buffer->id);
-			glBufferDataARB(target, buffer->size, 0, GL_STATIC_DRAW_ARB);
+			glBufferDataARB(target, buffer->size, NULL, GL_STATIC_DRAW_ARB);
 
 			/* attempt to map the buffer */
 			if(!(varray = glMapBufferARB(target, GL_WRITE_ONLY_ARB))) {
@@ -629,7 +629,7 @@ static void GPU_buffer_copy_normal(DerivedMesh *dm, float *varray, int *index, i
 		if(smoothnormal) {
 			/* copy vertex normal */
 			normal_short_to_float_v3(&varray[start], mvert[f->v1].no);
- 			normal_short_to_float_v3(&varray[start+3], mvert[f->v2].no);
+			normal_short_to_float_v3(&varray[start+3], mvert[f->v2].no);
 			normal_short_to_float_v3(&varray[start+6], mvert[f->v3].no);
 
 			if(f->v4) {
@@ -1058,7 +1058,8 @@ void GPU_uvedge_setup(DerivedMesh *dm)
 	GLStates |= GPU_BUFFER_VERTEX_STATE;
 }
 
-static int GPU_typesize(int type) {
+static int GPU_typesize(int type)
+{
 	switch(type) {
 	case GL_FLOAT:
 		return sizeof(float);
@@ -1075,7 +1076,8 @@ static int GPU_typesize(int type) {
 	}
 }
 
-int GPU_attrib_element_size(GPUAttrib data[], int numdata) {
+int GPU_attrib_element_size(GPUAttrib data[], int numdata)
+{
 	int i, elementsize = 0;
 
 	for(i = 0; i < numdata; i++) {
@@ -1086,7 +1088,8 @@ int GPU_attrib_element_size(GPUAttrib data[], int numdata) {
 	return elementsize;
 }
 
-void GPU_interleaved_attrib_setup(GPUBuffer *buffer, GPUAttrib data[], int numdata) {
+void GPU_interleaved_attrib_setup(GPUBuffer *buffer, GPUAttrib data[], int numdata)
+{
 	int i;
 	int elementsize;
 	intptr_t offset = 0;

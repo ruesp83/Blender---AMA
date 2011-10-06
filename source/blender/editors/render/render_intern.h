@@ -1,5 +1,5 @@
 /*
- * $Id: render_intern.h 36774 2011-05-19 11:34:11Z blendix $
+ * $Id: render_intern.h 39991 2011-09-07 06:33:29Z mont29 $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *

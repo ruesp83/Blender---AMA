@@ -1,7 +1,7 @@
 /*
  * A general argument parsing module
  *
- * $Id: BLI_args.c 38847 2011-07-30 09:24:10Z campbellbarton $
+ * $Id: BLI_args.c 40641 2011-09-28 05:53:40Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -76,7 +76,8 @@ struct bArgs {
 	int	  *passes;
 };
 
-static unsigned int case_strhash(const void *ptr) {
+static unsigned int case_strhash(const void *ptr)
+{
 	const char *s= ptr;
 	unsigned int i= 0;
 	unsigned char c;

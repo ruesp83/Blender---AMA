@@ -1,5 +1,5 @@
 /*
- * $Id: DocumentExporter.h 38079 2011-07-04 08:59:28Z jesterking $
+ * $Id: DocumentExporter.h 40019 2011-09-07 18:23:30Z jesterking $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -29,13 +29,18 @@
 #ifndef __DOCUMENTEXPORTER_H__
 #define __DOCUMENTEXPORTER_H__
 
+#include "ExportSettings.h"
+
 struct Scene;
 
 class DocumentExporter
 {
  public:
-	void exportCurrentScene(Scene *sce, const char* filename, bool selected);
+	DocumentExporter(const ExportSettings *export_settings);
+	void exportCurrentScene(Scene *sce);
 	void exportScenes(const char* filename);
+private:
+	const ExportSettings *export_settings;
 };
 
 #endif

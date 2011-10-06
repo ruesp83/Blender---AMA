@@ -1,5 +1,5 @@
 /*
- * $Id: math_vector_inline.c 39720 2011-08-26 22:37:20Z campbellbarton $
+ * $Id: math_vector_inline.c 40147 2011-09-12 04:14:12Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -72,6 +72,28 @@ MINLINE void copy_v3_v3(float r[3], const float a[3])
 }
 
 MINLINE void copy_v4_v4(float r[4], const float a[4])
+{
+	r[0]= a[0];
+	r[1]= a[1];
+	r[2]= a[2];
+	r[3]= a[3];
+}
+
+/* short */
+MINLINE void copy_v2_v2_short(short r[2], const short a[2])
+{
+	r[0]= a[0];
+	r[1]= a[1];
+}
+
+MINLINE void copy_v3_v3_short(short r[3], const short a[3])
+{
+	r[0]= a[0];
+	r[1]= a[1];
+	r[2]= a[2];
+}
+
+MINLINE void copy_v4_v4_short(short r[4], const short a[4])
 {
 	r[0]= a[0];
 	r[1]= a[1];

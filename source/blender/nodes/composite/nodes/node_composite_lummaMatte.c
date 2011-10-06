@@ -1,5 +1,5 @@
 /*
- * $Id: CMP_lummaMatte.c 36536 2011-05-07 13:27:27Z lukastoenne $
+ * $Id: node_composite_lummaMatte.c 40443 2011-09-22 03:14:50Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -51,8 +51,6 @@ static void do_luma_matte(bNode *node, float *out, float *in)
 {
 	NodeChroma *c=(NodeChroma *)node->storage;
 	float alpha;
-
-	alpha=0.0;
 
 	/* test range*/
 	if(in[0]>c->t1) {

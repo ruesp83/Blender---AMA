@@ -1,5 +1,5 @@
 /*
- * $Id: paint.c 37839 2011-06-27 04:05:19Z campbellbarton $
+ * $Id: paint.c 40368 2011-09-19 16:13:34Z jason_hays22 $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -97,6 +97,10 @@ int paint_facesel_test(Object *ob)
 	return (ob && ob->type==OB_MESH && ob->data && (((Mesh *)ob->data)->editflag & ME_EDIT_PAINT_MASK) && (ob->mode & (OB_MODE_VERTEX_PAINT|OB_MODE_WEIGHT_PAINT|OB_MODE_TEXTURE_PAINT)));
 }
 
+int paint_vertsel_test(Object *ob)
+{
+	return (ob && ob->type==OB_MESH && ob->data && (((Mesh *)ob->data)->editflag & ME_EDIT_VERT_SEL) && (ob->mode & OB_MODE_WEIGHT_PAINT));
+}
 void paint_init(Paint *p, const char col[3])
 {
 	Brush *brush;

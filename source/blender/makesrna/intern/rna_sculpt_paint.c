@@ -1,5 +1,5 @@
 /*
- * $Id: rna_sculpt_paint.c 37031 2011-05-31 02:14:25Z campbellbarton $
+ * $Id: rna_sculpt_paint.c 39991 2011-09-07 06:33:29Z mont29 $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *

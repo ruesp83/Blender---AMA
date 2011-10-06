@@ -1,5 +1,5 @@
 /*
- * $Id: MeshImporter.cpp 39927 2011-09-05 15:03:31Z jesterking $
+ * $Id: MeshImporter.cpp 40538 2011-09-25 12:31:21Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -466,7 +466,7 @@ void MeshImporter::read_faces(COLLADAFW::Mesh *mesh, Mesh *me, int new_tris) //T
 
 		if (has_normals && mp->getPositionIndices().getCount() != mp->getNormalIndices().getCount()) {
 			fprintf(stderr, "Warning: Number of normals is different from the number of vertcies, skipping normals\n");
-	 		has_normals = false;
+			has_normals = false;
 		}
 
 		unsigned int j, k;
@@ -778,7 +778,7 @@ MTFace *MeshImporter::assign_material_to_geom(COLLADAFW::MaterialBinding cmateri
 								std::map<COLLADAFW::UniqueId, Material*>& uid_material_map,
 								Object *ob, const COLLADAFW::UniqueId *geom_uid, 
 								MTex **color_texture, char *layername, MTFace *texture_face,
-								std::map<Material*, TexIndexTextureArrayMap>& material_texture_mapping_map, int mat_index)
+								std::map<Material*, TexIndexTextureArrayMap>& material_texture_mapping_map, short mat_index)
 {
 	Mesh *me = (Mesh*)ob->data;
 	const COLLADAFW::UniqueId& ma_uid = cmaterial.getReferencedMaterial();

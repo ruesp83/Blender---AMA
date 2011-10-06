@@ -1,5 +1,5 @@
 /*
- * $Id: rna_property.c 36704 2011-05-15 17:59:48Z dingto $
+ * $Id: rna_property.c 40224 2011-09-15 12:26:48Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -88,7 +88,7 @@ static void rna_GameProperty_type_set(PointerRNA *ptr, int value)
 static void rna_GameProperty_name_set(PointerRNA *ptr, const char *value)
 {
 	bProperty *prop= (bProperty*)(ptr->data);
-	BLI_strncpy(prop->name, value, sizeof(prop->name));
+	BLI_strncpy_utf8(prop->name, value, sizeof(prop->name));
 	unique_property(NULL, prop, 1);
 }
 

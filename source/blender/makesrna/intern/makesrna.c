@@ -1,5 +1,5 @@
 /*
- * $Id: makesrna.c 39792 2011-08-30 09:15:55Z nexyon $
+ * $Id: makesrna.c 40732 2011-10-01 15:40:32Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -42,7 +42,7 @@
 
 #include "rna_internal.h"
 
-#define RNA_VERSION_DATE "$Id: makesrna.c 39792 2011-08-30 09:15:55Z nexyon $"
+#define RNA_VERSION_DATE "$Id: makesrna.c 40732 2011-10-01 15:40:32Z campbellbarton $"
 
 #ifdef _WIN32
 #ifndef snprintf
@@ -522,11 +522,14 @@ static char *rna_def_property_get_func(FILE *f, StructRNA *srna, PropertyRNA *pr
 				fprintf(f, "	%s(ptr, value);\n", manualfunc);
 			}
 			else {
+				const PropertySubType subtype= prop->subtype;
+				const char *string_copy_func= (subtype==PROP_FILEPATH || subtype==PROP_DIRPATH || subtype==PROP_FILENAME) ? "BLI_strncpy" : "BLI_strncpy_utf8";
+
 				rna_print_data_get(f, dp);
 				if(sprop->maxlength)
-					fprintf(f, "	BLI_strncpy(value, data->%s, %d);\n", dp->dnaname, sprop->maxlength);
+					fprintf(f, "	%s(value, data->%s, %d);\n", string_copy_func, dp->dnaname, sprop->maxlength);
 				else
-					fprintf(f, "	BLI_strncpy(value, data->%s, sizeof(data->%s));\n", dp->dnaname, dp->dnaname);
+					fprintf(f, "	%s(value, data->%s, sizeof(data->%s));\n", string_copy_func, dp->dnaname, dp->dnaname);
 			}
 			fprintf(f, "}\n\n");
 			break;
@@ -734,11 +737,14 @@ static char *rna_def_property_set_func(FILE *f, StructRNA *srna, PropertyRNA *pr
 				fprintf(f, "	%s(ptr, value);\n", manualfunc);
 			}
 			else {
+				const PropertySubType subtype= prop->subtype;
+				const char *string_copy_func= (subtype==PROP_FILEPATH || subtype==PROP_DIRPATH || subtype==PROP_FILENAME) ? "BLI_strncpy" : "BLI_strncpy_utf8";
+
 				rna_print_data_get(f, dp);
 				if(sprop->maxlength)
-					fprintf(f, "	BLI_strncpy(data->%s, value, %d);\n", dp->dnaname, sprop->maxlength);
+					fprintf(f, "	%s(data->%s, value, %d);\n", string_copy_func, dp->dnaname, sprop->maxlength);
 				else
-					fprintf(f, "	BLI_strncpy(data->%s, value, sizeof(data->%s));\n", dp->dnaname, dp->dnaname);
+					fprintf(f, "	%s(data->%s, value, sizeof(data->%s));\n", string_copy_func, dp->dnaname, dp->dnaname);
 			}
 			fprintf(f, "}\n\n");
 			break;
@@ -1809,6 +1815,7 @@ static const char *rna_property_subtypename(PropertySubType type)
 		case PROP_FILEPATH: return "PROP_FILEPATH";
 		case PROP_FILENAME: return "PROP_FILENAME";
 		case PROP_DIRPATH: return "PROP_DIRPATH";
+		case PROP_TRANSLATE: return "PROP_TRANSLATE";
 		case PROP_UNSIGNED: return "PROP_UNSIGNED";
 		case PROP_PERCENTAGE: return "PROP_PERCENTAGE";
 		case PROP_FACTOR: return "PROP_FACTOR";
@@ -2272,7 +2279,7 @@ static void rna_generate_property(FILE *f, StructRNA *srna, const char *nest, Pr
 			 }
 			case PROP_COLLECTION: {
 				CollectionPropertyRNA *cprop= (CollectionPropertyRNA*)prop;
-				fprintf(f, "\t%s, %s, %s, %s, %s, %s, %s, ", rna_function_string(cprop->begin), rna_function_string(cprop->next), rna_function_string(cprop->end), rna_function_string(cprop->get), rna_function_string(cprop->length), rna_function_string(cprop->lookupint), rna_function_string(cprop->lookupstring));
+				fprintf(f, "\t%s, %s, %s, %s, %s, %s, %s, %s, ", rna_function_string(cprop->begin), rna_function_string(cprop->next), rna_function_string(cprop->end), rna_function_string(cprop->get), rna_function_string(cprop->length), rna_function_string(cprop->lookupint), rna_function_string(cprop->lookupstring), rna_function_string(cprop->assignint));
 				if(cprop->item_type) fprintf(f, "&RNA_%s\n", (char*)cprop->item_type);
 				else fprintf(f, "NULL\n");
 				break;
@@ -2425,7 +2432,7 @@ static RNAProcessItem PROCESS_ITEMS[]= {
 	{"rna_armature.c", "rna_armature_api.c", RNA_def_armature},
 	{"rna_boid.c", NULL, RNA_def_boid},
 	{"rna_brush.c", NULL, RNA_def_brush},
-	{"rna_camera.c", NULL, RNA_def_camera},
+	{"rna_camera.c", "rna_camera_api.c", RNA_def_camera},
 	{"rna_cloth.c", NULL, RNA_def_cloth},
 	{"rna_color.c", NULL, RNA_def_color},
 	{"rna_constraint.c", NULL, RNA_def_constraint},

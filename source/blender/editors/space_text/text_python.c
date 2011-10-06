@@ -1,5 +1,5 @@
 /*
- * $Id: text_python.c 39421 2011-08-15 16:18:04Z blendix $
+ * $Id: text_python.c 40567 2011-09-26 13:24:42Z mont29 $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -51,7 +51,7 @@
 
 int text_do_suggest_select(SpaceText *st, ARegion *ar)
 {
-	SuggItem *item, *first, *last, *sel;
+	SuggItem *item, *first, *last /* , *sel */ /* UNUSED */;
 	TextLine *tmp;
 	int l, x, y, w, h, i;
 	int tgti, *top;
@@ -62,7 +62,7 @@ int text_do_suggest_select(SpaceText *st, ARegion *ar)
 
 	first = texttool_suggest_first();
 	last = texttool_suggest_last();
-	sel = texttool_suggest_selected();
+	/* sel = texttool_suggest_selected(); */ /* UNUSED */
 	top = texttool_suggest_top();
 
 	if(!last || !first)

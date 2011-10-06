@@ -1,5 +1,5 @@
 /*
- * $Id: particle_edit.c 39744 2011-08-28 05:06:30Z campbellbarton $
+ * $Id: particle_edit.c 40581 2011-09-26 18:51:10Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -1526,7 +1526,7 @@ void PARTICLE_OT_select_linked(wmOperatorType *ot)
 	ot->flag= OPTYPE_REGISTER|OPTYPE_UNDO;
 
 	/* properties */
-	RNA_def_boolean(ot->srna, "deselect", 0, "Deselect", "Deselect linked keys rather than selecting them.");
+	RNA_def_boolean(ot->srna, "deselect", 0, "Deselect", "Deselect linked keys rather than selecting them");
 	RNA_def_int_vector(ot->srna, "location", 2, NULL, 0, INT_MAX, "Location", "", 0, 16384);
 }
 
@@ -1713,7 +1713,7 @@ void PARTICLE_OT_hide(wmOperatorType *ot)
 	ot->flag= OPTYPE_REGISTER|OPTYPE_UNDO;
 
 	/* props */
-	RNA_def_boolean(ot->srna, "unselected", 0, "Unselected", "Hide unselected rather than selected.");
+	RNA_def_boolean(ot->srna, "unselected", 0, "Unselected", "Hide unselected rather than selected");
 }
 
 /*************************** reveal operator **************************/
@@ -2403,7 +2403,7 @@ static int remove_doubles_exec(bContext *C, wmOperator *op)
 	if(totremoved == 0)
 		return OPERATOR_CANCELLED;
 
-	BKE_reportf(op->reports, RPT_INFO, "Remove %d double particles.", totremoved);
+	BKE_reportf(op->reports, RPT_INFO, "Remove %d double particles", totremoved);
 
 	DAG_id_tag_update(&ob->id, OB_RECALC_DATA);
 	WM_event_add_notifier(C, NC_OBJECT|ND_PARTICLE|NA_EDITED, ob);
@@ -2579,7 +2579,7 @@ void PARTICLE_OT_delete(wmOperatorType *ot)
 	ot->flag= OPTYPE_REGISTER|OPTYPE_UNDO;
 
 	/* properties */
-	ot->prop= RNA_def_enum(ot->srna, "type", delete_type_items, DEL_PARTICLE, "Type", "Delete a full particle or only keys.");
+	ot->prop= RNA_def_enum(ot->srna, "type", delete_type_items, DEL_PARTICLE, "Type", "Delete a full particle or only keys");
 }
 
 /*************************** mirror operator **************************/
@@ -3918,7 +3918,7 @@ void PE_undo_push(Scene *scene, const char *str)
 
 	/* make new */
 	edit->curundo= undo= MEM_callocN(sizeof(PTCacheUndo), "particle undo file");
-	strncpy(undo->name, str, 64-1);
+	BLI_strncpy(undo->name, str, sizeof(undo->name));
 	BLI_addtail(&edit->undo, undo);
 	
 	/* and limit amount to the maximum */

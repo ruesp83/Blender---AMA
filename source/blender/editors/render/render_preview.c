@@ -1,5 +1,5 @@
 /* 
- * $Id: render_preview.c 39744 2011-08-28 05:06:30Z campbellbarton $
+ * $Id: render_preview.c 40776 2011-10-03 17:29:43Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -344,7 +344,7 @@ static Scene *preview_prepare_scene(Scene *scene, ID *id, int id_type, ShaderPre
 					/* copy over object color, in case material uses it */
 					copy_v4_v4(base->object->col, sp->col);
 					
-					if(ELEM4(base->object->type, OB_MESH, OB_CURVE, OB_SURF, OB_MBALL)) {
+					if(OB_TYPE_SUPPORT_MATERIAL(base->object->type)) {
 						/* don't use assign_material, it changed mat->id.us, which shows in the UI */
 						Material ***matar= give_matarar(base->object);
 						int actcol= MAX2(base->object->actcol > 0, 1) - 1;

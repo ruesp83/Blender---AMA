@@ -1,5 +1,5 @@
 /*
- * $Id: DNA_mesh_types.h 36262 2011-04-21 08:55:10Z campbellbarton $ 
+ * $Id: DNA_mesh_types.h 40368 2011-09-19 16:13:34Z jason_hays22 $ 
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -125,7 +125,7 @@ typedef struct TFace {
 
 #define ME_EDIT_PAINT_MASK (1 << 3)
 #define ME_EDIT_MIRROR_TOPO (1 << 4)
-
+#define ME_EDIT_VERT_SEL (1 << 5)
 
 /* me->flag */
 /* #define ME_ISDONE		1 */

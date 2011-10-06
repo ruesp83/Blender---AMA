@@ -1,5 +1,5 @@
 /*
- * $Id: rna_object_force.c 39744 2011-08-28 05:06:30Z campbellbarton $
+ * $Id: rna_object_force.c 40732 2011-10-01 15:40:32Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -823,11 +823,11 @@ static void rna_def_pointcache(BlenderRNA *brna)
 
 	prop= RNA_def_property(srna, "use_library_path", PROP_BOOLEAN, PROP_NONE);
 	RNA_def_property_boolean_negative_sdna(prop, NULL, "flag", PTCACHE_IGNORE_LIBPATH);
-	RNA_def_property_ui_text(prop, "Library Path", "Use this files path when library linked into another file.");
+	RNA_def_property_ui_text(prop, "Library Path", "Use this files path when library linked into another file");
 	RNA_def_property_update(prop, NC_OBJECT, "rna_Cache_idname_change");
 
 	prop= RNA_def_property(srna, "point_caches", PROP_COLLECTION, PROP_NONE);
-	RNA_def_property_collection_funcs(prop, "rna_Cache_list_begin", "rna_iterator_listbase_next", "rna_iterator_listbase_end", "rna_iterator_listbase_get", 0, 0, 0);
+	RNA_def_property_collection_funcs(prop, "rna_Cache_list_begin", "rna_iterator_listbase_next", "rna_iterator_listbase_end", "rna_iterator_listbase_get", NULL, NULL, NULL, NULL);
 	RNA_def_property_struct_type(prop, "PointCache");
 	RNA_def_property_ui_text(prop, "Point Cache List", "Point cache list");
 	rna_def_ptcache_point_caches(brna, prop);
@@ -1048,18 +1048,21 @@ static void rna_def_field(BlenderRNA *brna)
 	
 	static EnumPropertyItem field_type_items[] = {
 		{0, "NONE", 0, "None", ""},
-		{PFIELD_FORCE, "FORCE", ICON_FORCE_FORCE, "Force", "Gives a radial field toward the center of object"},
-		{PFIELD_WIND, "WIND", ICON_FORCE_WIND, "Wind", "Gives a constant force along the force objects local Z axis"},
-		{PFIELD_VORTEX, "VORTEX", ICON_FORCE_VORTEX, "Vortex", "Gives a spiraling force that twists the force objects local Z axis"},
+		{PFIELD_FORCE, "FORCE", ICON_FORCE_FORCE, "Force", "Radial field toward the center of object"},
+		{PFIELD_WIND, "WIND", ICON_FORCE_WIND, "Wind", "Constant force along the force object's local Z axis"},
+		{PFIELD_VORTEX, "VORTEX", ICON_FORCE_VORTEX, "Vortex", "Spiraling force that twists the force object's local Z axis"},
 		{PFIELD_MAGNET, "MAGNET", ICON_FORCE_MAGNETIC, "Magnetic", "Forcefield depends on the speed of the particles"},
-		{PFIELD_HARMONIC, "HARMONIC", ICON_FORCE_HARMONIC, "Harmonic", "The source of this force field is the zero point of a harmonic oscillator"},
-		{PFIELD_CHARGE, "CHARGE", ICON_FORCE_CHARGE, "Charge", "Spherical forcefield based on the charge of particles, only influences other charge force fields"},
-		{PFIELD_LENNARDJ, "LENNARDJ", ICON_FORCE_LENNARDJONES, "Lennard-Jones", "Forcefield based on the Lennard-Jones potential"},
+		{PFIELD_HARMONIC, "HARMONIC", ICON_FORCE_HARMONIC, "Harmonic",
+		                  "The source of this force field is the zero point of a harmonic oscillator"},
+		{PFIELD_CHARGE, "CHARGE", ICON_FORCE_CHARGE, "Charge",
+		                "Spherical forcefield based on the charge of particles, only influences other charge force fields"},
+		{PFIELD_LENNARDJ, "LENNARDJ", ICON_FORCE_LENNARDJONES, "Lennard-Jones",
+		                  "Forcefield based on the Lennard-Jones potential"},
 		{PFIELD_TEXTURE, "TEXTURE", ICON_FORCE_TEXTURE, "Texture", "Forcefield based on a texture"},
-		{PFIELD_GUIDE, "GUIDE", ICON_FORCE_CURVE, "Curve Guide", "Creates a force along a curve object"},
+		{PFIELD_GUIDE, "GUIDE", ICON_FORCE_CURVE, "Curve Guide", "Create a force along a curve object"},
 		{PFIELD_BOID, "BOID", ICON_FORCE_BOID, "Boid", ""},
-		{PFIELD_TURBULENCE, "TURBULENCE", ICON_FORCE_TURBULENCE, "Turbulence", "Creates turbulence with a noise field"},
-		{PFIELD_DRAG, "DRAG", ICON_FORCE_DRAG, "Drag", "Creates a force that dampens motion"},
+		{PFIELD_TURBULENCE, "TURBULENCE", ICON_FORCE_TURBULENCE, "Turbulence", "Create turbulence with a noise field"},
+		{PFIELD_DRAG, "DRAG", ICON_FORCE_DRAG, "Drag", "Create a force that dampens motion"},
 		{0, NULL, 0, NULL, NULL}};
 
 	static EnumPropertyItem falloff_items[] = {
@@ -1676,7 +1679,7 @@ static void rna_def_softbody(BlenderRNA *brna)
 	
 	prop= RNA_def_property(srna, "use_estimate_matrix", PROP_BOOLEAN, PROP_NONE);
 	RNA_def_property_boolean_sdna(prop, NULL, "solverflags", SBSO_ESTIMATEIPO);
-	RNA_def_property_ui_text(prop, "Estimate matrix", "estimate matrix .. split to COM , ROT ,SCALE ");
+	RNA_def_property_ui_text(prop, "Estimate matrix", "Estimate matrix... split to COM, ROT, SCALE");
 
 
 	/***********************************************************************************/
@@ -1718,7 +1721,7 @@ static void rna_def_softbody(BlenderRNA *brna)
 	prop= RNA_def_property(srna, "use_stiff_quads", PROP_BOOLEAN, PROP_NONE);
 	RNA_def_property_boolean_funcs(prop, "rna_SoftBodySettings_stiff_quads_get", "rna_SoftBodySettings_stiff_quads_set");
 	RNA_def_property_clear_flag(prop, PROP_ANIMATABLE);
-	RNA_def_property_ui_text(prop, "Stiff Quads", "Adds diagonal springs on 4-gons");
+	RNA_def_property_ui_text(prop, "Stiff Quads", "Add diagonal springs on 4-gons");
 	RNA_def_property_update(prop, 0, "rna_softbody_update");
 	
 	prop= RNA_def_property(srna, "use_edge_collision", PROP_BOOLEAN, PROP_NONE);

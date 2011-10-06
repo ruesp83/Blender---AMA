@@ -1223,19 +1223,13 @@ class vrmlNode(object):
 
 
 def gzipOpen(path):
-    try:
-        import gzip
-    except:
-        gzip = None
+    import gzip
 
     data = None
-    if gzip:
-        try:
-            data = gzip.open(path, 'r').read()
-        except:
-            pass
-    else:
-        print('\tNote, gzip module could not be imported, compressed files will fail to load')
+    try:
+        data = gzip.open(path, 'r').read()
+    except:
+        pass
 
     if data is None:
         try:
@@ -2108,7 +2102,7 @@ def importShape(node, ancestry, global_matrix):
                 if ima_url is None:
                     print("\twarning, image with no URL, this is odd")
                 else:
-                    bpyima = image_utils.image_load(ima_url, os.path.dirname(node.getFilename()), place_holder=False, recursive=False, convert_callback=imageConvertCompat)
+                    bpyima = image_utils.load_image(ima_url, os.path.dirname(node.getFilename()), place_holder=False, recursive=False, convert_callback=imageConvertCompat)
                     if bpyima:
                         texture = bpy.data.textures.new("XXX", 'IMAGE')
                         texture.image = bpyima

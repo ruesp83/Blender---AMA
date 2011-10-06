@@ -1,5 +1,5 @@
 /*
- * $Id: blf_py_api.c 36871 2011-05-24 16:05:51Z campbellbarton $
+ * $Id: blf_py_api.c 40434 2011-09-21 16:06:47Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -33,8 +33,6 @@
 #include "../../blenfont/BLF_api.h"
 
 #include "BLI_utildefines.h"
-
-
 
 PyDoc_STRVAR(py_blf_position_doc,
 ".. function:: position(fontid, x, y, z)\n"
@@ -367,6 +365,26 @@ static PyObject *py_blf_load(PyObject *UNUSED(self), PyObject *args)
 	return PyLong_FromLong(BLF_load(filename));
 }
 
+PyDoc_STRVAR(py_blf_unload_doc,
+".. function:: unload(filename)\n"
+"\n"
+"   Unload an existing font.\n"
+"\n"
+"   :arg filename: the filename of the font.\n"
+"   :type filename: string\n"
+);
+static PyObject *py_blf_unload(PyObject *UNUSED(self), PyObject *args)
+{
+	char* filename;
+
+	if (!PyArg_ParseTuple(args, "s:blf.unload", &filename))
+		return NULL;
+
+	BLF_unload(filename);
+
+	Py_RETURN_NONE;
+}
+
 /*----------------------------MODULE INIT-------------------------*/
 static PyMethodDef BLF_methods[] = {
 	{"aspect", (PyCFunction) py_blf_aspect, METH_VARARGS, py_blf_aspect_doc},
@@ -382,6 +400,7 @@ static PyMethodDef BLF_methods[] = {
 	{"shadow_offset", (PyCFunction) py_blf_shadow_offset, METH_VARARGS, py_blf_shadow_offset_doc},
 	{"size", (PyCFunction) py_blf_size, METH_VARARGS, py_blf_size_doc},
 	{"load", (PyCFunction) py_blf_load, METH_VARARGS, py_blf_load_doc},
+	{"unload", (PyCFunction) py_blf_unload, METH_VARARGS, py_blf_unload_doc},
 	{NULL, NULL, 0, NULL}
 };
 

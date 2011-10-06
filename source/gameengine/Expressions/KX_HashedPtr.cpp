@@ -1,5 +1,5 @@
 /*
- * $Id: KX_HashedPtr.cpp 35168 2011-02-25 13:31:23Z jesterking $
+ * $Id: KX_HashedPtr.cpp 40538 2011-09-25 12:31:21Z campbellbarton $
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
  * This program is free software; you can redistribute it and/or
@@ -48,7 +48,7 @@ unsigned int KX_Hash(void * inDWord)
 	key += ~(key <<  9);
 	key ^=  (key >> 17);
 
-  	return (unsigned int)(key & 0xffffffff);
+	return (unsigned int)(key & 0xffffffff);
 }
 
 

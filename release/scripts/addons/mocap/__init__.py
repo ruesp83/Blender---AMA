@@ -50,81 +50,88 @@ else:
                            PointerProperty,
                            StringProperty,
                            )
-    from bpy import *
     from . import mocap_constraints
     from . import retarget
     from . import mocap_tools
-    from .mocap_constraints import *
+
 
 # MocapConstraint class
 # Defines MocapConstraint datatype, used to add and configute mocap constraints
 # Attached to Armature data
+
+def hasIKConstraint(pose_bone):
+    #utility function / predicate, returns True if given bone has IK constraint
+    ik = [constraint for constraint in pose_bone.constraints if constraint.type == "IK"]
+    if ik:
+        return ik[0]
+    else:
+        return False
 
 
 class MocapConstraint(bpy.types.PropertyGroup):
     name = StringProperty(name="Name",
         default="Mocap Fix",
         description="Name of Mocap Fix",
-        update=setConstraint)
+        update=mocap_constraints.setConstraint)
     constrained_bone = StringProperty(name="Bone",
         default="",
         description="Constrained Bone",
-        update=updateConstraintBoneType)
+        update=mocap_constraints.updateConstraintBoneType)
     constrained_boneB = StringProperty(name="Bone (2)",
         default="",
         description="Other Constrained Bone (optional, depends on type)",
-        update=setConstraint)
+        update=mocap_constraints.setConstraint)
     s_frame = IntProperty(name="S",
         default=0,
         description="Start frame of Fix",
-        update=setConstraint)
+        update=mocap_constraints.setConstraint)
     e_frame = IntProperty(name="E",
         default=100,
         description="End frame of Fix",
-        update=setConstraint)
+        update=mocap_constraints.setConstraint)
     smooth_in = IntProperty(name="In",
         default=10,
         description="Amount of frames to smooth in",
-        update=setConstraint,
+        update=mocap_constraints.setConstraint,
         min=0)
     smooth_out = IntProperty(name="Out",
         default=10,
         description="Amount of frames to smooth out",
-        update=setConstraint,
+        update=mocap_constraints.setConstraint,
         min=0)
     targetMesh = StringProperty(name="Mesh",
         default="",
         description="Target of Fix - Mesh (optional, depends on type)",
-        update=setConstraint)
+        update=mocap_constraints.setConstraint)
     active = BoolProperty(name="Active",
         default=True,
         description="Fix is active",
-        update=setConstraint)
+        update=mocap_constraints.setConstraint)
     show_expanded = BoolProperty(name="Show Expanded",
         default=True,
         description="Fix is fully shown")
     targetPoint = FloatVectorProperty(name="Point", size=3,
         subtype="XYZ", default=(0.0, 0.0, 0.0),
         description="Target of Fix - Point",
-        update=setConstraint)
+        update=mocap_constraints.setConstraint)
     targetDist = FloatProperty(name="Offset",
         default=0.0,
         description="Distance and Floor Fixes - Desired offset",
-        update=setConstraint)
+        update=mocap_constraints.setConstraint)
     targetSpace = EnumProperty(
         items=[("WORLD", "World Space", "Evaluate target in global space"),
             ("LOCAL", "Object space", "Evaluate target in object space"),
             ("constrained_boneB", "Other Bone Space", "Evaluate target in specified other bone space")],
         name="Space",
         description="In which space should Point type target be evaluated",
-        update=setConstraint)
+        update=mocap_constraints.setConstraint)
     type = EnumProperty(name="Type of constraint",
         items=[("point", "Maintain Position", "Bone is at a specific point"),
             ("freeze", "Maintain Position at frame", "Bone does not move from location specified in target frame"),
             ("floor", "Stay above", "Bone does not cross specified mesh object eg floor"),
             ("distance", "Maintain distance", "Target bones maintained specified distance")],
         description="Type of Fix",
-        update=updateConstraintBoneType)
+        update=mocap_constraints.updateConstraintBoneType)
     real_constraint = StringProperty()
     real_constraint_bone = StringProperty()
 
@@ -184,7 +191,7 @@ def toggleIKBone(self, context):
                 chainLen += 1
                 if hasIKConstraint(parent_bone):
                     break
-                deformer_children = [child for child in parent_bone.children if child.bone.use_deform]
+                #~ deformer_children = [child for child in parent_bone.children if child.bone.use_deform]
                 #~ if len(deformer_children) > 1:
                     #~ break
             ik.chain_count = chainLen
@@ -579,10 +586,6 @@ class OBJECT_OT_DenoiseButton(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        return context.active_object
-
-    @classmethod
-    def poll(cls, context):
         return context.active_object.animation_data
 
 
@@ -704,8 +707,8 @@ class OBJECT_OT_RemoveMocapConstraint(bpy.types.Operator):
         m_constraint = m_constraints[self.constraint]
         if m_constraint.real_constraint:
             bone = enduser_obj.pose.bones[m_constraint.real_constraint_bone]
-            cons_obj = getConsObj(bone)
-            removeConstraint(m_constraint, cons_obj)
+            cons_obj = mocap_constraints.getConsObj(bone)
+            mocap_constraints.removeConstraint(m_constraint, cons_obj)
         m_constraints.remove(self.constraint)
         return {"FINISHED"}
 
@@ -722,7 +725,7 @@ class OBJECT_OT_BakeMocapConstraints(bpy.types.Operator):
     bl_label = "Bake all fixes to target armature"
 
     def execute(self, context):
-        bakeConstraints(context)
+        mocap_constraints.bakeConstraints(context)
         return {"FINISHED"}
 
     @classmethod
@@ -738,7 +741,7 @@ class OBJECT_OT_UnbakeMocapConstraints(bpy.types.Operator):
     bl_label = "Unbake all fixes to target armature"
 
     def execute(self, context):
-        unbakeConstraints(context)
+        mocap_constraints.unbakeConstraints(context)
         return {"FINISHED"}
 
     @classmethod
@@ -755,7 +758,7 @@ class OBJECT_OT_UpdateMocapConstraints(bpy.types.Operator):
     bl_label = "Updates all fixes to target armature - neccesary to take under consideration changes to armature object or pose"
 
     def execute(self, context):
-        updateConstraints(context.active_object, context)
+        mocap_constraints.updateConstraints(context.active_object, context)
         return {"FINISHED"}
 
     @classmethod
@@ -881,7 +884,7 @@ def register():
     #Advanced retargeting boolean property
     bpy.types.Armature.advancedRetarget = BoolProperty(default=False, update=advancedRetargetToggle)
     #frame step - frequency of frames to retarget. Skipping is useful for previewing, faster work etc.
-    bpy.types.Armature.frameStep = smooth_out = IntProperty(name="Frame Skip",
+    bpy.types.Armature.frameStep = IntProperty(name="Frame Skip",
             default=1,
             description="Amount of frames to skip - for previewing retargets quickly. 1 is fully sampled",
             min=1)

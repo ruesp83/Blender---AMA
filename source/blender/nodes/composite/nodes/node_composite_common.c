@@ -1,5 +1,5 @@
 /*
- * $Id: CMP_blur.c 35562 2011-03-15 20:10:32Z lukastoenne $
+ * $Id: node_composite_common.c 40641 2011-09-28 05:53:40Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -122,7 +122,7 @@ static void *group_initexec(bNode *node)
 	bNodeStack *ns;
 	
 	/* initialize the internal node tree execution */
-	exec = ntreeCompositBeginExecTree(ngroup);
+	exec = ntreeCompositBeginExecTree(ngroup, 0);
 	
 	/* tag group outputs as external to prevent freeing */
 	for (sock=ngroup->outputs.first; sock; sock=sock->next) {
@@ -139,7 +139,7 @@ static void group_freeexec(bNode *UNUSED(node), void *nodedata)
 {
 	bNodeTreeExec *gexec= (bNodeTreeExec*)nodedata;
 	
-	ntreeCompositEndExecTree(gexec);
+	ntreeCompositEndExecTree(gexec, 0);
 }
 
 /* Copy inputs to the internal stack.
@@ -174,7 +174,8 @@ static void group_move_outputs(bNode *node, bNodeStack **out, bNodeStack *gstack
 }
 
 /* Free internal buffers */
-static void group_free_internal(bNodeTreeExec *gexec) {
+static void group_free_internal(bNodeTreeExec *gexec)
+{
 	bNodeStack *ns;
 	int i;
 	

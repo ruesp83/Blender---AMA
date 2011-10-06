@@ -2,7 +2,7 @@
  *  \ingroup bke
  */
 /*
- * $Id: writeframeserver.c 38594 2011-07-21 23:06:51Z campbellbarton $
+ * $Id: writeframeserver.c 40587 2011-09-27 01:32:27Z campbellbarton $
  *
  * Frameserver
  * Makes Blender accessible from TMPGenc directly using VFAPI (you can
@@ -257,7 +257,11 @@ int frameserver_loop(RenderData *rd, ReportList *UNUSED(reports))
 	struct timeval tv;
 	struct sockaddr_in      addr;
 	int len, rval;
+#ifdef FREE_WINDOWS
+	int socklen;
+#else
 	unsigned int socklen;
+#endif
 	char buf[4096];
 
 	if (connsock != -1) {

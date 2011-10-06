@@ -1,5 +1,5 @@
 /*
- * $Id: interface_ops.c 36644 2011-05-12 16:47:36Z campbellbarton $
+ * $Id: interface_ops.c 40679 2011-09-29 06:13:25Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -295,10 +295,28 @@ static int reset_default_button_exec(bContext *C, wmOperator *op)
 		if(RNA_property_reset(&ptr, prop, (all)? -1: index)) {
 			/* perform updates required for this property */
 			RNA_property_update(C, &ptr, prop);
+
+			/* as if we pressed the button */
+			uiContextActivePropertyHandle(C);
+
 			success= 1;
 		}
 	}
-	
+
+	/* Since we dont want to undo _all_ edits to settings, eg window
+	 * edits on the screen or on operator settings.
+	 * it might be better to move undo's inline - campbell */
+	if(success) {
+		ID *id= ptr.id.data;
+		if(id && ID_CHECK_UNDO(id)) {
+			/* do nothing, go ahead with undo */
+		}
+		else {
+			return OPERATOR_CANCELLED;
+		}
+	}
+	/* end hack */
+
 	return (success)? OPERATOR_FINISHED: OPERATOR_CANCELLED;
 }
 
@@ -314,10 +332,10 @@ static void UI_OT_reset_default_button(wmOperatorType *ot)
 	ot->exec= reset_default_button_exec;
 
 	/* flags */
-	ot->flag= OPTYPE_REGISTER|OPTYPE_UNDO;
+	ot->flag= OPTYPE_UNDO;
 	
 	/* properties */
-	RNA_def_boolean(ot->srna, "all", 1, "All", "Reset to default values all elements of the array.");
+	RNA_def_boolean(ot->srna, "all", 1, "All", "Reset to default values all elements of the array");
 }
 
 /* Copy To Selected Operator ------------------------ */
@@ -409,7 +427,7 @@ static void UI_OT_copy_to_selected_button(wmOperatorType *ot)
 	ot->flag= OPTYPE_REGISTER|OPTYPE_UNDO;
 
 	/* properties */
-	RNA_def_boolean(ot->srna, "all", 1, "All", "Reset to default values all elements of the array.");
+	RNA_def_boolean(ot->srna, "all", 1, "All", "Reset to default values all elements of the array");
 }
 
 /* Reports to Textblock Operator ------------------------ */

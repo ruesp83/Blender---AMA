@@ -1,5 +1,5 @@
 /*
- * $Id: SHD_util.h 36549 2011-05-08 14:23:38Z lukastoenne $
+ * $Id: node_shader_util.h 39944 2011-09-05 22:04:30Z gsrb3d $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *

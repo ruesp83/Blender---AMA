@@ -1,5 +1,5 @@
 /*
- * $Id: GHOST_WindowX11.cpp 37765 2011-06-23 19:55:47Z blendix $
+ * $Id: GHOST_WindowX11.cpp 40538 2011-09-25 12:31:21Z campbellbarton $
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
  * This program is free software; you can redistribute it and/or
@@ -614,7 +614,7 @@ void GHOST_WindowX11::initXInputDevices()
 							ici = (XAnyClassPtr)(((char *)ici) + ici->length);
 						}
 					} else {
- 						m_xtablet.StylusID= 0;
+						m_xtablet.StylusID= 0;
 					}
 				}
 				else if(m_xtablet.EraserDevice==NULL && is_eraser(device_info[i].name, device_type)) {
@@ -1216,11 +1216,11 @@ activateDrawingContext(
 	return GHOST_kFailure;
 }
 
- 	GHOST_TSuccess 
+	GHOST_TSuccess
 GHOST_WindowX11::
 invalidate(
 ){
- 	
+
 	// So the idea of this function is to generate an expose event
 	// for the window.
 	// Unfortunately X does not handle expose events for you and 

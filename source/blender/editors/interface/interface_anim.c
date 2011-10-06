@@ -1,5 +1,5 @@
 /*
- * $Id: interface_anim.c 39792 2011-08-30 09:15:55Z nexyon $
+ * $Id: interface_anim.c 40579 2011-09-26 17:30:56Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -83,7 +83,7 @@ void ui_but_anim_flag(uiBut *but, float cfra)
 	}
 }
 
-int ui_but_anim_expression_get(uiBut *but, char *str, int maxlen)
+int ui_but_anim_expression_get(uiBut *but, char *str, size_t maxlen)
 {
 	FCurve *fcu;
 	ChannelDriver *driver;

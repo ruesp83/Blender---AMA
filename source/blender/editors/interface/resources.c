@@ -1,5 +1,5 @@
 /*
- * $Id: resources.c 39792 2011-08-30 09:15:55Z nexyon $
+ * $Id: resources.c 40109 2011-09-11 04:31:09Z campbellbarton $
  *
  * ***** BEGIN GPL/BL DUAL LICENSE BLOCK *****
  *
@@ -1037,6 +1037,23 @@ void UI_ColorPtrBlendShade3ubv(const unsigned char cp1[3], const unsigned char c
 	b= b<0?0:(b>255?255:b);
 	
 	glColor3ub(r, g, b);
+}
+
+void UI_GetColorPtrShade3ubv(const unsigned char cp[3], unsigned char col[3], int offset)
+{
+	int r, g, b;
+
+	r= offset+(int)cp[0];
+	g= offset+(int)cp[1];
+	b= offset+(int)cp[2];
+
+	CLAMP(r, 0, 255);
+	CLAMP(g, 0, 255);
+	CLAMP(b, 0, 255);
+
+	col[0] = r;
+	col[1] = g;
+	col[2] = b;
 }
 
 // get a 3 byte color, blended and shaded between two other char color pointers

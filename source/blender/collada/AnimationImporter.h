@@ -1,5 +1,5 @@
 /*
- * $Id: AnimationImporter.h 39936 2011-09-05 19:27:21Z blendix $
+ * $Id: AnimationImporter.h 40641 2011-09-28 05:53:40Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -164,7 +164,7 @@ public:
 
 	int setAnimType ( const COLLADAFW::Animatable * prop , int type, int addition);
 	
-	void modify_fcurve(std::vector<FCurve*>* curves , char* rna_path , int array_index );
+	void modify_fcurve(std::vector<FCurve*>* curves , const char* rna_path , int array_index );
 	// prerequisites:
 	// animlist_map - map animlist id -> animlist
 	// curve_map - map anim id -> curve(s)

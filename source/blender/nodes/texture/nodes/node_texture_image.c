@@ -1,5 +1,5 @@
 /*
- * $Id: TEX_image.c 36481 2011-05-04 11:42:25Z lukastoenne $
+ * $Id: node_texture_image.c 39944 2011-09-05 22:04:30Z gsrb3d $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *

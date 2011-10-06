@@ -1,5 +1,5 @@
 /*
- * $Id: MOD_modifiertypes.h 38866 2011-07-31 02:24:06Z nicholasbishop $
+ * $Id: MOD_modifiertypes.h 40080 2011-09-09 21:28:56Z ben2610 $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -72,6 +72,10 @@ extern ModifierTypeInfo modifierType_ShapeKey;
 extern ModifierTypeInfo modifierType_Solidify;
 extern ModifierTypeInfo modifierType_Screw;
 extern ModifierTypeInfo modifierType_Warp;
+extern ModifierTypeInfo modifierType_NavMesh;
+extern ModifierTypeInfo modifierType_WeightVGEdit;
+extern ModifierTypeInfo modifierType_WeightVGMix;
+extern ModifierTypeInfo modifierType_WeightVGProximity;
 
 /* MOD_util.c */
 void modifier_type_init(ModifierTypeInfo *types[]);

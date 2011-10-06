@@ -1,5 +1,5 @@
 /*
- * $Id: strand.c 39570 2011-08-20 17:39:13Z campbellbarton $
+ * $Id: strand.c 40519 2011-09-24 14:34:24Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -92,7 +92,7 @@ void strand_eval_point(StrandSegment *sseg, StrandPoint *spoint)
 	Material *ma;
 	StrandBuffer *strandbuf;
 	float *simplify;
-	float p[4][3], data[4], cross[3], crosslen, w, dx, dy, t;
+	float p[4][3], data[4], cross[3], w, dx, dy, t;
 	int type;
 
 	strandbuf= sseg->buffer;
@@ -164,7 +164,7 @@ void strand_eval_point(StrandSegment *sseg, StrandPoint *spoint)
 
 	if(w > 0.0f) {
 		if(strandbuf->flag & R_STRAND_B_UNITS) {
-			crosslen= len_v3(cross);
+			const float crosslen= len_v3(cross);
 			w= 2.0f*crosslen*strandbuf->minwidth/w;
 
 			if(spoint->width < w) {

@@ -1,5 +1,5 @@
 /*
-* $Id: MOD_bevel.c 39342 2011-08-12 18:11:22Z blendix $
+* $Id: MOD_bevel.c 40581 2011-09-26 18:51:10Z campbellbarton $
 *
 * ***** BEGIN GPL LICENSE BLOCK *****
 *
@@ -72,7 +72,7 @@ static void copyData(ModifierData *md, ModifierData *target)
 	tbmd->lim_flags = bmd->lim_flags;
 	tbmd->e_flags = bmd->e_flags;
 	tbmd->bevel_angle = bmd->bevel_angle;
-	strncpy(tbmd->defgrp_name, bmd->defgrp_name, 32);
+	BLI_strncpy(tbmd->defgrp_name, bmd->defgrp_name, 32);
 }
 
 static CustomDataMask requiredDataMask(Object *UNUSED(ob), ModifierData *md)

@@ -1,4 +1,5 @@
 /**
+ * $Id: node_common.c 40581 2011-09-26 18:51:10Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -550,8 +551,8 @@ int node_group_ungroup(bNodeTree *ntree, bNode *gnode)
 	}
 	
 	/* delete the group instance. this also removes old input links! */
- 	nodeFreeNode(ntree, gnode);
- 	
+	nodeFreeNode(ntree, gnode);
+
 	/* free the group tree (takes care of user count) */
 	free_libblock(&G.main->nodetree, wgroup);
 	
@@ -566,7 +567,7 @@ bNodeSocket *node_group_add_socket(bNodeTree *ngroup, const char *name, int type
 	bNodeSocketType *stype = ntreeGetSocketType(type);
 	bNodeSocket *gsock = MEM_callocN(sizeof(bNodeSocket), "bNodeSocket");
 	
-	strncpy(gsock->name, name, sizeof(gsock->name));
+	BLI_strncpy(gsock->name, name, sizeof(gsock->name));
 	gsock->type = type;
 	/* group sockets are dynamically added */
 	gsock->flag |= SOCK_DYNAMIC;
@@ -825,11 +826,11 @@ bNodeTemplate node_forloop_template(bNode *node)
 
 void node_forloop_init(bNodeTree *ntree, bNode *node, bNodeTemplate *ntemp)
 {
-	bNodeSocket *sock;
+	/* bNodeSocket *sock; */ /* UNUSED */
 	
 	node->id = (ID*)ntemp->ngroup;
 	
-	sock = nodeAddInputFloat(ntree, node, "Iterations", PROP_UNSIGNED, 1, 0, 10000);
+	/* sock = */ nodeAddInputFloat(ntree, node, "Iterations", PROP_UNSIGNED, 1, 0, 10000);
 	
 	/* NB: group socket input/output roles are inverted internally!
 	 * Group "inputs" work as outputs in links and vice versa.
@@ -877,7 +878,7 @@ static void loop_sync(bNodeTree *ntree, int sync_in_out)
 		while (sync && ((sync->flag & SOCK_INTERNAL) || !(sync->flag & SOCK_DYNAMIC)))
 			sync = sync->next;
 		
-		if (!(sync->flag & SOCK_INTERNAL) && (sync->flag & SOCK_DYNAMIC)) {
+		if (sync && !(sync->flag & SOCK_INTERNAL) && (sync->flag & SOCK_DYNAMIC)) {
 			if (sock->storage==NULL) {
 				/* if mirror index is 0, the sockets is newly added and a new mirror must be created. */
 				mirror = node_group_expose_socket(ntree, sock, sync_in_out);
@@ -931,11 +932,11 @@ void node_loop_update_tree(bNodeTree *ngroup)
 
 void node_whileloop_init(bNodeTree *ntree, bNode *node, bNodeTemplate *ntemp)
 {
-	bNodeSocket *sock;
+	/* bNodeSocket *sock; */ /* UNUSED */
 	
 	node->id = (ID*)ntemp->ngroup;
 	
-	sock = nodeAddInputFloat(ntree, node, "Condition", PROP_NONE, 1, 0, 1);
+	/* sock = */ nodeAddInputFloat(ntree, node, "Condition", PROP_NONE, 1, 0, 1);
 	
 	/* max iterations */
 	node->custom1 = 10000;

@@ -1,5 +1,5 @@
 /*
- * $Id: DNA_windowmanager_types.h 39696 2011-08-25 16:42:42Z campbellbarton $
+ * $Id: DNA_windowmanager_types.h 40690 2011-09-29 13:52:58Z blendix $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -295,6 +295,7 @@ typedef struct wmKeyConfig {
 
 /* wmKeyConfig.flag */
 #define KEYCONF_USER			(1 << 1)
+#define KEYCONF_INIT_DEFAULT	(1 << 2)
 
 /* this one is the operator itself, stored in files for macros etc */
 /* operator + operatortype should be able to redo entirely, but for different contextes */

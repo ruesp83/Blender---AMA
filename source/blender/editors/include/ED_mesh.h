@@ -1,5 +1,5 @@
 /*
- * $Id: ED_mesh.h 37302 2011-06-07 18:04:03Z campbellbarton $
+ * $Id: ED_mesh.h 40368 2011-09-19 16:13:34Z jason_hays22 $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -123,6 +123,8 @@ int			EM_vertColorCheck(struct EditMesh *em);
 
 void		undo_push_mesh(struct bContext *C, const char *name);
 
+void		paintvert_flush_flags(struct Object *ob);
+void		paintvert_deselect_all_visible(struct Object *ob, int action, short flush_flags);
 
 /* editmesh_lib.c */
 

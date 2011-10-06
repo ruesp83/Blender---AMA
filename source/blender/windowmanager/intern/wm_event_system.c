@@ -1,5 +1,5 @@
 /*
- * $Id: wm_event_system.c 39934 2011-09-05 17:57:04Z blendix $
+ * $Id: wm_event_system.c 40730 2011-10-01 13:46:20Z nazgul $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -85,7 +85,7 @@ static int wm_operator_call_internal(bContext *C, wmOperatorType *ot, PointerRNA
 
 void wm_event_add(wmWindow *win, wmEvent *event_to_add)
 {
-	wmEvent *event= MEM_callocN(sizeof(wmEvent), "event");
+	wmEvent *event= MEM_callocN(sizeof(wmEvent), "wmEvent");
 	
 	*event= *event_to_add;
 	BLI_addtail(&win->queue, event);
@@ -441,12 +441,17 @@ static void wm_operator_reports(bContext *C, wmOperator *op, int retval, int pop
 		if(op->reports->list.first) {
 			/* FIXME, temp setting window, see other call to uiPupMenuReports for why */
 			wmWindow *win_prev= CTX_wm_window(C);
+			ScrArea *area_prev= CTX_wm_area(C);
+			ARegion *ar_prev= CTX_wm_region(C);
+
 			if(win_prev==NULL)
 				CTX_wm_window_set(C, CTX_wm_manager(C)->windows.first);
 
 			uiPupMenuReports(C, op->reports);
 
 			CTX_wm_window_set(C, win_prev);
+			CTX_wm_area_set(C, area_prev);
+			CTX_wm_region_set(C, ar_prev);
 		}
 	}
 	
@@ -1218,41 +1223,47 @@ static int wm_handler_operator_call(bContext *C, ListBase *handlers, wmEventHand
 			retval= ot->modal(C, op, event);
 			OPERATOR_RETVAL_CHECK(retval);
 
-			if(ot->flag & OPTYPE_UNDO && CTX_wm_manager(C) == wm)
-				wm->op_undo_depth--;
+			/* when this is _not_ the case the modal modifier may have loaded
+			 * a new blend file (demo mode does this), so we have to assume
+			 * the event, operator etc have all been freed. - campbell */
+			if(CTX_wm_manager(C) == wm) {
 
-			/* putting back screen context, reval can pass trough after modal failures! */
-			if((retval & OPERATOR_PASS_THROUGH) || wm_event_always_pass(event)) {
-				CTX_wm_area_set(C, area);
-				CTX_wm_region_set(C, region);
-			}
-			else {
-				/* this special cases is for areas and regions that get removed */
-				CTX_wm_area_set(C, NULL);
-				CTX_wm_region_set(C, NULL);
-			}		
+				if(ot->flag & OPTYPE_UNDO)
+					wm->op_undo_depth--;
 
-			if(retval & (OPERATOR_CANCELLED|OPERATOR_FINISHED))
-				wm_operator_reports(C, op, retval, 0);
-			
-			if(retval & OPERATOR_FINISHED) {
-				wm_operator_finished(C, op, 0);
-				handler->op= NULL;
-			}
-			else if(retval & (OPERATOR_CANCELLED|OPERATOR_FINISHED)) {
-				WM_operator_free(op);
-				handler->op= NULL;
-			}
-			
-			/* remove modal handler, operator itself should have been cancelled and freed */
-			if(retval & (OPERATOR_CANCELLED|OPERATOR_FINISHED)) {
-				WM_cursor_ungrab(CTX_wm_window(C));
+				/* putting back screen context, reval can pass trough after modal failures! */
+				if((retval & OPERATOR_PASS_THROUGH) || wm_event_always_pass(event)) {
+					CTX_wm_area_set(C, area);
+					CTX_wm_region_set(C, region);
+				}
+				else {
+					/* this special cases is for areas and regions that get removed */
+					CTX_wm_area_set(C, NULL);
+					CTX_wm_region_set(C, NULL);
+				}
 
-				BLI_remlink(handlers, handler);
-				wm_event_free_handler(handler);
-				
-				/* prevent silly errors from operator users */
-				//retval &= ~OPERATOR_PASS_THROUGH;
+				if(retval & (OPERATOR_CANCELLED|OPERATOR_FINISHED))
+					wm_operator_reports(C, op, retval, 0);
+
+				if(retval & OPERATOR_FINISHED) {
+					wm_operator_finished(C, op, 0);
+					handler->op= NULL;
+				}
+				else if(retval & (OPERATOR_CANCELLED|OPERATOR_FINISHED)) {
+					WM_operator_free(op);
+					handler->op= NULL;
+				}
+
+				/* remove modal handler, operator itself should have been cancelled and freed */
+				if(retval & (OPERATOR_CANCELLED|OPERATOR_FINISHED)) {
+					WM_cursor_ungrab(CTX_wm_window(C));
+
+					BLI_remlink(handlers, handler);
+					wm_event_free_handler(handler);
+
+					/* prevent silly errors from operator users */
+					//retval &= ~OPERATOR_PASS_THROUGH;
+				}
 			}
 			
 		}
@@ -1265,6 +1276,7 @@ static int wm_handler_operator_call(bContext *C, ListBase *handlers, wmEventHand
 		if(ot)
 			retval= wm_operator_invoke(C, ot, event, properties, NULL, FALSE);
 	}
+	/* Finished and pass through flag as handled */
 
 	/* Finished and pass through flag as handled */
 	if(retval == (OPERATOR_FINISHED|OPERATOR_PASS_THROUGH))
@@ -1394,6 +1406,9 @@ static int wm_handler_fileselect_call(bContext *C, ListBase *handlers, wmEventHa
 							 * only have because lib linking errors need to be seen by users :(
 							 * it can be removed without breaking anything but then no linking errors - campbell */
 							wmWindow *win_prev= CTX_wm_window(C);
+							ScrArea *area_prev= CTX_wm_area(C);
+							ARegion *ar_prev= CTX_wm_region(C);
+
 							if(win_prev==NULL)
 								CTX_wm_window_set(C, CTX_wm_manager(C)->windows.first);
 
@@ -1405,6 +1420,8 @@ static int wm_handler_fileselect_call(bContext *C, ListBase *handlers, wmEventHa
 							BLI_movelisttolist(&CTX_wm_reports(C)->list, &handler->op->reports->list);
 
 							CTX_wm_window_set(C, win_prev);
+							CTX_wm_area_set(C, area_prev);
+							CTX_wm_region_set(C, ar_prev);
 						}
 
 						WM_operator_free(handler->op);
@@ -1907,7 +1924,7 @@ void wm_event_do_handlers(bContext *C)
 			
 			/* store last event for this window */
 			/* mousemove and timer events don't overwrite last type */
-			if (event->type != MOUSEMOVE && !ISTIMER(event->type)) {
+			if (!ELEM(event->type, MOUSEMOVE, INBETWEEN_MOUSEMOVE) && !ISTIMER(event->type)) {
 				if (wm_action_not_handled(action)) {
 					if (win->eventstate->prevtype == event->type) {
 						/* set click time on first click (press -> release) */

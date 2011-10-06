@@ -1,4 +1,5 @@
 /*
+ * $Id: node_texture_translate.c 39944 2011-09-05 22:04:30Z gsrb3d $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *

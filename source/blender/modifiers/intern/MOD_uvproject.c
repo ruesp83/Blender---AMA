@@ -1,5 +1,5 @@
 /*
-* $Id: MOD_uvproject.c 39342 2011-08-12 18:11:22Z blendix $
+* $Id: MOD_uvproject.c 40372 2011-09-19 19:55:59Z dfelinto $
 *
 * ***** BEGIN GPL LICENSE BLOCK *****
 *
@@ -369,7 +369,6 @@ static DerivedMesh *uvprojectModifier_do(UVProjectModifierData *umd,
 		}
 
 		if(override_image) {
-			tface->mode = TF_TEX;
 			tface->tpage = image;
 		}
 	}

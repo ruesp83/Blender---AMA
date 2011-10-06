@@ -1,5 +1,5 @@
 /*
- * $Id: math_base.c 36815 2011-05-22 04:25:31Z campbellbarton $
+ * $Id: math_base.c 40641 2011-09-28 05:53:40Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -64,7 +64,8 @@ double round(double x);
 
 /* from python 3.1 floatobject.c
  * ndigits must be between 0 and 21 */
-double double_round(double x, int ndigits) {
+double double_round(double x, int ndigits)
+{
 	double pow1, pow2, y, z;
 	if (ndigits >= 0) {
 		pow1 = pow(10.0, (double)ndigits);

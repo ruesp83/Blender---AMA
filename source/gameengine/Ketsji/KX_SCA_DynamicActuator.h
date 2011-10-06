@@ -1,4 +1,4 @@
-// $Id: KX_SCA_DynamicActuator.h 35063 2011-02-22 10:33:14Z jesterking $
+// $Id: KX_SCA_DynamicActuator.h 40538 2011-09-25 12:31:21Z campbellbarton $
 //
 // ***** BEGIN GPL LICENSE BLOCK *****
 //
@@ -50,10 +50,10 @@ class KX_SCA_DynamicActuator : public SCA_IActuator
 	float m_setmass;
  public:
 	KX_SCA_DynamicActuator(
-		SCA_IObject* gameobj, 
-		short dyn_operation,
- 		float setmass
-	);
+	        SCA_IObject* gameobj,
+	        short dyn_operation,
+	        float setmass
+	        );
 
 	~KX_SCA_DynamicActuator(
 	);

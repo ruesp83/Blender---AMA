@@ -1,5 +1,5 @@
 /* 
- * $Id: mathutils.c 38409 2011-07-15 04:01:47Z campbellbarton $
+ * $Id: mathutils.c 40741 2011-10-02 12:34:41Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -94,11 +94,11 @@ int mathutils_array_parse(float *array, int array_min, int array_max, PyObject *
 #if 1 /* approx 6x speedup for mathutils types */
 	int size;
 
-	if(	(VectorObject_Check(value) && (size= ((VectorObject *)value)->size)) ||
-		(EulerObject_Check(value) && (size= 3)) ||
-		(QuaternionObject_Check(value) && (size= 4)) ||
-		(ColorObject_Check(value) && (size= 3))
-	) {
+	if(     (size= VectorObject_Check(value)     ? ((VectorObject *)value)->size : 0) ||
+	        (size= EulerObject_Check(value)      ? 3 : 0) ||
+	        (size= QuaternionObject_Check(value) ? 4 : 0) ||
+	        (size= ColorObject_Check(value)      ? 3 : 0))
+	{
 		if(BaseMath_ReadCallback((BaseMathObject *)value) == -1) {
 			return -1;
 		}

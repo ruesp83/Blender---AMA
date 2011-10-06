@@ -1,5 +1,5 @@
 /*
- * $Id: CMP_rgb.c 36333 2011-04-26 09:27:43Z lukastoenne $
+ * $Id: node_composite_rgb.c 39944 2011-09-05 22:04:30Z gsrb3d $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *

@@ -1,5 +1,5 @@
 /*
- * $Id: LightExporter.cpp 39792 2011-08-30 09:15:55Z nexyon $
+ * $Id: LightExporter.cpp 40019 2011-09-07 18:23:30Z jesterking $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -52,13 +52,13 @@ void forEachLampObjectInScene(Scene *sce, Functor &f, bool export_selected)
 	}
 }
 
-LightsExporter::LightsExporter(COLLADASW::StreamWriter *sw): COLLADASW::LibraryLights(sw){}
+LightsExporter::LightsExporter(COLLADASW::StreamWriter *sw, const ExportSettings *export_settings): COLLADASW::LibraryLights(sw), export_settings(export_settings) {}
 
-void LightsExporter::exportLights(Scene *sce, bool export_selected)
+void LightsExporter::exportLights(Scene *sce)
 {
 	openLibrary();
 	
-	forEachLampObjectInScene(sce, *this, export_selected);
+	forEachLampObjectInScene(sce, *this, this->export_settings->selected);
 	
 	closeLibrary();
 }

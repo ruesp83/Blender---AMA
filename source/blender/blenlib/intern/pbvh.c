@@ -1,5 +1,5 @@
 /*
- * $Id: pbvh.c 38867 2011-07-31 02:34:53Z nicholasbishop $
+ * $Id: pbvh.c 40539 2011-09-25 12:33:51Z ender79 $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -346,7 +346,7 @@ static int map_insert_vert(PBVH *bvh, GHash *map,
 
 	if(!BLI_ghash_haskey(map, key)) {
 		if(BLI_bitmap_get(bvh->vert_bitmap, vertex)) {
-			value = SET_INT_IN_POINTER(-(*face_verts) - 1);
+			value = SET_INT_IN_POINTER(~(*face_verts));
 			++(*face_verts);
 		}
 		else {

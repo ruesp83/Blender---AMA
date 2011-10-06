@@ -1,5 +1,5 @@
 /*
- * $Id: transform_input.c 36790 2011-05-20 07:40:05Z campbellbarton $
+ * $Id: transform_input.c 40641 2011-09-28 05:53:40Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -118,7 +118,8 @@ static void InputTrackBall(TransInfo *UNUSED(t), MouseInput *mi, const int mval[
 	output[1] *= mi->factor;
 }
 
-static void InputHorizontalRatio(TransInfo *t, MouseInput *mi, const int mval[2], float output[3]) {
+static void InputHorizontalRatio(TransInfo *t, MouseInput *mi, const int mval[2], float output[3])
+{
 	float x, pad;
 
 	pad = t->ar->winx / 10;
@@ -135,7 +136,8 @@ static void InputHorizontalRatio(TransInfo *t, MouseInput *mi, const int mval[2]
 	output[0] = (x - pad) / (t->ar->winx - 2 * pad);
 }
 
-static void InputHorizontalAbsolute(TransInfo *t, MouseInput *mi, const int mval[2], float output[3]) {
+static void InputHorizontalAbsolute(TransInfo *t, MouseInput *mi, const int mval[2], float output[3])
+{
 	float vec[3];
 
 	InputVector(t, mi, mval, vec);
@@ -144,7 +146,8 @@ static void InputHorizontalAbsolute(TransInfo *t, MouseInput *mi, const int mval
 	output[0] = dot_v3v3(t->viewinv[0], vec) * 2.0f;
 }
 
-static void InputVerticalRatio(TransInfo *t, MouseInput *mi, const int mval[2], float output[3]) {
+static void InputVerticalRatio(TransInfo *t, MouseInput *mi, const int mval[2], float output[3])
+{
 	float y, pad;
 
 	pad = t->ar->winy / 10;
@@ -160,7 +163,8 @@ static void InputVerticalRatio(TransInfo *t, MouseInput *mi, const int mval[2], 
 	output[0] = (y - pad) / (t->ar->winy - 2 * pad);
 }
 
-static void InputVerticalAbsolute(TransInfo *t, MouseInput *mi, const int mval[2], float output[3]) {
+static void InputVerticalAbsolute(TransInfo *t, MouseInput *mi, const int mval[2], float output[3])
+{
 	float vec[3];
 
 	InputVector(t, mi, mval, vec);

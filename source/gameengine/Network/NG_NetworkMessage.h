@@ -1,5 +1,5 @@
 /*
- * $Id: NG_NetworkMessage.h 35072 2011-02-22 12:42:55Z jesterking $
+ * $Id: NG_NetworkMessage.h 40538 2011-09-25 12:31:21Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -72,7 +72,7 @@ public:
 	{
 		if (! --m_refcount)
 		{
- 			delete this;
+			delete this;
 		}
 	}
 

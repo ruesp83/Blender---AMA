@@ -1,5 +1,5 @@
 /*
- * $Id: graph_select.c 39792 2011-08-30 09:15:55Z nexyon $
+ * $Id: graph_select.c 40291 2011-09-17 10:44:16Z mont29 $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -585,7 +585,7 @@ void GRAPH_OT_select_linked (wmOperatorType *ot)
 	/* identifiers */
 	ot->name = "Select Linked";
 	ot->idname= "GRAPH_OT_select_linked";
-	ot->description = "Select keyframes occurring the same F-Curves as selected ones";
+	ot->description = "Select keyframes occurring in the same F-Curves as selected ones";
 	
 	/* api callbacks */
 	ot->exec= graphkeys_select_linked_exec;

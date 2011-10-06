@@ -1,5 +1,5 @@
 /*
- * $Id: BLO_sys_types.h 39888 2011-09-03 09:43:20Z campbellbarton $
+ * $Id: BLO_sys_types.h 40419 2011-09-21 08:40:30Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -93,25 +93,32 @@ typedef unsigned long uintptr_t;
 #include <inttypes.h>
 
 #elif defined(FREE_WINDOWS)
-
+/* define htoln here, there must be a syntax error in winsock2.h in MinGW */
+unsigned long __attribute__((__stdcall__)) htonl(unsigned long);
 #include <stdint.h>
 
 #else
 
-	/* FreeBSD, Irix, Solaris */
+	/* FreeBSD, Solaris */
 #include <sys/types.h>
 
 #endif /* ifdef platform for types */
 
 
 #ifdef _WIN32
+#ifndef FREE_WINDOWS
+#ifndef htonl
 #define htonl(x) correctByteOrder(x)
+#endif
+#ifndef ntohl
 #define ntohl(x) correctByteOrder(x)
+#endif
+#endif
 #elif defined (__FreeBSD__) || defined (__OpenBSD__) 
 #include <sys/param.h>
 #elif defined (__APPLE__)
 #include <sys/types.h>
-#else  /* irix sun linux */
+#else  /* sun linux */
 #include <netinet/in.h>
 #endif /* ifdef platform for htonl/ntohl */
 

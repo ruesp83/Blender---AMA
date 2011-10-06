@@ -1,5 +1,5 @@
 /*
- * $Id: node_edit.c 39941 2011-09-05 21:01:50Z lukastoenne $
+ * $Id: node_edit.c 40641 2011-09-28 05:53:40Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -447,9 +447,8 @@ void snode_set_context(SpaceNode *snode, Scene *scene)
 	else if(snode->treetype==NTREE_COMPOSIT) {
 		snode->id= &scene->id;
 		
-		/* bit clumsy but reliable way to see if we draw first time */
-		if(snode->nodetree==NULL)
-			ntreeCompositForceHidden(scene->nodetree, scene);
+		/* update output sockets based on available layers */
+		ntreeCompositForceHidden(scene->nodetree, scene);
 	}
 	else if(snode->treetype==NTREE_TEXTURE) {
 		Tex *tx= NULL;
@@ -608,28 +607,45 @@ void ED_node_set_active(Main *bmain, bNodeTree *ntree, bNode *node)
 static int compare_nodes(bNode *a, bNode *b)
 {
 	bNode *parent;
+	/* These tell if either the node or any of the parent nodes is selected.
+	 * A selected parent means an unselected node is also in foreground!
+	 */
+	int a_select=(a->flag & NODE_SELECT), b_select=(b->flag & NODE_SELECT);
+	int a_active=(a->flag & NODE_ACTIVE), b_active=(b->flag & NODE_ACTIVE);
 	
 	/* if one is an ancestor of the other */
 	/* XXX there might be a better sorting algorithm for stable topological sort, this is O(n^2) worst case */
 	for (parent = a->parent; parent; parent=parent->parent) {
+		/* if b is an ancestor, it is always behind a */
 		if (parent==b)
 			return 1;
+		/* any selected ancestor moves the node forward */
+		if (parent->flag & NODE_ACTIVE)
+			a_active = 1;
+		if (parent->flag & NODE_SELECT)
+			a_select = 1;
 	}
 	for (parent = b->parent; parent; parent=parent->parent) {
+		/* if a is an ancestor, it is always behind b */
 		if (parent==a)
 			return 0;
+		/* any selected ancestor moves the node forward */
+		if (parent->flag & NODE_ACTIVE)
+			b_active = 1;
+		if (parent->flag & NODE_SELECT)
+			b_select = 1;
 	}
 
 	/* if one of the nodes is in the background and the other not */
-	if ((a->flag & NODE_BACKGROUND) && !(b->typeinfo->flag & NODE_BACKGROUND))
+	if ((a->flag & NODE_BACKGROUND) && !(b->flag & NODE_BACKGROUND))
 		return 0;
-	else if (!(a->flag & NODE_BACKGROUND) && (b->typeinfo->flag & NODE_BACKGROUND))
+	else if (!(a->flag & NODE_BACKGROUND) && (b->flag & NODE_BACKGROUND))
 		return 1;
 	
 	/* if one has a higher selection state (active > selected > nothing) */
-	if (!(b->flag & NODE_ACTIVE) && (a->flag & NODE_ACTIVE))
+	if (!b_active && a_active)
 		return 1;
-	else if (!(b->flag & NODE_SELECT) && ((a->flag & NODE_ACTIVE) || (a->flag & NODE_SELECT)))
+	else if (!b_select && (a_active || a_select))
 		return 1;
 	
 	return 0;
@@ -741,6 +757,8 @@ void ED_node_update_hierarchy(bContext *UNUSED(C), bNodeTree *ntree)
 
 /* ***************** generic operator functions for nodes ***************** */
 
+#if 0 /* UNUSED */
+
 static int edit_node_poll(bContext *C)
 {
 	return ED_operator_node_active(C);
@@ -776,7 +794,7 @@ static int edit_node_invoke_properties(bContext *C, wmOperator *op)
 static void edit_node_properties_get(wmOperator *op, bNodeTree *ntree, bNode **rnode, bNodeSocket **rsock, int *rin_out)
 {
 	bNode *node;
-	bNodeSocket *sock;
+	bNodeSocket *sock=NULL;
 	char nodename[32];
 	int sockindex;
 	int in_out;
@@ -799,6 +817,7 @@ static void edit_node_properties_get(wmOperator *op, bNodeTree *ntree, bNode **r
 	if (rin_out)
 		*rin_out = in_out;
 }
+#endif
 
 /* ***************** Edit Group operator ************* */
 
@@ -886,7 +905,7 @@ static int node_group_socket_add_exec(bContext *C, wmOperator *op)
 	char name[32]= "";
 	int type= SOCK_FLOAT;
 	bNodeTree *ngroup= snode->edittree;
-	bNodeSocket *sock;
+	/* bNodeSocket *sock; */ /* UNUSED */
 	
 	ED_preview_kill_jobs(C);
 	
@@ -902,7 +921,7 @@ static int node_group_socket_add_exec(bContext *C, wmOperator *op)
 		return OPERATOR_CANCELLED;
 	
 	/* using placeholder subtype first */
-	sock = node_group_add_socket(ngroup, name, type, in_out);
+	/* sock = */ /* UNUSED */ node_group_add_socket(ngroup, name, type, in_out);
 	
 	ntreeUpdateTree(ngroup);
 	
@@ -967,7 +986,7 @@ void NODE_OT_group_socket_remove(wmOperatorType *ot)
 {
 	/* identifiers */
 	ot->name = "Remove Group Socket";
-	ot->description = "Removed node group socket";
+	ot->description = "Remove a node group socket";
 	ot->idname = "NODE_OT_group_socket_remove";
 	
 	/* api callbacks */
@@ -1786,7 +1805,7 @@ void NODE_OT_link_viewer(wmOperatorType *ot)
 {
 	/* identifiers */
 	ot->name= "Link to Viewer Node";
-	ot->description = "Link to Viewer Node";
+	ot->description = "Link to viewer node";
 	ot->idname= "NODE_OT_link_viewer";
 	
 	/* api callbacks */
@@ -2175,7 +2194,6 @@ static int node_duplicate_exec(bContext *C, wmOperator *op)
 	bNode *node, *newnode, *lastnode;
 	bNodeLink *link, *newlink, *lastlink;
 	int keep_inputs = RNA_boolean_get(op->ptr, "keep_inputs");
-	bNodeSocket *sock;
 	
 	ED_preview_kill_jobs(C);
 	
@@ -2257,7 +2275,7 @@ void NODE_OT_duplicate(wmOperatorType *ot)
 {
 	/* identifiers */
 	ot->name= "Duplicate Nodes";
-	ot->description = "Duplicate the nodes";
+	ot->description = "Duplicate selected nodes";
 	ot->idname= "NODE_OT_duplicate";
 	
 	/* api callbacks */
@@ -2885,12 +2903,13 @@ static int node_read_fullsamplelayers_exec(bContext *C, wmOperator *UNUSED(op))
 	Render *re= RE_NewRender(curscene->id.name);
 
 	WM_cursor_wait(1);
-
 	RE_MergeFullSample(re, bmain, curscene, snode->nodetree);
-	snode_notify(C, snode);
-	snode_dag_update(C, snode);
-	
 	WM_cursor_wait(0);
+
+	/* note we are careful to send the right notifier, as otherwise the
+	   compositor would reexecute and overwrite the full sample result */
+	WM_event_add_notifier(C, NC_SCENE|ND_COMPO_RESULT, NULL);
+
 	return OPERATOR_FINISHED;
 }
 
@@ -3247,7 +3266,8 @@ void NODE_OT_delete(wmOperatorType *ot)
 }
 
 /* ****************** Delete with reconnect ******************* */
-static int is_connected_to_input_socket(bNode* node, bNodeLink* link) {
+static int is_connected_to_input_socket(bNode* node, bNodeLink* link)
+{
 	bNodeSocket *sock;
 	if (link->tonode == node) {
 		for(sock= node->inputs.first; sock; sock= sock->next) {
@@ -3447,7 +3467,7 @@ static int node_add_file_exec(bContext *C, wmOperator *op)
 		ima= BKE_add_image_file(path);
 
 		if(!ima) {
-			BKE_reportf(op->reports, RPT_ERROR, "Can't read: \"%s\", %s.", path, errno ? strerror(errno) : "Unsupported image format");
+			BKE_reportf(op->reports, RPT_ERROR, "Can't read: \"%s\", %s", path, errno ? strerror(errno) : "Unsupported image format");
 			return OPERATOR_CANCELLED;
 		}
 	}
@@ -3458,7 +3478,7 @@ static int node_add_file_exec(bContext *C, wmOperator *op)
 		ima= (Image *)find_id("IM", name);
 
 		if(!ima) {
-			BKE_reportf(op->reports, RPT_ERROR, "Image named \"%s\", not found.", name);
+			BKE_reportf(op->reports, RPT_ERROR, "Image named \"%s\", not found", name);
 			return OPERATOR_CANCELLED;
 		}
 	}
@@ -3476,7 +3496,7 @@ static int node_add_file_exec(bContext *C, wmOperator *op)
 	node = node_add_node(snode, bmain, scene, &ntemp, snode->mx, snode->my);
 	
 	if (!node) {
-		BKE_report(op->reports, RPT_WARNING, "Could not add an image node.");
+		BKE_report(op->reports, RPT_WARNING, "Could not add an image node");
 		return OPERATOR_CANCELLED;
 	}
 	
@@ -3519,7 +3539,7 @@ void NODE_OT_add_file(wmOperatorType *ot)
 	ot->flag= OPTYPE_REGISTER|OPTYPE_UNDO;
 	
 	WM_operator_properties_filesel(ot, FOLDERFILE|IMAGEFILE, FILE_SPECIAL, FILE_OPENFILE, WM_FILESEL_FILEPATH);  //XXX TODO, relative_path
-	RNA_def_string(ot->srna, "name", "Image", 24, "Name", "Datablock name to assign.");
+	RNA_def_string(ot->srna, "name", "Image", 24, "Name", "Datablock name to assign");
 }
 
 /********************** New node tree operator *********************/

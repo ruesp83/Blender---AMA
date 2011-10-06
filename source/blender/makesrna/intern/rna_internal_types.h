@@ -1,5 +1,5 @@
 /*
- * $Id: rna_internal_types.h 37335 2011-06-09 13:46:34Z campbellbarton $
+ * $Id: rna_internal_types.h 40735 2011-10-01 17:54:33Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -102,6 +102,7 @@ typedef PointerRNA (*PropCollectionGetFunc)(struct CollectionPropertyIterator *i
 typedef int (*PropCollectionLengthFunc)(struct PointerRNA *ptr);
 typedef int (*PropCollectionLookupIntFunc)(struct PointerRNA *ptr, int key, struct PointerRNA *r_ptr);
 typedef int (*PropCollectionLookupStringFunc)(struct PointerRNA *ptr, const char *key, struct PointerRNA *r_ptr);
+typedef int (*PropCollectionAssignIntFunc)(struct PointerRNA *ptr, int key, const struct PointerRNA *assign_ptr);
 
 /* Container - generic abstracted container of RNA properties */
 typedef struct ContainerRNA {
@@ -285,6 +286,7 @@ typedef struct CollectionPropertyRNA {
 	PropCollectionLengthFunc length;				/* optional */
 	PropCollectionLookupIntFunc lookupint;			/* optional */
 	PropCollectionLookupStringFunc lookupstring;	/* optional */
+	PropCollectionAssignIntFunc assignint;			/* optional */
 
 	struct StructRNA *item_type;			/* the type of this item */
 } CollectionPropertyRNA;

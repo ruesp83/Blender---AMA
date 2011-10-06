@@ -1,5 +1,5 @@
 /*
- * $Id: AUD_SequencerReader.cpp 39792 2011-08-30 09:15:55Z nexyon $
+ * $Id: AUD_SequencerReader.cpp 40650 2011-09-28 09:37:50Z nexyon $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -132,8 +132,14 @@ void AUD_SequencerReader::read(int& length, bool& eos, sample_t* buffer)
 
 		while(eit != m_factory->m_entries.end())
 		{
-			handle = new AUD_SequencerHandle(*eit, m_device);
-			handles.push_front(handle);
+			try
+			{
+				handle = new AUD_SequencerHandle(*eit, m_device);
+				handles.push_front(handle);
+			}
+			catch(AUD_Exception&)
+			{
+			}
 			eit++;
 		}
 
@@ -162,7 +168,7 @@ void AUD_SequencerReader::read(int& length, bool& eos, sample_t* buffer)
 
 		for(AUD_HandleIterator it = m_handles.begin(); it != m_handles.end(); it++)
 		{
-			(*it)->update(time, frame);
+			(*it)->update(time, frame, m_factory->m_fps);
 		}
 
 		m_factory->m_volume.read(frame, &volume);
@@ -174,7 +180,7 @@ void AUD_SequencerReader::read(int& length, bool& eos, sample_t* buffer)
 		m_device.setListenerLocation(v);
 		m_factory->m_location.read(frame + 1, v2.get());
 		v2 -= v;
-		m_device.setListenerVelocity(v2);
+		m_device.setListenerVelocity(v2 * m_factory->m_fps);
 
 		m_device.read(reinterpret_cast<data_t*>(buffer + specs.channels * pos), len);
 

@@ -1,5 +1,5 @@
 /*
- * $Id: GHOST_SystemX11.h 38908 2011-08-02 04:28:05Z merwin $
+ * $Id: GHOST_SystemX11.h 40538 2011-09-25 12:31:21Z campbellbarton $
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
  * This program is free software; you can redistribute it and/or
@@ -285,7 +285,7 @@ private :
 		void
 	processEvent(
 		XEvent *xe
- 	);
+	);
 
 		Time
 	lastEventTime(
@@ -294,7 +294,7 @@ private :
 
 		bool
 	generateWindowExposeEvents(
- 	);
+	);
 };
 
 #endif

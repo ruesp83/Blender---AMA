@@ -1,5 +1,5 @@
 /*
- * $Id: PyObjectPlus.h 39792 2011-08-30 09:15:55Z nexyon $
+ * $Id: PyObjectPlus.h 40538 2011-09-25 12:31:21Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -563,7 +563,7 @@ public:
 	
 	/** enable/disable display of deprecation warnings */
 	static void			SetDeprecationWarnings(bool ignoreDeprecationWarnings);
- 	/** Shows a deprecation warning */
+	/** Shows a deprecation warning */
 	static void			ShowDeprecationWarning_func(const char* method,const char* prop);
 	static void			ClearDeprecationWarning();
 	

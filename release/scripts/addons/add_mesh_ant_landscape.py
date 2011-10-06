@@ -23,7 +23,7 @@ bl_info = {
     "blender": (2, 5, 9),
     "api": 39685,
     "location": "View3D > Add > Mesh",
-    "description": "Adds a Landscape Primitive",
+    "description": "Add a landscape primitive",
     "warning": "", # used for warning icon and text in addons panel
     "wiki_url": "http://wiki.blender.org/index.php/Extensions:2.5/Py/"\
         "Scripts/Add_Mesh/ANT_Landscape",
@@ -534,31 +534,31 @@ class landscape_add(bpy.types.Operator):
                 min=1,
                 max=16,
                 default=6,
-                description="Noise Depth - number of frequencies in the fBm.")
+                description="Noise Depth - number of frequencies in the fBm")
 
     mDimension = FloatProperty(name="Dimension",
                 min=0.01,
                 max=2.0,
                 default=1.0,
-                description="H - fractal dimension of the roughest areas.")
+                description="H - fractal dimension of the roughest areas")
 
     mLacunarity = FloatProperty(name="Lacunarity",
                 min=0.01,
                 max=6.0,
                 default=2.0,
-                description="Lacunarity - gap between successive frequencies.")
+                description="Lacunarity - gap between successive frequencies")
 
     mOffset = FloatProperty(name="Offset",
                 min=0.01,
                 max=6.0,
                 default=1.0,
-                description="Offset - raises the terrain from sea level.")
+                description="Offset - raises the terrain from sea level")
 
     mGain = FloatProperty(name="Gain",
                 min=0.01,
                 max=6.0,
                 default=1.0,
-                description="Gain - scale factor.")
+                description="Gain - scale factor")
 
     BiasTypes = [
                 ("0","Sin","Sin"),

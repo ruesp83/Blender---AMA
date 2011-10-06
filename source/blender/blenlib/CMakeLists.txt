@@ -1,4 +1,4 @@
-# $Id: CMakeLists.txt 38443 2011-07-17 09:11:13Z campbellbarton $
+# $Id: CMakeLists.txt 40216 2011-09-15 08:07:42Z campbellbarton $
 # ***** BEGIN GPL LICENSE BLOCK *****
 #
 # This program is free software; you can redistribute it and/or
@@ -80,6 +80,7 @@ set(SRC
 	intern/scanfill.c
 	intern/storage.c
 	intern/string.c
+	intern/string_utf8.c
 	intern/threads.c
 	intern/time.c
 	intern/uvproject.c

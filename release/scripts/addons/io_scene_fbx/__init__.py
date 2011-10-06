@@ -21,7 +21,7 @@
 bl_info = {
     "name": "Autodesk FBX format",
     "author": "Campbell Barton",
-    "blender": (2, 5, 8),
+    "blender": (2, 5, 9),
     "api": 38691,
     "location": "File > Import-Export",
     "description": "Export FBX meshes, UV's, vertex colors, materials, "
@@ -41,7 +41,11 @@ if "bpy" in locals():
 
 
 import bpy
-from bpy.props import StringProperty, BoolProperty, FloatProperty, EnumProperty
+from bpy.props import (StringProperty,
+                       BoolProperty,
+                       FloatProperty,
+                       EnumProperty,
+                       )
 
 from bpy_extras.io_utils import (ExportHelper,
                                  path_reference_mode,
@@ -80,7 +84,7 @@ class ExportFBX(bpy.types.Operator, ExportHelper):
                    ('Y', "Y Forward", ""),
                    ('Z', "Z Forward", ""),
                    ('-X', "-X Forward", ""),
-                   ('-Y', "-Y Forward (Blender)", ""),
+                   ('-Y', "-Y Forward", ""),
                    ('-Z', "-Z Forward", ""),
                    ),
             default='-Z',
@@ -89,7 +93,7 @@ class ExportFBX(bpy.types.Operator, ExportHelper):
             name="Up",
             items=(('X', "X Up", ""),
                    ('Y', "Y Up", ""),
-                   ('Z', "Z Up (Blender)", ""),
+                   ('Z', "Z Up", ""),
                    ('-X', "-X Up", ""),
                    ('-Y', "-Y Up", ""),
                    ('-Z', "-Z Up", ""),
@@ -145,7 +149,7 @@ class ExportFBX(bpy.types.Operator, ExportHelper):
             description=("Export currently assigned object and armature "
                          "animations into a default take from the scene "
                          "start/end frames"),
-            default=False
+            default=True
             )
     use_anim_optimize = BoolProperty(
             name="Optimize Keyframes",
@@ -162,7 +166,7 @@ class ExportFBX(bpy.types.Operator, ExportHelper):
             )
     path_mode = path_reference_mode
     use_rotate_workaround = BoolProperty(
-            name="Rotate Animation Fix",
+            name="XNA Rotate Animation Hack",
             description="Disable global rotation, for XNA compatibility",
             default=False,
             )
@@ -179,7 +183,7 @@ class ExportFBX(bpy.types.Operator, ExportHelper):
                    ),
             )
     use_batch_own_dir = BoolProperty(
-            name="Own Dir",
+            name="Batch Own Dir",
             description="Create a dir for each exported file",
             default=True,
             )

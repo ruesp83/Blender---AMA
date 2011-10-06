@@ -1,5 +1,5 @@
 # -*- mode: cmake; indent-tabs-mode: t; -*-
-# $Id: CMakeLists.txt 38409 2011-07-15 04:01:47Z campbellbarton $
+# $Id: CMakeLists.txt 40606 2011-09-27 10:51:57Z jensverwiebe $
 # ***** BEGIN GPL LICENSE BLOCK *****
 #
 # This program is free software; you can redistribute it and/or
@@ -63,6 +63,18 @@ if(WIN32 AND NOT UNIX)
 	endif()
 
 	add_executable(blenderplayer ${EXETYPE} ${CMAKE_CURRENT_BINARY_DIR}/dna.c ../icons/winblender.rc)
+
+elseif(APPLE)
+	add_executable(blenderplayer ${EXETYPE} ${CMAKE_CURRENT_BINARY_DIR}/dna.c)
+	# setup Info.plist
+	execute_process(COMMAND date "+%Y-%m-%d" OUTPUT_VARIABLE BLENDER_DATE OUTPUT_STRIP_TRAILING_WHITESPACE)
+	set(PLAYER_SOURCEDIR ${CMAKE_SOURCE_DIR}/source/darwin/blenderplayer.app)
+	set(PLAYER_SOURCEINFO ${PLAYER_SOURCEDIR}/Contents/Info.plist)
+	set_target_properties(blenderplayer PROPERTIES
+		MACOSX_BUNDLE_INFO_PLIST ${PLAYER_SOURCEINFO}
+		MACOSX_BUNDLE_SHORT_VERSION_STRING ${BLENDER_VERSION}
+		MACOSX_BUNDLE_LONG_VERSION_STRING "${BLENDER_VERSION} ${BLENDER_DATE}")
+
 else()
 	add_executable(blenderplayer ${CMAKE_CURRENT_BINARY_DIR}/dna.c)
 endif()
@@ -138,6 +150,7 @@ endif()
 		bf_intern_ghost # duplicate for linking
 		bf_blenkernel # duplicate for linking
 		bf_intern_mikktspace
+		extern_recastnavigation
 	)
 
 	if(WITH_MOD_CLOTH_ELTOPO)

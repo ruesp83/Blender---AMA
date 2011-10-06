@@ -1,5 +1,5 @@
 /*
- * $Id: WM_types.h 39293 2011-08-11 06:06:17Z campbellbarton $
+ * $Id: WM_types.h 40762 2011-10-03 01:36:25Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -464,8 +464,6 @@ typedef struct wmOperatorType {
 	/* struct wmOperatorTypeMacro */
 	ListBase macro;
 
-	short flag;
-
 	/* pointer to modal keymap, do not free! */
 	struct wmKeyMap *modalkeymap;
 
@@ -476,6 +474,10 @@ typedef struct wmOperatorType {
 
 	/* RNA integration */
 	ExtensionRNA ext;
+
+	/* Flag last for padding */
+	short flag;
+
 } wmOperatorType;
 
 /* **************** Paint Cursor ******************* */
@@ -540,10 +542,11 @@ typedef struct wmDropBox {
 	
 	/* if poll survives, operator is called */
 	wmOperatorType *ot;				/* not saved in file, so can be pointer */
-	short opcontext;				/* default invoke */
-	
-	struct IDProperty *properties;			/* operator properties, assigned to ptr->data and can be written to a file */
+
+	struct IDProperty *properties;	/* operator properties, assigned to ptr->data and can be written to a file */
 	struct PointerRNA *ptr;			/* rna pointer to access properties */
+
+	short opcontext;				/* default invoke */
 
 } wmDropBox;
 

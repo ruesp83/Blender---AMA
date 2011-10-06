@@ -1,5 +1,5 @@
 /*
- * $Id: pointcache.c 39795 2011-08-30 10:07:50Z blendix $
+ * $Id: pointcache.c 40641 2011-09-28 05:53:40Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -2544,7 +2544,8 @@ static void ptcache_dt_to_str(char *str, double dtime)
 		sprintf(str, "%is", ((int)dtime) % 60);
 }
 
-static void *ptcache_bake_thread(void *ptr) {
+static void *ptcache_bake_thread(void *ptr)
+{
 	int usetimer = 0, sfra, efra;
 	double stime, ptime, ctime, fetd;
 	char run[32], cur[32], etd[32];

@@ -1,5 +1,5 @@
 /*
- * $Id: BKE_sequencer.h 39792 2011-08-30 09:15:55Z nexyon $
+ * $Id: BKE_sequencer.h 40122 2011-09-11 10:35:26Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -44,8 +44,6 @@ struct Sequence;
 struct Strip;
 struct StripElem;
 struct bSound;
-
-#define MAXSEQ          32
 
 #define BUILD_SEQAR_COUNT_NOTHING  0
 #define BUILD_SEQAR_COUNT_CURRENT  1

@@ -1,5 +1,5 @@
 /*
- * $Id: BKE_image.h 39749 2011-08-28 14:46:03Z schlaile $ 
+ * $Id: BKE_image.h 40372 2011-09-19 19:55:59Z dfelinto $ 
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -167,6 +167,9 @@ struct Image *copy_image(struct Image *ima);
 
 /* merge source into dest, and free source */
 void BKE_image_merge(struct Image *dest, struct Image *source);
+
+/* check if texture has alpha (depth=32) */
+int BKE_image_has_alpha(struct Image *image);
 
 /* image_gen.c */
 void BKE_image_buf_fill_color(unsigned char *rect, float *rect_float, int width, int height, float color[4]);

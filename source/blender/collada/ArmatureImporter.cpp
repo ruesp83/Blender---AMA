@@ -1,5 +1,5 @@
 /*
- * $Id: ArmatureImporter.cpp 39936 2011-09-05 19:27:21Z blendix $
+ * $Id: ArmatureImporter.cpp 40095 2011-09-10 09:38:38Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -576,7 +576,7 @@ void ArmatureImporter::set_pose ( Object * ob_arm ,  COLLADAFW::Node * root_node
    float obmat[4][4];
 
 	float ax[3];
-	float angle = NULL;
+	float angle = 0.0f;
 	
 	// object-space
 	get_node_mat(obmat, root_node, NULL, NULL);

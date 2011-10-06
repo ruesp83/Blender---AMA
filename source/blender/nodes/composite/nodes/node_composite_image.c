@@ -1,5 +1,5 @@
 /*
- * $Id: CMP_image.c 36536 2011-05-07 13:27:27Z lukastoenne $
+ * $Id: node_composite_image.c 40538 2011-09-25 12:31:21Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -74,7 +74,7 @@ static CompBuf *node_composit_get_image(RenderData *rd, Image *ima, ImageUser *i
 
 	ibuf= BKE_image_get_ibuf(ima, iuser);
 	if(ibuf==NULL || (ibuf->rect==NULL && ibuf->rect_float==NULL)) {
- 		return NULL;
+		return NULL;
 	}
 
 	if (ibuf->rect_float == NULL) {

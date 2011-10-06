@@ -1,5 +1,5 @@
 /*
- * $Id: space_node.c 39941 2011-09-05 21:01:50Z lukastoenne $
+ * $Id: space_node.c 40453 2011-09-22 12:45:25Z blendix $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -177,6 +177,9 @@ static void node_area_listener(ScrArea *sa, wmNotifier *wmn)
 				case ND_NODES:
 				case ND_FRAME:
 					ED_area_tag_refresh(sa);
+					break;
+				case ND_COMPO_RESULT:
+					ED_area_tag_redraw(sa);
 					break;
 				case ND_TRANSFORM_DONE:
 					if(type==NTREE_COMPOSIT) {

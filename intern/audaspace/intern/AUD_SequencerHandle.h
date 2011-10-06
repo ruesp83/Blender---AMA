@@ -1,5 +1,5 @@
 /*
- * $Id: AUD_SequencerHandle.h 39792 2011-08-30 09:15:55Z nexyon $
+ * $Id: AUD_SequencerHandle.h 40124 2011-09-11 12:24:11Z nexyon $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -94,8 +94,9 @@ public:
 	 * Updates the handle for playback.
 	 * \param position The current time during playback.
 	 * \param frame The current frame during playback.
+	 * \param fps The animation frames per second.
 	 */
-	void update(float position, float frame);
+	void update(float position, float frame, float fps);
 
 	/**
 	 * Seeks the handle to a specific time position.

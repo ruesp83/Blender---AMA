@@ -1,5 +1,5 @@
 /*
- * $Id: TEX_valToRgb.c 36593 2011-05-10 11:19:26Z lukastoenne $
+ * $Id: node_texture_valToRgb.c 39944 2011-09-05 22:04:30Z gsrb3d $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *

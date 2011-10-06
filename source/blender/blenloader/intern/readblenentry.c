@@ -1,5 +1,5 @@
 /*
- * $Id: readblenentry.c 39731 2011-08-27 03:25:02Z campbellbarton $
+ * $Id: readblenentry.c 40641 2011-09-28 05:53:40Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -240,7 +240,8 @@ LinkNode *BLO_blendhandle_get_linkable_groups(BlendHandle *bh)
 	return names;
 }		
 
-void BLO_blendhandle_close(BlendHandle *bh) {
+void BLO_blendhandle_close(BlendHandle *bh)
+{
 	FileData *fd= (FileData*) bh;
 	
 	blo_freefiledata(fd);

@@ -35,16 +35,20 @@ import bpy
 import os
 import sys
 import shutil
+import tempfile
 
 
 def CopyPythonLibs(dst, overwrite_lib, report=print):
-    import sysconfig
-    src = sysconfig.get_paths()['platstdlib']
-    # Unix 'platstdlib' excludes 'lib', eg:
-    #  '/usr/lib/python3.3' vs 'C:\blender\bin\2.58\python\Lib'
-    # in both cases we have to end up with './2.58/python/lib'
-    if sys.platform[:3] != "win":
-        dst = os.path.join(dst, os.path.basename(src))
+    import platform
+
+    # use python module to find pytohn's libpath
+    src = os.path.dirname(platform.__file__)
+
+    # dst points to lib/, but src points to current python's library path, eg:
+    #  '/usr/lib/python3.2' vs '/usr/lib'
+    # append python's library dir name to destination, so only python's
+    # libraries would be copied
+    dst = os.path.join(dst, os.path.basename(src))
 
     if os.path.exists(src):
         write = False
@@ -57,7 +61,7 @@ def CopyPythonLibs(dst, overwrite_lib, report=print):
         if write:
             shutil.copytree(src, dst, ignore=lambda dir, contents: [i for i in contents if i == '__pycache__'])
     else:
-        report({'WARNING'}, "Python not found in %r, skipping pythn copy." % src)
+        report({'WARNING'}, "Python not found in %r, skipping pythn copy" % src)
 
 
 def WriteAppleRuntime(player_path, output_path, copy_python, overwrite_lib):
@@ -82,7 +86,7 @@ def WriteRuntime(player_path, output_path, copy_python, overwrite_lib, copy_dlls
 
     # Check the paths
     if not os.path.isfile(player_path) and not(os.path.exists(player_path) and player_path.endswith('.app')):
-        report({'ERROR'}, "The player could not be found! Runtime not saved.")
+        report({'ERROR'}, "The player could not be found! Runtime not saved")
         return
     
     # Check if we're bundling a .app
@@ -101,7 +105,8 @@ def WriteRuntime(player_path, output_path, copy_python, overwrite_lib, copy_dlls
     file.close()
     
     # Create a tmp blend file (Blenderplayer doesn't like compressed blends)
-    blend_path = bpy.path.clean_name(output_path)
+    tempdir = tempfile.mkdtemp()
+    blend_path = os.path.join(tempdir, bpy.path.clean_name(output_path))
     bpy.ops.wm.save_as_mainfile(filepath=blend_path,
                                 relative_remap=False,
                                 compress=False,
@@ -116,6 +121,7 @@ def WriteRuntime(player_path, output_path, copy_python, overwrite_lib, copy_dlls
 
     # Get rid of the tmp blend, we're done with it
     os.remove(blend_path)
+    os.rmdir(tempdir)
     
     # Create a new file for the bundled runtime
     output = open(output_path, 'wb')

@@ -1,5 +1,5 @@
 /* 
- * $Id: ED_particle.h 37185 2011-06-04 17:03:46Z ton $
+ * $Id: ED_particle.h 39991 2011-09-07 06:33:29Z mont29 $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *

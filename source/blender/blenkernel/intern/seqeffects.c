@@ -1,5 +1,5 @@
 /*
- * $Id: seqeffects.c 39792 2011-08-30 09:15:55Z nexyon $
+ * $Id: seqeffects.c 40782 2011-10-04 08:28:37Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -41,6 +41,7 @@
 
 #include "BLI_math.h" /* windows needs for M_PI */
 #include "BLI_utildefines.h"
+#include "BLI_string.h"
 
 #include "DNA_scene_types.h"
 #include "DNA_sequence_types.h"
@@ -177,7 +178,7 @@ static void open_plugin_seq(PluginSeq *pis, const char *seqname)
 				MEM_freeN(info);
 
 				cp= BLI_dynlib_find_symbol(pis->handle, "seqname");
-				if(cp) strncpy(cp, seqname, 21);
+				if(cp) BLI_strncpy(cp, seqname, 21);
 			} else {
 				printf ("Plugin returned unrecognized version number\n");
 				return;
@@ -203,7 +204,7 @@ static PluginSeq *add_plugin_seq(const char *str, const char *seqname)
 
 	pis= MEM_callocN(sizeof(PluginSeq), "PluginSeq");
 
-	strncpy(pis->name, str, FILE_MAXDIR+FILE_MAXFILE);
+	BLI_strncpy(pis->name, str, FILE_MAX);
 	open_plugin_seq(pis, seqname);
 
 	if(pis->doit==NULL) {
@@ -1638,8 +1639,6 @@ float hyp3,hyp4,b4,b5
 	if(wipezone->flip) x = xo - x;
 	angle = wipezone->angle;
 
-	posy = facf0 * yo;
-
 	if(wipe->forward){
 		posx = facf0 * xo;
 		posy = facf0 * yo;
@@ -2132,7 +2131,7 @@ static void do_transform(Scene *scene, Sequence *seq, float UNUSED(facf0), int x
 	}
 	
 	// Rotate
-	rotate_radians = ((float)M_PI*transform->rotIni)/180.0f;
+	rotate_radians = DEG2RADF(transform->rotIni);
 
 	transform_image(x,y, ibuf1, out, scale_x, scale_y, translate_x, translate_y, rotate_radians, transform->interpolation);
 }
@@ -2319,7 +2318,7 @@ static void RVBlurBitmap2_byte ( unsigned char* map, int width,int height,
 
 
 	/*	Swap buffers */
-	swap=temp;temp=map;map=swap;
+	swap=temp;temp=map; /* map=swap; */ /* UNUSED */
 
 	/*	Tidy up	 */
 	MEM_freeN (filter);
@@ -2489,7 +2488,7 @@ static void RVBlurBitmap2_float ( float* map, int width,int height,
 
 
 	/*	Swap buffers */
-	swap=temp;temp=map;map=swap;
+	swap=temp;temp=map; /* map=swap; */ /* UNUSED */
 
 	/*	Tidy up	 */
 	MEM_freeN (filter);

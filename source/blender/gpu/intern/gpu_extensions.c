@@ -1,5 +1,5 @@
 /*
- * $Id: gpu_extensions.c 39744 2011-08-28 05:06:30Z campbellbarton $
+ * $Id: gpu_extensions.c 40252 2011-09-16 06:47:01Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -423,7 +423,7 @@ static GPUTexture *GPU_texture_create_nD(int w, int h, int n, float *fpixels, in
 
 	if (tex->target != GL_TEXTURE_1D) {
 		/* CLAMP_TO_BORDER is an OpenGL 1.3 core feature */
-		GLenum wrapmode = (depth)? GL_CLAMP_TO_EDGE: GL_CLAMP_TO_BORDER;
+		GLenum wrapmode = (depth || tex->h == 1)? GL_CLAMP_TO_EDGE: GL_CLAMP_TO_BORDER;
 		glTexParameteri(tex->target, GL_TEXTURE_WRAP_S, wrapmode);
 		glTexParameteri(tex->target, GL_TEXTURE_WRAP_T, wrapmode);
 
@@ -514,8 +514,7 @@ GPUTexture *GPU_texture_create_3D(int w, int h, int depth, float *fpixels)
 	if (pixels)
 		MEM_freeN(pixels);
 
-	if (tex)
-		GPU_texture_unbind(tex);
+	GPU_texture_unbind(tex);
 
 	return tex;
 }
@@ -683,6 +682,11 @@ int GPU_texture_opengl_width(GPUTexture *tex)
 int GPU_texture_opengl_height(GPUTexture *tex)
 {
 	return tex->h;
+}
+
+int GPU_texture_opengl_bindcode(GPUTexture *tex)
+{
+	return tex->bindcode;
 }
 
 GPUFrameBuffer *GPU_texture_framebuffer(GPUTexture *tex)

@@ -1,5 +1,5 @@
 /*
- * $Id: IDProp.c 37581 2011-06-17 05:56:17Z campbellbarton $
+ * $Id: IDProp.c 40590 2011-09-27 05:28:06Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -269,7 +269,7 @@ static int idp_sequence_type(PyObject *seq)
 	PyObject *item;
 	int type= IDP_INT;
 
-	int i, len = PySequence_Size(seq);
+	Py_ssize_t i, len = PySequence_Size(seq);
 	for (i=0; i < len; i++) {
 		item = PySequence_GetItem(seq, i);
 		if (PyFloat_Check(item)) {

@@ -70,6 +70,7 @@ x3d_names_reserved = {'Anchor', 'Appearance', 'Arc2D', 'ArcClose2D', 'AudioClip'
 
 # h3d defines
 H3D_TOP_LEVEL = 'TOP_LEVEL_TI'
+H3D_CAMERA_FOLLOW = 'CAMERA_FOLLOW_TRANSFORM'
 H3D_VIEW_MATRIX = 'view_matrix'
 
 
@@ -89,14 +90,14 @@ def suffix_quoted_str(value, suffix):
     return value[:-1] + suffix + value[-1:]
 
 
-def clean_def(str):
+def clean_def(txt):
     # see report [#28256]
-    if not str:
-        str = "None"
+    if not txt:
+        txt = "None"
     # no digit start
-    if str[0] in "1234567890+-":
-        str = "_" + str
-    return str.translate({  # control characters 0x0-0x1f
+    if txt[0] in "1234567890+-":
+        txt = "_" + txt
+    return txt.translate({  # control characters 0x0-0x1f
                             # 0x00: "_",
                           0x01: "_",
                           0x02: "_",
@@ -170,9 +171,12 @@ def build_hierarchy(objects):
 # -----------------------------------------------------------------------------
 # H3D Functions
 # -----------------------------------------------------------------------------
-def h3d_shader_glsl_frag_patch(filepath, global_vars):
+def h3d_shader_glsl_frag_patch(filepath, scene, global_vars, frag_uniform_var_map):
     h3d_file = open(filepath, 'r')
     lines = []
+
+    last_transform = None
+
     for l in h3d_file:
         if l.startswith("void main(void)"):
             lines.append("\n")
@@ -183,17 +187,30 @@ def h3d_shader_glsl_frag_patch(filepath, global_vars):
             lines.append("\n")
         elif l.lstrip().startswith("lamp_visibility_other("):
             w = l.split(', ')
+            last_transform = w[1] + "_transform"  # XXX - HACK!!!
             w[1] = '(view_matrix * %s_transform * vec4(%s.x, %s.y, %s.z, 1.0)).xyz' % (w[1], w[1], w[1], w[1])
             l = ", ".join(w)
         elif l.lstrip().startswith("lamp_visibility_sun_hemi("):
             w = l.split(', ')
             w[0] = w[0][len("lamp_visibility_sun_hemi(") + 1:]
-            w[0] = '(mat3(normalize(view_matrix[0].xyz), normalize(view_matrix[1].xyz), normalize(view_matrix[2].xyz)) * -%s)' % w[0]
+
+            if not h3d_is_object_view(scene, frag_uniform_var_map[w[0]]):
+                w[0] = '(mat3(normalize(view_matrix[0].xyz), normalize(view_matrix[1].xyz), normalize(view_matrix[2].xyz)) * -%s)' % w[0]
+            else:
+                w[0] = ('(mat3(normalize((view_matrix*%s)[0].xyz), normalize((view_matrix*%s)[1].xyz), normalize((view_matrix*%s)[2].xyz)) * -%s)' %
+                        (last_transform, last_transform, last_transform, w[0]))
+
             l = "\tlamp_visibility_sun_hemi(" + ", ".join(w)
         elif l.lstrip().startswith("lamp_visibility_spot_circle("):
             w = l.split(', ')
             w[0] = w[0][len("lamp_visibility_spot_circle(") + 1:]
-            w[0] = '(mat3(normalize(view_matrix[0].xyz), normalize(view_matrix[1].xyz), normalize(view_matrix[2].xyz)) * -%s)' % w[0]
+
+            if not h3d_is_object_view(scene, frag_uniform_var_map[w[0]]):
+                w[0] = '(mat3(normalize(view_matrix[0].xyz), normalize(view_matrix[1].xyz), normalize(view_matrix[2].xyz)) * -%s)' % w[0]
+            else:
+                w[0] = ('(mat3(normalize((view_matrix*%s)[0].xyz), normalize((view_matrix*%s)[1].xyz), normalize((view_matrix*%s)[2].xyz)) * %s)' %
+                    (last_transform, last_transform, last_transform, w[0]))
+
             l = "\tlamp_visibility_spot_circle(" + ", ".join(w)
 
         lines.append(l)
@@ -203,6 +220,16 @@ def h3d_shader_glsl_frag_patch(filepath, global_vars):
     h3d_file = open(filepath, 'w')
     h3d_file.writelines(lines)
     h3d_file.close()
+
+
+def h3d_is_object_view(scene, obj):
+    camera = scene.camera
+    parent = obj.parent
+    while parent:
+        if parent == camera:
+            return True
+        parent = parent.parent
+    return False
 
 
 # -----------------------------------------------------------------------------
@@ -457,43 +484,13 @@ def export(file,
         if not mesh.faces:
             return
 
-        texface_use_halo = 0
-        texface_use_billboard = 0
-        # texface_use_collision = 0
+        use_collnode = bool([mod for mod in obj.modifiers
+                             if mod.type == 'COLLISION'
+                             if mod.show_viewport])
 
-        use_halonode = False
-        use_billnode = False
-        use_collnode = False
-
-        if mesh.uv_textures.active:  # if mesh.faceUV:
-            for face in mesh.uv_textures.active.data:  # for face in mesh.faces:
-                texface_use_halo |= face.use_halo
-                texface_use_billboard |= face.use_billboard
-                # texface_use_collision |= face.use_collision
-                # texface_use_object_color |= face.use_object_color
-
-        # use modifier instead
-        texface_use_collision = bool([mod for mod in obj.modifiers
-                                      if mod.type == 'COLLISION'
-                                      if mod.show_viewport])
-
-        if texface_use_halo:
-            fw('%s<Billboard axisOfRotation="0 0 0">\n' % ident)
-            use_halonode = True
-            ident += '\t'
-        elif texface_use_billboard:
-            fw('%s<Billboard axisOfRotation="0 1 0">\n' % ident)
-            use_billnode = True
-            ident += '\t'
-        elif texface_use_collision:
+        if use_collnode:
             fw('%s<Collision enabled="true">\n' % ident)
-            use_collnode = True
             ident += '\t'
-
-        del texface_use_halo
-        del texface_use_billboard
-        del texface_use_collision
-        # del texface_use_object_color
 
         ident = writeTransform_begin(ident, matrix, suffix_quoted_str(obj_id, "_TRANSFORM"))
 
@@ -540,7 +537,7 @@ def export(file,
             mesh_faces_vertices = [f.vertices[:] for f in mesh_faces]
 
             if is_uv and True in mesh_materials_use_face_texture:
-                mesh_faces_image = [(fuv.image if (mesh_materials_use_face_texture[mesh_faces_materials[i]] and fuv.use_image) else mesh_material_images[mesh_faces_materials[i]]) for i, fuv in enumerate(mesh.uv_textures.active.data)]
+                mesh_faces_image = [(fuv.image if (mesh_materials_use_face_texture[mesh_faces_materials[i]]) else mesh_material_images[mesh_faces_materials[i]]) for i, fuv in enumerate(mesh.uv_textures.active.data)]
                 mesh_faces_image_unique = set(mesh_faces_image)
             elif len(set(mesh_material_images) | {None}) > 1:  # make sure there is at least one image
                 mesh_faces_image = [mesh_material_images[material_index] for material_index in mesh_faces_materials]
@@ -907,13 +904,7 @@ def export(file,
 
         ident = writeTransform_end(ident)
 
-        if use_halonode:
-            ident = ident[:-1]
-            fw('%s</Billboard>\n' % ident)
-        elif use_billnode:
-            ident = ident[:-1]
-            fw('%s</Billboard>\n' % ident)
-        elif use_collnode:
+        if use_collnode:
             ident = ident[:-1]
             fw('%s</Collision>\n' % ident)
 
@@ -1058,41 +1049,53 @@ def export(file,
 
             # ------------------------------------------------------
             # shader-patch
-            fw('%s<field name="%s" type="SFMatrix4f" accessType="inputOutput" />\n' % (ident, H3D_VIEW_MATRIX))
+            field_descr = " <!--- H3D View Matrix Patch -->"
+            fw('%s<field name="%s" type="SFMatrix4f" accessType="inputOutput" />%s\n' % (ident, H3D_VIEW_MATRIX, field_descr))
             frag_vars = ["uniform mat4 %s;" % H3D_VIEW_MATRIX]
 
+            # annoying!, we need to track if some of the directional lamp
+            # vars are children of the camera or not, since this adjusts how
+            # they are patched.
+            frag_uniform_var_map = {}
+
             h3d_material_route.append(
-                    '<ROUTE fromNode="%s" fromField="glModelViewMatrix" toNode=%s toField="%s" />' %
-                    (H3D_TOP_LEVEL, material_id, H3D_VIEW_MATRIX))
+                    '<ROUTE fromNode="%s" fromField="glModelViewMatrix" toNode=%s toField="%s" />%s' %
+                    (H3D_TOP_LEVEL, material_id, H3D_VIEW_MATRIX, field_descr))
             # ------------------------------------------------------
 
             for uniform in gpu_shader['uniforms']:
                 if uniform['type'] == gpu.GPU_DYNAMIC_SAMPLER_2DIMAGE:
-                    fw('%s<field name="%s" type="SFNode" accessType="inputOutput">\n' % (ident, uniform['varname']))
-                    writeImageTexture(ident + '\t', bpy.data.images[uniform['image']])
+                    field_descr = " <!--- Dynamic Sampler 2d Image -->"
+                    fw('%s<field name="%s" type="SFNode" accessType="inputOutput">%s\n' % (ident, uniform['varname'], field_descr))
+                    writeImageTexture(ident + '\t', uniform['image'])
                     fw('%s</field>\n' % ident)
 
                 elif uniform['type'] == gpu.GPU_DYNAMIC_LAMP_DYNCO:
+                    lamp_obj = uniform['lamp']
+                    frag_uniform_var_map[uniform['varname']] = lamp_obj
+
                     if uniform['datatype'] == gpu.GPU_DATA_3F:  # should always be true!
-                        lamp_obj = bpy.data.objects[uniform['lamp']]
                         lamp_obj_id = quoteattr(unique_name(lamp_obj, 'LA_' + lamp_obj.name, uuid_cache_lamp, clean_func=clean_def, sep="_"))
+                        lamp_obj_transform_id = quoteattr(unique_name(lamp_obj, lamp_obj.name, uuid_cache_object, clean_func=clean_def, sep="_"))
 
                         value = '%.6g %.6g %.6g' % (global_matrix * lamp_obj.matrix_world).to_translation()[:]
-                        fw('%s<field name="%s" type="SFVec3f" accessType="inputOutput" value="%s" />\n' % (ident, uniform['varname'], value))
+                        field_descr = " <!--- Lamp DynCo '%s' -->" % lamp_obj.name
+                        fw('%s<field name="%s" type="SFVec3f" accessType="inputOutput" value="%s" />%s\n' % (ident, uniform['varname'], value, field_descr))
 
                         # ------------------------------------------------------
                         # shader-patch
-                        fw('%s<field name="%s_transform" type="SFMatrix4f" accessType="inputOutput" />\n' % (ident, uniform['varname']))
+                        field_descr = " <!--- Lamp DynCo '%s' (shader patch) -->" % lamp_obj.name
+                        fw('%s<field name="%s_transform" type="SFMatrix4f" accessType="inputOutput" />%s\n' % (ident, uniform['varname'], field_descr))
 
                         # transform
                         frag_vars.append("uniform mat4 %s_transform;" % uniform['varname'])
                         h3d_material_route.append(
-                                '<ROUTE fromNode=%s fromField="accForwardMatrix" toNode=%s toField="%s_transform" />' %
-                                (suffix_quoted_str(lamp_obj_id, "_TRANSFORM"), material_id, uniform['varname']))
+                                '<ROUTE fromNode=%s fromField="accumulatedForward" toNode=%s toField="%s_transform" />%s' %
+                                (suffix_quoted_str(lamp_obj_transform_id, "_TRANSFORM"), material_id, uniform['varname'], field_descr))
 
                         h3d_material_route.append(
-                                '<ROUTE fromNode=%s fromField="location" toNode=%s toField="%s" />' %
-                                (suffix_quoted_str(lamp_obj_id, "_TRANSFORM"), material_id, uniform['varname']))
+                                '<ROUTE fromNode=%s fromField="location" toNode=%s toField="%s" /> %s' %
+                                (lamp_obj_id, material_id, uniform['varname'], field_descr))
                         # ------------------------------------------------------
 
                     else:
@@ -1100,12 +1103,16 @@ def export(file,
 
                 elif uniform['type'] == gpu.GPU_DYNAMIC_LAMP_DYNCOL:
                     # odd  we have both 3, 4 types.
-                    lamp = bpy.data.objects[uniform['lamp']].data
+                    lamp_obj = uniform['lamp']
+                    frag_uniform_var_map[uniform['varname']] = lamp_obj
+
+                    lamp = lamp_obj.data
                     value = '%.6g %.6g %.6g' % (lamp.color * lamp.energy)[:]
+                    field_descr = " <!--- Lamp DynColor '%s' -->" % lamp_obj.name
                     if uniform['datatype'] == gpu.GPU_DATA_3F:
-                        fw('%s<field name="%s" type="SFVec3f" accessType="inputOutput" value="%s" />\n' % (ident, uniform['varname'], value))
+                        fw('%s<field name="%s" type="SFVec3f" accessType="inputOutput" value="%s" />%s\n' % (ident, uniform['varname'], value, field_descr))
                     elif uniform['datatype'] == gpu.GPU_DATA_4F:
-                        fw('%s<field name="%s" type="SFVec4f" accessType="inputOutput" value="%s 1.0" />\n' % (ident, uniform['varname'], value))
+                        fw('%s<field name="%s" type="SFVec4f" accessType="inputOutput" value="%s 1.0" />%s\n' % (ident, uniform['varname'], value, field_descr))
                     else:
                         assert(0)
 
@@ -1114,26 +1121,42 @@ def export(file,
                     assert(0)
 
                 elif uniform['type'] == gpu.GPU_DYNAMIC_LAMP_DYNVEC:
+                    lamp_obj = uniform['lamp']
+                    frag_uniform_var_map[uniform['varname']] = lamp_obj
+
                     if uniform['datatype'] == gpu.GPU_DATA_3F:
-                        lamp_obj = bpy.data.objects[uniform['lamp']]
+                        lamp_obj = uniform['lamp']
                         value = '%.6g %.6g %.6g' % ((global_matrix * lamp_obj.matrix_world).to_quaternion() * mathutils.Vector((0.0, 0.0, 1.0))).normalized()[:]
-                        fw('%s<field name="%s" type="SFVec3f" accessType="inputOutput" value="%s" />\n' % (ident, uniform['varname'], value))
+                        field_descr = " <!--- Lamp DynDirection '%s' -->" % lamp_obj.name
+                        fw('%s<field name="%s" type="SFVec3f" accessType="inputOutput" value="%s" />%s\n' % (ident, uniform['varname'], value, field_descr))
+
+                        # route so we can have the lamp update the view
+                        if h3d_is_object_view(scene, lamp_obj):
+                            lamp_id = quoteattr(unique_name(lamp_obj, 'LA_' + lamp_obj.name, uuid_cache_lamp, clean_func=clean_def, sep="_"))
+                            h3d_material_route.append(
+                                '<ROUTE fromNode=%s fromField="direction" toNode=%s toField="%s" />%s' %
+                                        (lamp_id, material_id, uniform['varname'], field_descr))
+
                     else:
                         assert(0)
 
                 elif uniform['type'] == gpu.GPU_DYNAMIC_OBJECT_VIEWIMAT:
+                    frag_uniform_var_map[uniform['varname']] = None
                     if uniform['datatype'] == gpu.GPU_DATA_16F:
                         # must be updated dynamically
                         # TODO, write out 'viewpointMatrices.py'
                         value = ' '.join(['%.6f' % f for v in mathutils.Matrix() for f in v])
-                        fw('%s<field name="%s" type="SFMatrix4f" accessType="inputOutput" value="%s" />\n' % (ident, uniform['varname'], value))
+                        field_descr = " <!--- Object View Matrix '%s' -->" % obj.name
+                        fw('%s<field name="%s" type="SFMatrix4f" accessType="inputOutput" value="%s" />%s\n' % (ident, uniform['varname'], value, field_descr))
                     else:
                         assert(0)
 
                 elif uniform['type'] == gpu.GPU_DYNAMIC_OBJECT_IMAT:
+                    frag_uniform_var_map[uniform['varname']] = None
                     if uniform['datatype'] == gpu.GPU_DATA_16F:
                         value = ' '.join(['%.6f' % f for v in (global_matrix * obj.matrix_world).inverted() for f in v])
-                        fw('%s<field name="%s" type="SFMatrix4f" accessType="inputOutput" value="%s" />\n' % (ident, uniform['varname'], value))
+                        field_descr = " <!--- Object Invertex Matrix '%s' -->" % obj.name
+                        fw('%s<field name="%s" type="SFMatrix4f" accessType="inputOutput" value="%s" />%s\n' % (ident, uniform['varname'], value, field_descr))
                     else:
                         assert(0)
 
@@ -1141,6 +1164,8 @@ def export(file,
                     pass  # XXX, shadow buffers not supported.
 
                 elif uniform['type'] == gpu.GPU_DYNAMIC_SAMPLER_2DBUFFER:
+                    frag_uniform_var_map[uniform['varname']] = None
+
                     if uniform['datatype'] == gpu.GPU_DATA_1I:
                         if 1:
                             tex = uniform['texpixels']
@@ -1149,7 +1174,8 @@ def export(file,
                                 col = tex[i:i + 4]
                                 value.append('0x%.2x%.2x%.2x%.2x' % (col[0], col[1], col[2], col[3]))
 
-                            fw('%s<field name="%s" type="SFNode" accessType="inputOutput">\n' % (ident, uniform['varname']))
+                            field_descr = " <!--- Material Buffer -->"
+                            fw('%s<field name="%s" type="SFNode" accessType="inputOutput">%s\n' % (ident, uniform['varname'], field_descr))
 
                             ident += '\t'
 
@@ -1170,7 +1196,7 @@ def export(file,
                             #value = ' '.join(['%d' % f for f in uniform['texpixels']])
                             # value = ' '.join(['%.6g' % (f / 256) for f in uniform['texpixels']])
 
-                            #fw('%s<field name="%s" type="SFInt32" accessType="inputOutput" value="%s" />\n' % (ident, uniform['varname'], value))
+                            #fw('%s<field name="%s" type="SFInt32" accessType="inputOutput" value="%s" />%s\n' % (ident, uniform['varname'], value, field_descr))
                             #print('test', len(uniform['texpixels']))
                     else:
                         assert(0)
@@ -1181,7 +1207,11 @@ def export(file,
             file_frag.write(gpu_shader['fragment'])
             file_frag.close()
             # patch it
-            h3d_shader_glsl_frag_patch(os.path.join(base_dst, shader_url_frag), frag_vars)
+            h3d_shader_glsl_frag_patch(os.path.join(base_dst, shader_url_frag),
+                                       scene,
+                                       frag_vars,
+                                       frag_uniform_var_map,
+                                       )
 
             file_vert = open(os.path.join(base_dst, shader_url_vert), 'w')
             file_vert.write(gpu_shader['vertex'])
@@ -1319,8 +1349,22 @@ def export(file,
                 # make transform node relative
                 obj_matrix = obj_main_matrix_world_invert * obj_matrix
 
+            # H3D - use for writing a dummy transform parent
+            is_dummy_tx = False
+
             if obj_type == 'CAMERA':
                 writeViewpoint(ident, obj, obj_matrix, scene)
+
+                if use_h3d and scene.camera == obj:
+                    view_id = uuid_cache_view[obj]
+                    fw('%s<Transform DEF="%s">\n' % (ident, H3D_CAMERA_FOLLOW))
+                    h3d_material_route.extend([
+                        '<ROUTE fromNode="%s" fromField="totalPosition" toNode="%s" toField="translation" />' % (view_id, H3D_CAMERA_FOLLOW),
+                        '<ROUTE fromNode="%s" fromField="totalOrientation" toNode="%s" toField="rotation" />' % (view_id, H3D_CAMERA_FOLLOW),
+                        ])
+                    is_dummy_tx = True
+                    ident += '\t'
+
             elif obj_type in {'MESH', 'CURVE', 'SURF', 'FONT'}:
                 if (obj_type != 'MESH') or (use_apply_modifiers and obj.is_modified(scene, 'PREVIEW')):
                     try:
@@ -1360,6 +1404,11 @@ def export(file,
         # ---------------------------------------------------------------------
         for obj_child, obj_child_children in obj_children:
             export_object(ident, obj_main, obj_child, obj_child_children)
+
+        if is_dummy_tx:
+            ident = ident[:-1]
+            fw('%s</Transform>\n' % ident)
+            is_dummy_tx = False
 
         if use_hierarchy:
             ident = writeTransform_end(ident)
@@ -1439,16 +1488,10 @@ def save(operator, context, filepath="",
     if bpy.ops.object.mode_set.poll():
         bpy.ops.object.mode_set(mode='OBJECT')
 
-    file = None
     if use_compress:
-        try:
-            import gzip
-            file = gzip.open(filepath, 'w')
-        except:
-            print('failed to import compression modules, exporting uncompressed')
-            filepath = filepath[:-1]  # remove trailing z
-
-    if file is None:
+        import gzip
+        file = gzip.open(filepath, 'w')
+    else:
         file = open(filepath, 'w')
 
     if global_matrix is None:

@@ -1,5 +1,5 @@
 /*
- * $Id: space_sequencer.c 39937 2011-09-05 19:34:27Z blendix $
+ * $Id: space_sequencer.c 40353 2011-09-19 13:12:54Z nazgul $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -223,11 +223,11 @@ static void sequencer_refresh(const bContext *C, ScrArea *sa)
 				WM_event_remove_handlers((bContext*)C, &ar_preview->handlers);
 				view_changed= 1;
 			}
-			if (ar_main && ar_main->alignment != RGN_ALIGN_TOP) {
+			if (ar_main && ar_main->alignment != RGN_ALIGN_NONE) {
 				ar_main->alignment= RGN_ALIGN_NONE;
 				view_changed= 1;
 			}
-			if (ar_preview && ar_preview->alignment != RGN_ALIGN_TOP) {
+			if (ar_preview && ar_preview->alignment != RGN_ALIGN_NONE) {
 				ar_preview->alignment= RGN_ALIGN_NONE;
 				view_changed= 1;
 			}
@@ -245,11 +245,11 @@ static void sequencer_refresh(const bContext *C, ScrArea *sa)
 				ar_preview->v2d.cur = ar_preview->v2d.tot;
 				view_changed= 1;
 			}
-			if (ar_main && ar_main->alignment != RGN_ALIGN_TOP) {
+			if (ar_main && ar_main->alignment != RGN_ALIGN_NONE) {
 				ar_main->alignment= RGN_ALIGN_NONE;
 				view_changed= 1;
 			}
-			if (ar_preview && ar_preview->alignment != RGN_ALIGN_TOP) {
+			if (ar_preview && ar_preview->alignment != RGN_ALIGN_NONE) {
 				ar_preview->alignment= RGN_ALIGN_NONE;
 				view_changed= 1;
 			}
@@ -266,7 +266,7 @@ static void sequencer_refresh(const bContext *C, ScrArea *sa)
 				ar_preview->v2d.cur = ar_preview->v2d.tot;
 				view_changed= 1;
 			}
-			if (ar_main && ar_main->alignment != RGN_ALIGN_TOP) {
+			if (ar_main && ar_main->alignment != RGN_ALIGN_NONE) {
 				ar_main->alignment= RGN_ALIGN_NONE;
 				view_changed= 1;
 			}

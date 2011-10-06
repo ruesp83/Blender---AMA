@@ -19,8 +19,8 @@
 # <pep8 compliant>
 
 import bpy
-from mathutils import *
-from bl_operators import nla
+from mathutils import Vector
+from bpy_extras import anim_utils
 from .  import retarget
 
 
@@ -383,8 +383,14 @@ def bakeAllConstraints(obj, s_frame, e_frame, bones):
     constraintStrip.frame_start = s_frame
     constraintStrip.frame_end = e_frame
     if selectedBones:
-        #Use bake function from NLA Bake Action operator
-        nla.bake(s_frame, e_frame, action=constraintStrip.action, only_selected=True, do_pose=True, do_object=False)
+        # Use bake function from NLA Bake Action operator
+        anim_utils.bake_action(s_frame,
+                               e_frame,
+                               action=constraintStrip.action,
+                               only_selected=True,
+                               do_pose=True,
+                               do_object=False,
+                               )
     if simpleBake:
         #Do a "simple" bake, location only, world space only.
         locBake(s_frame, e_frame, simpleBake)

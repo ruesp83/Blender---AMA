@@ -1,7 +1,7 @@
 /*
  * blenlib/BKE_mesh.h (mar-2001 nzc)
  *	
- * $Id: BKE_mesh.h 36332 2011-04-26 07:17:21Z campbellbarton $ 
+ * $Id: BKE_mesh.h 40382 2011-09-20 06:25:15Z campbellbarton $ 
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -84,7 +84,7 @@ void nurbs_to_mesh(struct Object *ob);
 void mesh_to_curve(struct Scene *scene, struct Object *ob);
 void free_dverts(struct MDeformVert *dvert, int totvert);
 void copy_dverts(struct MDeformVert *dst, struct MDeformVert *src, int totvert); /* __NLA */
-void mesh_delete_material_index(struct Mesh *me, int index);
+void mesh_delete_material_index(struct Mesh *me, short index);
 void mesh_set_smooth_flag(struct Object *meshOb, int enableSmooth);
 
 struct BoundBox *mesh_get_bb(struct Object *ob);

@@ -1,7 +1,7 @@
 /*
  * KX_SoundActuator.cpp
  *
- * $Id: KX_SoundActuator.cpp 39792 2011-08-30 09:15:55Z nexyon $
+ * $Id: KX_SoundActuator.cpp 39984 2011-09-06 21:02:26Z nexyon $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -108,7 +108,15 @@ void KX_SoundActuator::play()
 		break;
 	}
 
-	m_handle = AUD_getDevice()->play(sound, 0);
+	try
+	{
+		m_handle = AUD_getDevice()->play(sound, 0);
+	}
+	catch(AUD_Exception&)
+	{
+		// cannot play back, ignore
+		return;
+	}
 
 	AUD_Reference<AUD_I3DHandle> handle3d = AUD_Reference<AUD_I3DHandle>(m_handle);
 

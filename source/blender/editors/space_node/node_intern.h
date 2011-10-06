@@ -1,5 +1,5 @@
 /*
- * $Id: node_intern.h 39941 2011-09-05 21:01:50Z lukastoenne $
+ * $Id: node_intern.h 40587 2011-09-27 01:32:27Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -33,6 +33,7 @@
 #ifndef ED_NODE_INTERN_H
 #define ED_NODE_INTERN_H
 
+#include <stddef.h> /* for size_t */
 #include "UI_interface.h"
 
 /* internal exports only */

@@ -21,10 +21,14 @@
     geometry_utils.py
 
     3d geometry calculations
+    
+    
+
 '''
 
 
-from mathutils import geometry, Vector
+from mathutils import Vector, Matrix
+from mathutils import geometry
 
 
 # 3D Geometry
@@ -121,6 +125,7 @@ class G3:
         except(RuntimeError, TypeError):
             return None
 
+    # Poor mans approach of finding center of circle
     @classmethod
     def circumCenter(cls, fv):
         fm = G3.medianTriangle(fv)
@@ -136,15 +141,16 @@ class G3:
     def closestP2CylinderAxis(cls, p, fv):
         n = G3.ThreePnormal(fv)
         c = G3.circumCenter(fv)
-        if c is None:
+        if(c==None):
             return None
         return G3.closestP2L(p, c, c+n)
 
+    # Poor mans approach of finding center of sphere
     @classmethod
     def centerOfSphere(cls, fv):
         try:
             if len(fv)==3:
-                return G3.circumCenter(fv)
+                return G3.circumCenter(fv) # Equator
             if len(fv)==4:
                 fv3 = [fv[0],fv[1],fv[2]]
                 c1 = G3.circumCenter(fv)
@@ -163,7 +169,7 @@ class G3:
         #print ("G3.closestP2Sphere")
         try:
             c = G3.centerOfSphere(fv)
-            if c is None:
+            if c==None:
                 return None
             pc = p-c
             if pc.length == 0:
@@ -178,7 +184,7 @@ class G3:
     def closestP2Cylinder(cls, p, fv):
         #print ("G3.closestP2Sphere")
         c = G3.closestP2CylinderAxis(p, fv)
-        if c is None:
+        if c==None:
             return None
         r = (fv[0] - G3.centerOfSphere(fv)).length
         pc = p-c
@@ -206,3 +212,6 @@ class G3:
         #else:
             #pc.normalize()
         #return c + (pc * G3.distanceP2P(c, fv[0]))
+
+
+
