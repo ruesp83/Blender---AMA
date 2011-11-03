@@ -1,7 +1,4 @@
-/*  image_gen.c	
- * 
- * $Id: image_gen.c 36271 2011-04-21 13:11:51Z campbellbarton $
- *
+/*
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
  * This program is free software; you can redistribute it and/or

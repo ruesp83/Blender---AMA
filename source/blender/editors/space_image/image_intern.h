@@ -1,6 +1,4 @@
 /*
- * $Id: image_intern.h 38908 2011-08-02 04:28:05Z merwin $
- *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
  * This program is free software; you can redistribute it and/or
@@ -52,9 +50,6 @@ struct ARegion *image_has_buttons_region(struct ScrArea *sa);
 struct ARegion *image_has_scope_region(struct ScrArea *sa);
 
 extern const char *image_context_dir[]; /* doc access */
-
-/* image_header.c */
-void image_header_buttons(const struct bContext *C, struct ARegion *ar);
 
 void IMAGE_OT_toolbox(struct wmOperatorType *ot);
 

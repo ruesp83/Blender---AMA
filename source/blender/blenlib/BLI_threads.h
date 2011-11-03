@@ -1,6 +1,5 @@
 /*
  *
- * $Id: BLI_threads.h 34966 2011-02-18 13:58:08Z jesterking $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -71,6 +70,7 @@ int		BLI_system_thread_count(void); /* gets the number of threads the system can
 #define LOCK_CUSTOM1	3
 #define LOCK_RCACHE		4
 #define LOCK_OPENGL		5
+#define LOCK_NODES		6
 
 void	BLI_lock_thread(int type);
 void	BLI_unlock_thread(int type);

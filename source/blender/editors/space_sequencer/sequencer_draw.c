@@ -1,6 +1,4 @@
 /*
- * $Id: sequencer_draw.c 40114 2011-09-11 06:41:09Z campbellbarton $
- *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
  * This program is free software; you can redistribute it and/or
@@ -74,7 +72,8 @@
 #define SEQ_RIGHTHANDLE	2
 
 
-/* Note, Dont use WHILE_SEQ while drawing! - it messes up transform, - Campbell */
+/* Note, Dont use SEQ_BEGIN/SEQ_END while drawing!
+ * it messes up transform, - Campbell */
 static void draw_shadedstrip(Sequence *seq, unsigned char col[3], float x1, float y1, float x2, float y2);
 
 static void get_seq_color3ubv(Scene *curscene, Sequence *seq, unsigned char col[3])
@@ -187,7 +186,13 @@ static void drawseqwave(Scene *scene, Sequence *seq, float x1, float y1, float x
 		if(!seq->sound->waveform)
 			sound_read_waveform(seq->sound);
 
+		if(!seq->sound->waveform)
+			return; /* zero length sound */
+
 		waveform = seq->sound->waveform;
+
+		if(!waveform)
+			return;
 
 		startsample = floor((seq->startofs + seq->anim_startofs)/FPS * SOUND_WAVE_SAMPLES_PER_SECOND);
 		endsample = ceil((seq->startofs + seq->anim_startofs + seq->enddisp - seq->startdisp)/FPS * SOUND_WAVE_SAMPLES_PER_SECOND);
@@ -249,8 +254,10 @@ static void drawmeta_stipple(int value)
 
 static void drawmeta_contents(Scene *scene, Sequence *seqm, float x1, float y1, float x2, float y2)
 {
-	/* Note, this used to use WHILE_SEQ, but it messes up the seq->depth value, (needed by transform when doing overlap checks)
-	 * so for now, just use the meta's immediate children, could be fixed but its only drawing - Campbell */
+	/* note: this used to use SEQ_BEGIN/SEQ_END, but it messes up the
+	 * seq->depth value, (needed by transform when doing overlap checks)
+	 * so for now, just use the meta's immediate children, could be fixed but
+	 * its only drawing - campbell */
 	Sequence *seq;
 	unsigned char col[4];
 
@@ -508,47 +515,48 @@ static void draw_seq_text(View2D *v2d, Sequence *seq, float x1, float x2, float 
 	char str[32 + FILE_MAXDIR+FILE_MAXFILE];
 	const char *name= seq->name+2;
 	char col[4];
-	
+
+	/* note, all strings should include 'name' */
 	if(name[0]=='\0')
 		name= give_seqname(seq);
 
 	if(seq->type == SEQ_META || seq->type == SEQ_ADJUSTMENT) {
-		sprintf(str, "%d | %s", seq->len, name);
+		BLI_snprintf(str, sizeof(str), "%d | %s", seq->len, name);
 	}
 	else if(seq->type == SEQ_SCENE) {
 		if(seq->scene) {
 			if(seq->scene_camera) {
-				sprintf(str, "%d | %s: %s (%s)", seq->len, name, seq->scene->id.name+2, ((ID *)seq->scene_camera)->name+2);
+				BLI_snprintf(str, sizeof(str), "%d | %s: %s (%s)", seq->len, name, seq->scene->id.name+2, ((ID *)seq->scene_camera)->name+2);
 			} else {
-				sprintf(str, "%d | %s: %s", seq->len, name, seq->scene->id.name+2);
+				BLI_snprintf(str, sizeof(str), "%d | %s: %s", seq->len, name, seq->scene->id.name+2);
 			}
 		}
 		else {
-			sprintf(str, "%d | %s", seq->len, name);
+			BLI_snprintf(str, sizeof(str), "%d | %s", seq->len, name);
 		}
 	}
 	else if(seq->type == SEQ_MULTICAM) {
-		sprintf(str, "Cam: %d", seq->multicam_source);
+		BLI_snprintf(str, sizeof(str), "Cam | %s: %d", name, seq->multicam_source);
 	}
 	else if(seq->type == SEQ_IMAGE) {
-		sprintf(str, "%d | %s%s", seq->len, seq->strip->dir, seq->strip->stripdata->name);
+		BLI_snprintf(str, sizeof(str), "%d | %s: %s%s", seq->len, name, seq->strip->dir, seq->strip->stripdata->name);
 	}
 	else if(seq->type & SEQ_EFFECT) {
 		int can_float = (seq->type != SEQ_PLUGIN)
 			|| (seq->plugin && seq->plugin->version >= 4);
 
 		if(seq->seq3!=seq->seq2 && seq->seq1!=seq->seq3)
-			sprintf(str, "%d | %s: %d>%d (use %d)%s", seq->len, name, seq->seq1->machine, seq->seq2->machine, seq->seq3->machine, can_float ? "" : " No float, upgrade plugin!");
+			BLI_snprintf(str, sizeof(str), "%d | %s: %d>%d (use %d)%s", seq->len, name, seq->seq1->machine, seq->seq2->machine, seq->seq3->machine, can_float ? "" : " No float, upgrade plugin!");
 		else if (seq->seq1 && seq->seq2)
-			sprintf(str, "%d | %s: %d>%d%s", seq->len, name, seq->seq1->machine, seq->seq2->machine, can_float ? "" : " No float, upgrade plugin!");
+			BLI_snprintf(str, sizeof(str), "%d | %s: %d>%d%s", seq->len, name, seq->seq1->machine, seq->seq2->machine, can_float ? "" : " No float, upgrade plugin!");
 		else
-			sprintf(str, "%d | %s", seq->len, name);
+			BLI_snprintf(str, sizeof(str), "%d | %s", seq->len, name);
 	}
 	else if (seq->type == SEQ_SOUND) {
-		sprintf(str, "%d | %s", seq->len, seq->sound->name);
+		BLI_snprintf(str, sizeof(str), "%d | %s: %s", seq->len, name, seq->sound->name);
 	}
 	else if (seq->type == SEQ_MOVIE) {
-		sprintf(str, "%d | %s%s", seq->len, seq->strip->dir, seq->strip->stripdata->name);
+		BLI_snprintf(str, sizeof(str), "%d | %s: %s%s", seq->len, name, seq->strip->dir, seq->strip->stripdata->name);
 	}
 	
 	if(seq->flag & SELECT){

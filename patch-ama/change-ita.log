@@ -50,6 +50,9 @@ TODO:
 	- Associare una curva all'array.
 	- Creare i cloni con una forma ad aspirale.
 
+BUGS:
+
+	- Blender crascia se inserisco una curva al FitCurve e poi un MidCap, viceversa no!!
 
 Video 5\03\2011:
 1)http://vimeo.com/15561032

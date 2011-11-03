@@ -1,6 +1,4 @@
 /*
- * $Id: writefile.c 40469 2011-09-22 17:52:27Z nazgul $
- *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
  * This program is free software; you can redistribute it and/or
@@ -872,7 +870,7 @@ static void write_pointcaches(WriteData *wd, ListBase *ptcaches)
 				
 				for(i=0; i<BPHYS_TOT_DATA; i++) {
 					if(pm->data[i] && pm->data_types & (1<<i)) {
-						if(strcmp(ptcache_data_struct[i], "")==0)
+						if(ptcache_data_struct[i][0]=='\0')
 							writedata(wd, DATA, MEM_allocN_len(pm->data[i]), pm->data[i]);
 						else
 							writestruct(wd, DATA, ptcache_data_struct[i], pm->totpoint, pm->data[i]);
@@ -880,7 +878,7 @@ static void write_pointcaches(WriteData *wd, ListBase *ptcaches)
 				}
 
 				for(; extra; extra=extra->next) {
-					if(strcmp(ptcache_extra_struct[extra->type], "")==0)
+					if(ptcache_extra_struct[extra->type][0]=='\0')
 						continue;
 					writestruct(wd, DATA, "PTCacheExtra", 1, extra);
 					writestruct(wd, DATA, ptcache_extra_struct[extra->type], extra->totdata, extra->data);
@@ -1864,6 +1862,12 @@ static void write_worlds(WriteData *wd, ListBase *idbase)
 			for(a=0; a<MAX_MTEX; a++) {
 				if(wrld->mtex[a]) writestruct(wd, DATA, "MTex", 1, wrld->mtex[a]);
 			}
+
+			/* nodetree is integral part of lamps, no libdata */
+			if(wrld->nodetree) {
+				writestruct(wd, DATA, "bNodeTree", 1, wrld->nodetree);
+				write_nodetree(wd, wrld->nodetree);
+			}
 			
 			write_previews(wd, wrld->preview);
 		}
@@ -1893,6 +1897,12 @@ static void write_lamps(WriteData *wd, ListBase *idbase)
 			if(la->curfalloff)
 				write_curvemapping(wd, la->curfalloff);	
 			
+			/* nodetree is integral part of lamps, no libdata */
+			if(la->nodetree) {
+				writestruct(wd, DATA, "bNodeTree", 1, la->nodetree);
+				write_nodetree(wd, la->nodetree);
+			}
+
 			write_previews(wd, la->preview);
 			
 		}
@@ -2212,10 +2222,6 @@ static void write_screens(WriteData *wd, ListBase *scrbase)
 					if(sima->cumap)
 						write_curvemapping(wd, sima->cumap);
 				}
-				else if(sl->spacetype==SPACE_IMASEL) {
-					// XXX: depreceated... do we still want to keep this?
-					writestruct(wd, DATA, "SpaceImaSel", 1, sl);
-				}
 				else if(sl->spacetype==SPACE_TEXT) {
 					writestruct(wd, DATA, "SpaceText", 1, sl);
 				}
@@ -2226,9 +2232,6 @@ static void write_screens(WriteData *wd, ListBase *scrbase)
 				}
 				else if(sl->spacetype==SPACE_ACTION) {
 					writestruct(wd, DATA, "SpaceAction", 1, sl);
-				}
-				else if(sl->spacetype==SPACE_SOUND) {
-					writestruct(wd, DATA, "SpaceSound", 1, sl);
 				}
 				else if(sl->spacetype==SPACE_NLA){
 					SpaceNla *snla= (SpaceNla *)sl;
@@ -2271,7 +2274,7 @@ static void write_screens(WriteData *wd, ListBase *scrbase)
 
 static void write_libraries(WriteData *wd, Main *main)
 {
-	ListBase *lbarray[30];
+	ListBase *lbarray[MAX_LIBARRAY];
 	ID *id;
 	int a, tot, foundone;
 
@@ -2683,8 +2686,8 @@ int BLO_write_file(Main *mainvar, const char *filepath, int write_flags, ReportL
 	if(write_flags & G_FILE_RELATIVE_REMAP) {
 		char dir1[FILE_MAXDIR+FILE_MAXFILE];
 		char dir2[FILE_MAXDIR+FILE_MAXFILE];
-		BLI_split_dirfile(filepath, dir1, NULL);
-		BLI_split_dirfile(mainvar->name, dir2, NULL);
+		BLI_split_dir_part(filepath, dir1, sizeof(dir1));
+		BLI_split_dir_part(mainvar->name, dir2, sizeof(dir2));
 
 		/* just incase there is some subtle difference */
 		BLI_cleanup_dir(mainvar->name, dir1);
@@ -2738,7 +2741,7 @@ int BLO_write_file(Main *mainvar, const char *filepath, int write_flags, ReportL
 
 		/* first write compressed to separate @.gz */
 		BLI_snprintf(gzname, sizeof(gzname), "%s@.gz", filepath);
-		ret = BLI_gzip(tempname, gzname);
+		ret = BLI_file_gzip(tempname, gzname);
 		
 		if(0==ret) {
 			/* now rename to real file name, and delete temp @ file too */

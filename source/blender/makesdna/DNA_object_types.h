@@ -1,6 +1,4 @@
 /*
- * $Id: DNA_object_types.h 40776 2011-10-03 17:29:43Z campbellbarton $ 
- *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
  * This program is free software; you can redistribute it and/or
@@ -324,6 +322,7 @@ typedef struct DupliObject {
 
 /* check if the object type supports materials */
 #define OB_TYPE_SUPPORT_MATERIAL(_type) ((_type)  >= OB_MESH && (_type) <= OB_MBALL)
+#define OB_TYPE_SUPPORT_VGROUP(_type)   (ELEM(_type, OB_MESH, OB_LATTICE))
 
 /* partype: first 4 bits: type */
 #define PARTYPE			15
@@ -388,8 +387,11 @@ typedef struct DupliObject {
 #define OB_BOUNDBOX		1
 #define OB_WIRE			2
 #define OB_SOLID		3
-#define OB_SHADED		4
+#define OB_MATERIAL		4
 #define OB_TEXTURE		5
+#define OB_RENDER		6
+
+#define OB_PAINT		100	/* temporary used in draw code */
 
 /* dtx: flags, char! */
 #define OB_AXIS			2
@@ -414,14 +416,14 @@ typedef struct DupliObject {
 #define OB_EMPTY_IMAGE	8
 
 /* boundtype */
-#define OB_BOUND_BOX		0
-#define OB_BOUND_SPHERE		1
-#define OB_BOUND_CYLINDER	2
-#define OB_BOUND_CONE		3
-#define OB_BOUND_POLYH		4
-#define OB_BOUND_POLYT		5
+#define OB_BOUND_BOX           0
+#define OB_BOUND_SPHERE        1
+#define OB_BOUND_CYLINDER      2
+#define OB_BOUND_CONE          3
+#define OB_BOUND_TRIANGLE_MESH 4
+#define OB_BOUND_CONVEX_HULL   5
 /* #define OB_BOUND_DYN_MESH   6 */ /*UNUSED*/
-#define OB_BOUND_CAPSULE	7
+#define OB_BOUND_CAPSULE       7
 
 
 /* **************** BASE ********************* */

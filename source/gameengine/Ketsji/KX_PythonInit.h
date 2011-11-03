@@ -1,6 +1,4 @@
 /*
- * $Id: KX_PythonInit.h 40080 2011-09-09 21:28:56Z ben2610 $
- *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
  * This program is free software; you can redistribute it and/or
@@ -56,7 +54,7 @@ void		exitGamePythonScripting();
 
 void setupGamePython(KX_KetsjiEngine* ketsjiengine, KX_Scene* startscene, Main *blenderdata, PyObject *pyGlobalDict, PyObject **gameLogic, PyObject **gameLogic_keys, int argc, char** argv);
 
-void		setGamePythonPath(char *path);
+void		setGamePythonPath(const char *path);
 void		resetGamePythonPath();
 void		pathGamePythonConfig( char *path );
 int			saveGamePythonConfig( char **marshal_buffer);

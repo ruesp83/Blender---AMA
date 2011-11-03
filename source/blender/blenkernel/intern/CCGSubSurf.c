@@ -1,7 +1,7 @@
+
 /** \file blender/blenkernel/intern/CCGSubSurf.c
  *  \ingroup bke
  */
-/* $Id: CCGSubSurf.c 35888 2011-03-30 02:05:10Z campbellbarton $ */
 
 #include <stdlib.h>
 #include <string.h>

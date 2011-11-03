@@ -1,7 +1,4 @@
-/*  image.c
- * 
- * $Id: image.c 40372 2011-09-19 19:55:59Z dfelinto $
- *
+/*
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
  * This program is free software; you can redistribute it and/or
@@ -63,10 +60,14 @@
 #include "DNA_camera_types.h"
 #include "DNA_sequence_types.h"
 #include "DNA_userdef_types.h"
+#include "DNA_brush_types.h"
+#include "DNA_mesh_types.h"
+#include "DNA_meshdata_types.h"
 
 #include "BLI_blenlib.h"
 #include "BLI_threads.h"
 #include "BLI_utildefines.h"
+#include "BLI_bpath.h"
 
 #include "BKE_bmfont.h"
 #include "BKE_global.h"
@@ -314,6 +315,133 @@ Image *copy_image(Image *ima)
 	nima->aspy= ima->aspy;
 
 	return nima;
+}
+
+static void extern_local_image(Image *UNUSED(ima))
+{
+	/* Nothing to do: images don't link to other IDs. This function exists to
+	   match id_make_local pattern. */
+}
+
+void make_local_image(struct Image *ima)
+{
+	Main *bmain= G.main;
+	Tex *tex;
+	Brush *brush;
+	Mesh *me;
+	int is_local= FALSE, is_lib= FALSE;
+
+	/* - only lib users: do nothing
+	 * - only local users: set flag
+	 * - mixed: make copy
+	 */
+
+	if(ima->id.lib==NULL) return;
+
+	/* Can't take short cut here: must check meshes at least because of bogus
+	   texface ID refs. - z0r */
+#if 0
+	if(ima->id.us==1) {
+		id_clear_lib_data(bmain, &ima->id);
+		extern_local_image(ima);
+		return;
+	}
+#endif
+
+	for(tex= bmain->tex.first; tex; tex= tex->id.next) {
+		if(tex->ima == ima) {
+			if(tex->id.lib) is_lib= TRUE;
+			else is_local= TRUE;
+		}
+	}
+	for(brush= bmain->brush.first; brush; brush= brush->id.next) {
+		if(brush->clone.image == ima) {
+			if(brush->id.lib) is_lib= TRUE;
+			else is_local= TRUE;
+		}
+	}
+	for(me= bmain->mesh.first; me; me= me->id.next) {
+		if(me->mtface) {
+			MTFace *tface;
+			int a, i;
+
+			for(i=0; i<me->fdata.totlayer; i++) {
+				if(me->fdata.layers[i].type == CD_MTFACE) {
+					tface= (MTFace*)me->fdata.layers[i].data;
+
+					for(a=0; a<me->totface; a++, tface++) {
+						if(tface->tpage == ima) {
+							if(me->id.lib) is_lib= TRUE;
+							else is_local= TRUE;
+						}
+					}
+				}
+			}
+		}
+	}
+
+	if(is_local && is_lib == FALSE) {
+		id_clear_lib_data(bmain, &ima->id);
+		extern_local_image(ima);
+	}
+	else if(is_local && is_lib) {
+		Image *iman= copy_image(ima);
+
+		iman->id.us= 0;
+
+		/* Remap paths of new ID using old library as base. */
+		BKE_id_lib_local_paths(bmain, &iman->id);
+
+		tex= bmain->tex.first;
+		while(tex) {
+			if(tex->id.lib==NULL) {
+				if(tex->ima==ima) {
+					tex->ima = iman;
+					iman->id.us++;
+					ima->id.us--;
+				}
+			}
+			tex= tex->id.next;
+		}
+		brush= bmain->brush.first;
+		while(brush) {
+			if(brush->id.lib==NULL) {
+				if(brush->clone.image==ima) {
+					brush->clone.image = iman;
+					iman->id.us++;
+					ima->id.us--;
+				}
+			}
+			brush= brush->id.next;
+		}
+		/* Transfer references in texfaces. Texfaces don't add to image ID
+		   user count *unless* there are no other users. See
+		   readfile.c:lib_link_mtface. */
+		me= bmain->mesh.first;
+		while(me) {
+			if(me->mtface) {
+				MTFace *tface;
+				int a, i;
+
+				for(i=0; i<me->fdata.totlayer; i++) {
+					if(me->fdata.layers[i].type == CD_MTFACE) {
+						tface= (MTFace*)me->fdata.layers[i].data;
+
+						for(a=0; a<me->totface; a++, tface++) {	
+							if(tface->tpage == ima) {
+								tface->tpage = iman;
+								if(iman->id.us == 0) {
+									tface->tpage->id.us= 1;
+								}
+								id_lib_extern((ID*)iman);
+							}
+						}
+					}
+				}
+			}
+			me= me->id.next;
+		}
+	}
 }
 
 void BKE_image_merge(Image *dest, Image *source)
@@ -852,7 +980,7 @@ int BKE_add_image_extension(char *string, int imtype)
 				  || (G.have_quicktime && BLI_testextensie_array(string, imb_ext_image_qt))) {
 			return BLI_replace_extension(string, FILE_MAX, extension);
 		} else {
-			strcat(string, extension);
+			return BLI_ensure_extension(string, FILE_MAX, extension);
 			return TRUE;
 		}
 		
@@ -907,8 +1035,8 @@ static void stampdata(Scene *scene, Object *camera, StampData *stamp_data, int d
 	
 	if (scene->r.stamp & R_STAMP_MARKER) {
 		char *name = scene_find_last_marker_name(scene, CFRA);
-	
-		if (name)	strcpy(text, name);
+
+		if (name)	BLI_strncpy(text, name, sizeof(text));
 		else 		strcpy(text, "<none>");
 
 		BLI_snprintf(stamp_data->marker, sizeof(stamp_data->marker), do_prefix ? "Marker %s":"%s", text);
@@ -981,7 +1109,7 @@ static void stampdata(Scene *scene, Object *camera, StampData *stamp_data, int d
 	if (scene->r.stamp & R_STAMP_SEQSTRIP) {
 		Sequence *seq= seq_foreground_frame_get(scene, scene->r.cfra);
 	
-		if (seq) strcpy(text, seq->name+2);
+		if (seq)	BLI_strncpy(text, seq->name+2, sizeof(text));
 		else 		strcpy(text, "<none>");
 
 		BLI_snprintf(stamp_data->strip, sizeof(stamp_data->strip), do_prefix ? "Strip %s":"%s", text);
@@ -1371,7 +1499,7 @@ void BKE_makepicstring(char *string, const char *base, int frame, int imtype, co
 }
 
 /* used by sequencer too */
-struct anim *openanim(char *name, int flags, int streamindex)
+struct anim *openanim(const char *name, int flags, int streamindex)
 {
 	struct anim *anim;
 	struct ImBuf *ibuf;
@@ -1480,7 +1608,7 @@ void BKE_image_signal(Image *ima, ImageUser *iuser, int signal)
 		/* try to repack file */
 		if(ima->packedfile) {
 			PackedFile *pf;
-			pf = newPackedFile(NULL, ima->name);
+			pf = newPackedFile(NULL, ima->name, ID_BLEND_PATH(G.main, &ima->id));
 			if (pf) {
 				freePackedFile(ima->packedfile);
 				ima->packedfile = pf;
@@ -1515,7 +1643,7 @@ void BKE_image_signal(Image *ima, ImageUser *iuser, int signal)
 		Scene *scene;
 		for(scene= G.main->scene.first; scene; scene= scene->id.next) {
 			if(scene->nodetree) {
-				NodeTagIDChanged(scene->nodetree, &ima->id);
+				nodeUpdateID(scene->nodetree, &ima->id);
 			}
 		}
 	}
@@ -1653,10 +1781,7 @@ static ImBuf *image_load_sequence_file(Image *ima, ImageUser *iuser, int frame)
 	BLI_stringdec(name, head, tail, &numlen);
 	BLI_stringenc(name, head, tail, numlen, frame);
 
-	if(ima->id.lib)
-		BLI_path_abs(name, ima->id.lib->filepath);
-	else
-		BLI_path_abs(name, G.main->name);
+	BLI_path_abs(name, ID_BLEND_PATH(G.main, &ima->id));
 	
 	flag= IB_rect|IB_multilayer;
 	if(ima->flag & IMA_DO_PREMUL)
@@ -1768,11 +1893,8 @@ static ImBuf *image_load_movie_file(Image *ima, ImageUser *iuser, int frame)
 		char str[FILE_MAX];
 		
 		BLI_strncpy(str, ima->name, FILE_MAX);
-		if(ima->id.lib)
-			BLI_path_abs(str, ima->id.lib->filepath);
-		else
-			BLI_path_abs(str, G.main->name);
-		
+		BLI_path_abs(str, ID_BLEND_PATH(G.main, &ima->id));
+
 		/* FIXME: make several stream accessible in image editor, too*/
 		ima->anim = openanim(str, IB_rect, 0);
 		
@@ -1825,7 +1947,7 @@ static ImBuf *image_load_image_file(Image *ima, ImageUser *iuser, int cfra)
 		flag = IB_rect|IB_multilayer;
 		if(ima->flag & IMA_DO_PREMUL) flag |= IB_premul;
 		
-		ibuf = IMB_ibImageFromMemory((unsigned char*)ima->packedfile->data, ima->packedfile->size, flag);
+		ibuf = IMB_ibImageFromMemory((unsigned char*)ima->packedfile->data, ima->packedfile->size, flag, "<packed data>");
 	} 
 	else {
 		flag= IB_rect|IB_multilayer|IB_metadata;
@@ -1834,10 +1956,7 @@ static ImBuf *image_load_image_file(Image *ima, ImageUser *iuser, int cfra)
 			
 		/* get the right string */
 		BLI_strncpy(str, ima->name, sizeof(str));
-		if(ima->id.lib)
-			BLI_path_abs(str, ima->id.lib->filepath);
-		else
-			BLI_path_abs(str, G.main->name);
+		BLI_path_abs(str, ID_BLEND_PATH(G.main, &ima->id));
 		
 		/* read ibuf */
 		ibuf = IMB_loadiffname(str, flag);
@@ -1860,7 +1979,7 @@ static ImBuf *image_load_image_file(Image *ima, ImageUser *iuser, int cfra)
 			
 			/* make packed file for autopack */
 			if ((ima->packedfile == NULL) && (G.fileflags & G_AUTOPACK))
-				ima->packedfile = newPackedFile(NULL, str);
+				ima->packedfile = newPackedFile(NULL, str, ID_BLEND_PATH(G.main, &ima->id));
 		}
 	}
 	else

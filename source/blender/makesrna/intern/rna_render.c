@@ -1,6 +1,4 @@
 /*
- * $Id: rna_render.c 40732 2011-10-01 15:40:32Z campbellbarton $
- *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
  * This program is free software; you can redistribute it and/or
@@ -36,6 +34,7 @@
 
 #include "rna_internal.h"
 
+#include "RE_engine.h"
 #include "RE_pipeline.h"
 
 #include "BKE_utildefines.h"
@@ -49,51 +48,45 @@
 #include "BKE_context.h"
 #include "BKE_report.h"
 
-/* RenderEngine */
+/* RenderEngine Callbacks */
 
-static RenderEngineType internal_render_type = {
-	NULL, NULL, "BLENDER_RENDER", "Blender Render", RE_INTERNAL, NULL, {NULL, NULL, NULL, NULL}};
-#ifdef WITH_GAMEENGINE
-static RenderEngineType internal_game_type = {
-	NULL, NULL, "BLENDER_GAME", "Blender Game", RE_INTERNAL|RE_GAME, NULL, {NULL, NULL, NULL, NULL}};
-#endif
-
-ListBase R_engines = {NULL, NULL};
-
-void RE_engines_init(void)
+void engine_tag_redraw(RenderEngine *engine)
 {
-	BLI_addtail(&R_engines, &internal_render_type);
-#ifdef WITH_GAMEENGINE
-	BLI_addtail(&R_engines, &internal_game_type);
-#endif
+	engine->flag |= RE_ENGINE_DO_DRAW;
 }
 
-void RE_engines_exit(void)
+void engine_tag_update(RenderEngine *engine)
 {
-	RenderEngineType *type, *next;
-
-	for(type=R_engines.first; type; type=next) {
-		next= type->next;
-
-		BLI_remlink(&R_engines, type);
-
-		if(!(type->flag & RE_INTERNAL)) {
-			if(type->ext.free)
-				type->ext.free(type->ext.data);
-
-			MEM_freeN(type);
-		}
-	}
+	engine->flag |= RE_ENGINE_DO_UPDATE;
 }
 
-static void engine_render(RenderEngine *engine, struct Scene *scene)
+static void engine_update(RenderEngine *engine, Main *bmain, Scene *scene)
 {
+	extern FunctionRNA rna_RenderEngine_update_func;
 	PointerRNA ptr;
 	ParameterList list;
 	FunctionRNA *func;
 
 	RNA_pointer_create(NULL, engine->type->ext.srna, engine, &ptr);
-	func= RNA_struct_find_function(&ptr, "render");
+	func= &rna_RenderEngine_update_func;
+
+	RNA_parameter_list_create(&list, &ptr, func);
+	RNA_parameter_set_lookup(&list, "data", &bmain);
+	RNA_parameter_set_lookup(&list, "scene", &scene);
+	engine->type->ext.call(NULL, &ptr, func, &list);
+
+	RNA_parameter_list_free(&list);
+}
+
+static void engine_render(RenderEngine *engine, struct Scene *scene)
+{
+	extern FunctionRNA rna_RenderEngine_render_func;
+	PointerRNA ptr;
+	ParameterList list;
+	FunctionRNA *func;
+
+	RNA_pointer_create(NULL, engine->type->ext.srna, engine, &ptr);
+	func= &rna_RenderEngine_render_func;
 
 	RNA_parameter_list_create(&list, &ptr, func);
 	RNA_parameter_set_lookup(&list, "scene", &scene);
@@ -101,6 +94,42 @@ static void engine_render(RenderEngine *engine, struct Scene *scene)
 
 	RNA_parameter_list_free(&list);
 }
+
+static void engine_view_update(RenderEngine *engine, const struct bContext *context)
+{
+	extern FunctionRNA rna_RenderEngine_view_update_func;
+	PointerRNA ptr;
+	ParameterList list;
+	FunctionRNA *func;
+
+	RNA_pointer_create(NULL, engine->type->ext.srna, engine, &ptr);
+	func= &rna_RenderEngine_view_update_func;
+
+	RNA_parameter_list_create(&list, &ptr, func);
+	RNA_parameter_set_lookup(&list, "context", &context);
+	engine->type->ext.call(NULL, &ptr, func, &list);
+
+	RNA_parameter_list_free(&list);
+}
+
+static void engine_view_draw(RenderEngine *engine, const struct bContext *context)
+{
+	extern FunctionRNA rna_RenderEngine_view_draw_func;
+	PointerRNA ptr;
+	ParameterList list;
+	FunctionRNA *func;
+
+	RNA_pointer_create(NULL, engine->type->ext.srna, engine, &ptr);
+	func= &rna_RenderEngine_view_draw_func;
+
+	RNA_parameter_list_create(&list, &ptr, func);
+	RNA_parameter_set_lookup(&list, "context", &context);
+	engine->type->ext.call(NULL, &ptr, func, &list);
+
+	RNA_parameter_list_free(&list);
+}
+
+/* RenderEngine registration */
 
 static void rna_RenderEngine_unregister(Main *UNUSED(bmain), StructRNA *type)
 {
@@ -119,7 +148,7 @@ static StructRNA *rna_RenderEngine_register(Main *bmain, ReportList *reports, vo
 	RenderEngineType *et, dummyet = {NULL};
 	RenderEngine dummyengine= {NULL};
 	PointerRNA dummyptr;
-	int have_function[1];
+	int have_function[4];
 
 	/* setup dummy engine & engine type to store static properties in */
 	dummyengine.type= &dummyet;
@@ -145,7 +174,7 @@ static StructRNA *rna_RenderEngine_register(Main *bmain, ReportList *reports, vo
 	}
 	
 	/* create a new engine type */
-	et= MEM_callocN(sizeof(RenderEngineType), "python buttons engine");
+	et= MEM_callocN(sizeof(RenderEngineType), "python render engine");
 	memcpy(et, &dummyet, sizeof(dummyet));
 
 	et->ext.srna= RNA_def_struct(&BLENDER_RNA, et->idname, "RenderEngine"); 
@@ -154,11 +183,20 @@ static StructRNA *rna_RenderEngine_register(Main *bmain, ReportList *reports, vo
 	et->ext.free= free;
 	RNA_struct_blender_type_set(et->ext.srna, et);
 
-	et->render= (have_function[0])? engine_render: NULL;
+	et->update= (have_function[0])? engine_update: NULL;
+	et->render= (have_function[1])? engine_render: NULL;
+	et->view_update= (have_function[2])? engine_view_update: NULL;
+	et->view_draw= (have_function[3])? engine_view_draw: NULL;
 
 	BLI_addtail(&R_engines, et);
 
 	return et->ext.srna;
+}
+
+static void **rna_RenderEngine_instance(PointerRNA *ptr)
+{
+	RenderEngine *engine = ptr->data;
+	return &engine->py_instance;
 }
 
 static StructRNA* rna_RenderEngine_refine(PointerRNA *ptr)
@@ -235,13 +273,38 @@ static void rna_def_render_engine(BlenderRNA *brna)
 	RNA_def_struct_sdna(srna, "RenderEngine");
 	RNA_def_struct_ui_text(srna, "Render Engine", "Render engine");
 	RNA_def_struct_refine_func(srna, "rna_RenderEngine_refine");
-	RNA_def_struct_register_funcs(srna, "rna_RenderEngine_register", "rna_RenderEngine_unregister", NULL);
+	RNA_def_struct_register_funcs(srna, "rna_RenderEngine_register", "rna_RenderEngine_unregister", "rna_RenderEngine_instance");
 
-	/* render */
+	/* final render callbacks */
+	func= RNA_def_function(srna, "update", NULL);
+	RNA_def_function_ui_description(func, "Export scene data for render");
+	RNA_def_function_flag(func, FUNC_REGISTER_OPTIONAL);
+	RNA_def_pointer(func, "data", "BlendData", "", "");
+	RNA_def_pointer(func, "scene", "Scene", "", "");
+
 	func= RNA_def_function(srna, "render", NULL);
 	RNA_def_function_ui_description(func, "Render scene into an image");
-	RNA_def_function_flag(func, FUNC_REGISTER);
+	RNA_def_function_flag(func, FUNC_REGISTER_OPTIONAL);
 	RNA_def_pointer(func, "scene", "Scene", "", "");
+
+	/* viewport render callbacks */
+	func= RNA_def_function(srna, "view_update", NULL);
+	RNA_def_function_ui_description(func, "Update on data changes for viewport render");
+	RNA_def_function_flag(func, FUNC_REGISTER_OPTIONAL);
+	RNA_def_pointer(func, "context", "Context", "", "");
+
+	func= RNA_def_function(srna, "view_draw", NULL);
+	RNA_def_function_ui_description(func, "Draw viewport render");
+	RNA_def_function_flag(func, FUNC_REGISTER_OPTIONAL);
+	RNA_def_pointer(func, "context", "Context", "", "");
+
+	/* tag for redraw */
+	RNA_def_function(srna, "tag_redraw", "engine_tag_redraw");
+	RNA_def_function_ui_description(func, "Request redraw for viewport rendering");
+
+	/* tag for update */
+	RNA_def_function(srna, "tag_update", "engine_tag_update");
+	RNA_def_function_ui_description(func, "Request update call for viewport rendering");
 
 	func= RNA_def_function(srna, "begin_result", "RE_engine_begin_result");
 	prop= RNA_def_int(func, "x", 0, 0, INT_MAX, "X", "", 0, INT_MAX);
@@ -273,14 +336,25 @@ static void rna_def_render_engine(BlenderRNA *brna)
 	prop= RNA_def_string(func, "info", "", 0, "Info", "");
 	RNA_def_property_flag(prop, PROP_REQUIRED);
 
+	func= RNA_def_function(srna, "update_progress", "RE_engine_update_progress");
+	prop= RNA_def_float(func, "progress", 0, 0.0f, 1.0f, "", "Percentage of render that's done", 0.0f, 1.0f);
+	RNA_def_property_flag(prop, PROP_REQUIRED);
+
 	func= RNA_def_function(srna, "report", "RE_engine_report");
 	prop= RNA_def_enum_flag(func, "type", wm_report_items, 0, "Type", "");
 	RNA_def_property_flag(prop, PROP_REQUIRED);
 	prop= RNA_def_string(func, "message", "", 0, "Report Message", "");
 	RNA_def_property_flag(prop, PROP_REQUIRED);
 
-	/* registration */
 	RNA_define_verify_sdna(0);
+
+	prop= RNA_def_property(srna, "is_animation", PROP_BOOLEAN, PROP_NONE);
+	RNA_def_property_boolean_sdna(prop, NULL, "flag", RE_ENGINE_ANIMATION);
+
+	prop= RNA_def_property(srna, "is_preview", PROP_BOOLEAN, PROP_NONE);
+	RNA_def_property_boolean_sdna(prop, NULL, "flag", RE_ENGINE_PREVIEW);
+
+	/* registration */
 
 	prop= RNA_def_property(srna, "bl_idname", PROP_STRING, PROP_NONE);
 	RNA_def_property_string_sdna(prop, NULL, "type->idname");
@@ -291,11 +365,15 @@ static void rna_def_render_engine(BlenderRNA *brna)
 	RNA_def_property_flag(prop, PROP_REGISTER);
 
 	prop= RNA_def_property(srna, "bl_use_preview", PROP_BOOLEAN, PROP_NONE);
-	RNA_def_property_boolean_sdna(prop, NULL, "type->flag", RE_DO_PREVIEW);
+	RNA_def_property_boolean_sdna(prop, NULL, "type->flag", RE_USE_PREVIEW);
 	RNA_def_property_flag(prop, PROP_REGISTER_OPTIONAL);
 
 	prop= RNA_def_property(srna, "bl_use_postprocess", PROP_BOOLEAN, PROP_NONE);
-	RNA_def_property_boolean_negative_sdna(prop, NULL, "type->flag", RE_DO_ALL);
+	RNA_def_property_boolean_negative_sdna(prop, NULL, "type->flag", RE_USE_POSTPROCESS);
+	RNA_def_property_flag(prop, PROP_REGISTER_OPTIONAL);
+
+	prop= RNA_def_property(srna, "bl_use_shading_nodes", PROP_BOOLEAN, PROP_NONE);
+	RNA_def_property_boolean_sdna(prop, NULL, "type->flag", RE_USE_SHADING_NODES);
 	RNA_def_property_flag(prop, PROP_REGISTER_OPTIONAL);
 
 	RNA_define_verify_sdna(1);

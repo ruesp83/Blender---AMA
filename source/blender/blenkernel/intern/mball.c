@@ -1,13 +1,4 @@
-/* mball.c
- *  
- * MetaBalls are created from a single Object (with a name without number in it),
- * here the DispList and BoundBox also is located.
- * All objects with the same name (but with a number in it) are added to this.
- *  
- * texture coordinates are patched within the displist
- * 
- * $Id: mball.c 36332 2011-04-26 07:17:21Z campbellbarton $
- *
+/*
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
  * This program is free software; you can redistribute it and/or
@@ -30,12 +21,17 @@
  * Contributor(s): Jiri Hnidek <jiri.hnidek@vslib.cz>.
  *
  * ***** END GPL LICENSE BLOCK *****
+ *
+ * MetaBalls are created from a single Object (with a name without number in it),
+ * here the DispList and BoundBox also is located.
+ * All objects with the same name (but with a number in it) are added to this.
+ *
+ * texture coordinates are patched within the displist
  */
 
 /** \file blender/blenkernel/intern/mball.c
  *  \ingroup bke
  */
-
 
 #include <stdio.h>
 #include <string.h>
@@ -54,7 +50,7 @@
 #include "BLI_blenlib.h"
 #include "BLI_math.h"
 #include "BLI_utildefines.h"
-
+#include "BLI_bpath.h"
 
 
 #include "BKE_global.h"
@@ -151,7 +147,7 @@ void make_local_mball(MetaBall *mb)
 {
 	Main *bmain= G.main;
 	Object *ob;
-	int local=0, lib=0;
+	int is_local= FALSE, is_lib= FALSE;
 
 	/* - only lib users: do nothing
 	 * - only local users: set flag
@@ -160,31 +156,29 @@ void make_local_mball(MetaBall *mb)
 	
 	if(mb->id.lib==NULL) return;
 	if(mb->id.us==1) {
-		mb->id.lib= NULL;
-		mb->id.flag= LIB_LOCAL;
-		new_id(&bmain->mball, (ID *)mb, NULL);
+		id_clear_lib_data(bmain, &mb->id);
 		extern_local_mball(mb);
 		
 		return;
 	}
 
-	for(ob= G.main->object.first; ob && ELEM(0, lib, local); ob= ob->id.next) {
+	for(ob= G.main->object.first; ob && ELEM(0, is_lib, is_local); ob= ob->id.next) {
 		if(ob->data == mb) {
-			if(ob->id.lib) lib= 1;
-			else local= 1;
+			if(ob->id.lib) is_lib= TRUE;
+			else is_local= TRUE;
 		}
 	}
 	
-	if(local && lib==0) {
-		mb->id.lib= NULL;
-		mb->id.flag= LIB_LOCAL;
-
-		new_id(&bmain->mball, (ID *)mb, NULL);
+	if(is_local && is_lib == FALSE) {
+		id_clear_lib_data(bmain, &mb->id);
 		extern_local_mball(mb);
 	}
-	else if(local && lib) {
+	else if(is_local && is_lib) {
 		MetaBall *mbn= copy_mball(mb);
 		mbn->id.us= 0;
+
+		/* Remap paths of new ID using old library as base. */
+		BKE_id_lib_local_paths(bmain, &mbn->id);
 
 		for(ob= G.main->object.first; ob; ob= ob->id.next) {
 			if(ob->data == mb) {

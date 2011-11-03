@@ -1,9 +1,4 @@
-
-/*  curve.c 
- * 
- *  
- * $Id: curve.c 40680 2011-09-29 06:15:33Z campbellbarton $
- *
+/*
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
  * This program is free software; you can redistribute it and/or
@@ -41,6 +36,7 @@
 
 #include "MEM_guardedalloc.h"
 
+#include "BLI_bpath.h"
 #include "BLI_blenlib.h"
 #include "BLI_math.h"
 #include "BLI_utildefines.h"
@@ -250,7 +246,7 @@ void make_local_curve(Curve *cu)
 {
 	Main *bmain= G.main;
 	Object *ob;
-	int local=0, lib=0;
+	int is_local= FALSE, is_lib= FALSE;
 	
 	/* - when there are only lib users: don't do
 	 * - when there are only local users: set flag
@@ -260,31 +256,27 @@ void make_local_curve(Curve *cu)
 	if(cu->id.lib==NULL) return;
 
 	if(cu->id.us==1) {
-		cu->id.lib= NULL;
-		cu->id.flag= LIB_LOCAL;
-
-		new_id(&bmain->curve, (ID *)cu, NULL);
+		id_clear_lib_data(bmain, &cu->id);
 		extern_local_curve(cu);
 		return;
 	}
 
-	for(ob= bmain->object.first; ob && ELEM(0, lib, local); ob= ob->id.next) {
+	for(ob= bmain->object.first; ob && ELEM(0, is_lib, is_local); ob= ob->id.next) {
 		if(ob->data == cu) {
-			if(ob->id.lib) lib= 1;
-			else local= 1;
+			if(ob->id.lib) is_lib= TRUE;
+			else is_local= TRUE;
 		}
 	}
 
-	if(local && lib==0) {
-		cu->id.lib= NULL;
-		cu->id.flag= LIB_LOCAL;
-
-		new_id(&bmain->curve, (ID *)cu, NULL);
+	if(is_local && is_lib == FALSE) {
+		id_clear_lib_data(bmain, &cu->id);
 		extern_local_curve(cu);
 	}
-	else if(local && lib) {
+	else if(is_local && is_lib) {
 		Curve *cun= copy_curve(cu);
 		cun->id.us= 0;
+
+		BKE_id_lib_local_paths(bmain, &cun->id);
 
 		for(ob= bmain->object.first; ob; ob= ob->id.next) {
 			if(ob->data==cu) {
@@ -1234,7 +1226,7 @@ float *make_orco_curve(Scene *scene, Object *ob)
 					fp[1]= 0.0;
 					fp[2]= 0.0;
 				} else {
-					VECCOPY(fp, &dl->verts[u*3]);
+					copy_v3_v3(fp, &dl->verts[u*3]);
 
 					fp[0]= (fp[0]-cu->loc[0])/cu->size[0];
 					fp[1]= (fp[1]-cu->loc[1])/cu->size[1];
@@ -1263,7 +1255,7 @@ float *make_orco_curve(Scene *scene, Object *ob)
 						int realu= u % dl->parts;
 						
 						vert= dl->verts + 3*(dl->nr*realu + realv);
-						VECCOPY(fp, vert);
+						copy_v3_v3(fp, vert);
 
 						fp[0]= (fp[0]-cu->loc[0])/cu->size[0];
 						fp[1]= (fp[1]-cu->loc[1])/cu->size[1];
@@ -1524,7 +1516,7 @@ static short bevelinside(BevList *bl1,BevList *bl2)
 	hvec1[0]= bevp->vec[0]; 
 	hvec1[1]= bevp->vec[1]; 
 	hvec1[2]= 0.0;
-	VECCOPY(hvec2,hvec1);
+	copy_v3_v3(hvec2,hvec1);
 	hvec2[0]+=1000;
 
 	/* test it with all edges of potential surounding poly */
@@ -1695,15 +1687,15 @@ static void bevel_list_cyclic_fix_3D(BevList *bl)
 
 	bevp= (BevPoint *)(bl+1);
 	bevp1= bevp+1;
-	QUATCOPY(bevp->quat, bevp1->quat);
-	VECCOPY(bevp->dir, bevp1->dir);
-	VECCOPY(bevp->tan, bevp1->tan);
+	copy_qt_qt(bevp->quat, bevp1->quat);
+	copy_v3_v3(bevp->dir, bevp1->dir);
+	copy_v3_v3(bevp->tan, bevp1->tan);
 	bevp= (BevPoint *)(bl+1);
 	bevp+= (bl->nr-1);
 	bevp1= bevp-1;
-	QUATCOPY(bevp->quat, bevp1->quat);
-	VECCOPY(bevp->dir, bevp1->dir);
-	VECCOPY(bevp->tan, bevp1->tan);
+	copy_qt_qt(bevp->quat, bevp1->quat);
+	copy_v3_v3(bevp->dir, bevp1->dir);
+	copy_v3_v3(bevp->tan, bevp1->tan);
 }
 /* utility for make_bevel_list_3D_* funcs */
 static void bevel_list_calc_bisect(BevList *bl)
@@ -1796,7 +1788,7 @@ static void bevel_list_smooth(BevList *bl, int smooth_iter)
 
 		}
 
-		QUATCOPY(bevp0_quat, bevp0->quat);
+		copy_qt_qt(bevp0_quat, bevp0->quat);
 
 		while(nr--) {
 			/* interpolate quats */
@@ -1809,7 +1801,7 @@ static void bevel_list_smooth(BevList *bl, int smooth_iter)
 			axis_angle_to_quat(q2, cross, angle_normalized_v3v3(zaxis, bevp1->dir));
 			normalize_qt(q2);
 
-			QUATCOPY(bevp0_quat, bevp1->quat);
+			copy_qt_qt(bevp0_quat, bevp1->quat);
 			mul_qt_qtqt(q, q2, q);
 			interp_qt_qtqt(bevp1->quat, bevp1->quat, q, 0.5);
 			normalize_qt(bevp1->quat);
@@ -1871,7 +1863,7 @@ static void make_bevel_list_3D_minimum_twist(BevList *bl)
 				mul_qt_qtqt(bevp1->quat, q, bevp0->quat);
 			}
 			else {
-				QUATCOPY(bevp1->quat, bevp0->quat);
+				copy_qt_qt(bevp1->quat, bevp0->quat);
 			}
 		}
 
@@ -1980,7 +1972,7 @@ static void make_bevel_list_3D_tangent(BevList *bl)
 	bevp1= bevp2+(bl->nr-1);
 	bevp0= bevp1-1;
 
-	VECCOPY(bevp0_tan, bevp0->tan);
+	copy_v3_v3(bevp0_tan, bevp0->tan);
 
 	nr= bl->nr;
 	while(nr--) {
@@ -2040,8 +2032,8 @@ static void make_bevel_list_segment_3D(BevList *bl)
 	axis_angle_to_quat(q, bevp1->dir, bevp1->alfa);
 	mul_qt_qtqt(bevp1->quat, q, bevp1->quat);
 	normalize_qt(bevp1->quat);
-	VECCOPY(bevp2->dir, bevp1->dir);
-	QUATCOPY(bevp2->quat, bevp1->quat);
+	copy_v3_v3(bevp2->dir, bevp1->dir);
+	copy_qt_qt(bevp2->quat, bevp1->quat);
 }
 
 
@@ -2111,7 +2103,7 @@ void makeBevelList(Object *ob)
 				bp= nu->bp;
 	
 				while(len--) {
-					VECCOPY(bevp->vec, bp->vec);
+					copy_v3_v3(bevp->vec, bp->vec);
 					bevp->alfa= bp->alfa;
 					bevp->radius= bp->radius;
 					bevp->weight= bp->weight;
@@ -2144,7 +2136,7 @@ void makeBevelList(Object *ob)
 				while(a--) {
 					if(prevbezt->h2==HD_VECT && bezt->h1==HD_VECT) {
 
-						VECCOPY(bevp->vec, prevbezt->vec[1]);
+						copy_v3_v3(bevp->vec, prevbezt->vec[1]);
 						bevp->alfa= prevbezt->alfa;
 						bevp->radius= prevbezt->radius;
 						bevp->weight= prevbezt->weight;
@@ -2196,7 +2188,7 @@ void makeBevelList(Object *ob)
 				}
 				
 				if((nu->flagu & CU_NURB_CYCLIC)==0) {	    /* not cyclic: endpoint */
-					VECCOPY(bevp->vec, prevbezt->vec[1]);
+					copy_v3_v3(bevp->vec, prevbezt->vec[1]);
 					bevp->alfa= prevbezt->alfa;
 					bevp->radius= prevbezt->radius;
 					bevp->weight= prevbezt->weight;
@@ -2595,12 +2587,10 @@ void calchandleNurb(BezTriple *bezt, BezTriple *prev, BezTriple *next, int mode)
 	}
 
 	if(bezt->h1==HD_VECT) {	/* vector */
-		mul_v3_fl(dvec_a, 1.0f/3.0f);
-		sub_v3_v3v3(p2-3, p2, dvec_a);
+		madd_v3_v3v3fl(p2-3, p2, dvec_a, -1.0f/3.0f);
 	}
 	if(bezt->h2==HD_VECT) {
-		mul_v3_fl(dvec_b, 1.0f/3.0f);
-		sub_v3_v3v3(p2+3, p2, dvec_b);
+		madd_v3_v3v3fl(p2+3, p2, dvec_b,  1.0f/3.0f);
 	}
 
 	len_b= len_v3v3(p2, p2+3);
@@ -3018,15 +3008,15 @@ float (*curve_getVertexCos(Curve *UNUSED(cu), ListBase *lb, int *numVerts_r))[3]
 			BezTriple *bezt = nu->bezt;
 
 			for (i=0; i<nu->pntsu; i++,bezt++) {
-				VECCOPY(co, bezt->vec[0]); co+=3;
-				VECCOPY(co, bezt->vec[1]); co+=3;
-				VECCOPY(co, bezt->vec[2]); co+=3;
+				copy_v3_v3(co, bezt->vec[0]); co+=3;
+				copy_v3_v3(co, bezt->vec[1]); co+=3;
+				copy_v3_v3(co, bezt->vec[2]); co+=3;
 			}
 		} else {
 			BPoint *bp = nu->bp;
 
 			for (i=0; i<nu->pntsu*nu->pntsv; i++,bp++) {
-				VECCOPY(co, bp->vec); co+=3;
+				copy_v3_v3(co, bp->vec); co+=3;
 			}
 		}
 	}
@@ -3045,15 +3035,15 @@ void curve_applyVertexCos(Curve *UNUSED(cu), ListBase *lb, float (*vertexCos)[3]
 			BezTriple *bezt = nu->bezt;
 
 			for (i=0; i<nu->pntsu; i++,bezt++) {
-				VECCOPY(bezt->vec[0], co); co+=3;
-				VECCOPY(bezt->vec[1], co); co+=3;
-				VECCOPY(bezt->vec[2], co); co+=3;
+				copy_v3_v3(bezt->vec[0], co); co+=3;
+				copy_v3_v3(bezt->vec[1], co); co+=3;
+				copy_v3_v3(bezt->vec[2], co); co+=3;
 			}
 		} else {
 			BPoint *bp = nu->bp;
 
 			for (i=0; i<nu->pntsu*nu->pntsv; i++,bp++) {
-				VECCOPY(bp->vec, co); co+=3;
+				copy_v3_v3(bp->vec, co); co+=3;
 			}
 		}
 	}
@@ -3071,9 +3061,9 @@ float (*curve_getKeyVertexCos(Curve *UNUSED(cu), ListBase *lb, float *key))[3]
 			BezTriple *bezt = nu->bezt;
 
 			for (i=0; i<nu->pntsu; i++,bezt++) {
-				VECCOPY(co, key); co+=3; key+=3;
-				VECCOPY(co, key); co+=3; key+=3;
-				VECCOPY(co, key); co+=3; key+=3;
+				copy_v3_v3(co, key); co+=3; key+=3;
+				copy_v3_v3(co, key); co+=3; key+=3;
+				copy_v3_v3(co, key); co+=3; key+=3;
 				key+=3; /* skip tilt */
 			}
 		}
@@ -3081,7 +3071,7 @@ float (*curve_getKeyVertexCos(Curve *UNUSED(cu), ListBase *lb, float *key))[3]
 			BPoint *bp = nu->bp;
 
 			for(i=0; i<nu->pntsu*nu->pntsv; i++,bp++) {
-				VECCOPY(co, key); co+=3; key+=3;
+				copy_v3_v3(co, key); co+=3; key+=3;
 				key++; /* skip tilt */
 			}
 		}

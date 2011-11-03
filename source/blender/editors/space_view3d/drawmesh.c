@@ -1,6 +1,4 @@
 /*
- * $Id: drawmesh.c 40823 2011-10-06 05:01:24Z campbellbarton $
- *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
  * This program is free software; you can redistribute it and/or
@@ -54,7 +52,6 @@
 #include "BKE_material.h"
 #include "BKE_paint.h"
 #include "BKE_property.h"
-
 
 #include "BIF_gl.h"
 #include "BIF_glutil.h"
@@ -227,7 +224,7 @@ static int set_draw_settings_cached(int clearcache, MTFace *texface, Material *m
 	static int c_lit;
 
 	Object *litob = NULL; //to get mode to turn off mipmap in painting mode
-	int backculled = 0;
+	int backculled = GEMAT_BACKCULL;
 	int alphablend = 0;
 	int textured = 0;
 	int lit = 0;
@@ -450,9 +447,9 @@ static void add_tface_color_layer(DerivedMesh *dm)
 			}
 		} else if (tface && tface->mode&TF_OBCOL) {
 			for(j=0;j<4;j++) {
-				finalCol[i*4+j].r = FTOCHAR(Gtexdraw.obcol[0]);
+				finalCol[i*4+j].b = FTOCHAR(Gtexdraw.obcol[0]);
 				finalCol[i*4+j].g = FTOCHAR(Gtexdraw.obcol[1]);
-				finalCol[i*4+j].b = FTOCHAR(Gtexdraw.obcol[2]);
+				finalCol[i*4+j].r = FTOCHAR(Gtexdraw.obcol[2]);
 			}
 		} else if (!mcol) {
 			if (tface) {
@@ -471,9 +468,9 @@ static void add_tface_color_layer(DerivedMesh *dm)
 					else copy_v3_v3(col, &ma->r);
 					
 					for(j=0;j<4;j++) {
-						finalCol[i*4+j].b = FTOCHAR(col[2]);
+						finalCol[i*4+j].b = FTOCHAR(col[0]);
 						finalCol[i*4+j].g = FTOCHAR(col[1]);
-						finalCol[i*4+j].r = FTOCHAR(col[0]);
+						finalCol[i*4+j].r = FTOCHAR(col[2]);
 					}
 				}
 				else
@@ -485,9 +482,9 @@ static void add_tface_color_layer(DerivedMesh *dm)
 			}
 		} else {
 			for(j=0;j<4;j++) {
-				finalCol[i*4+j].b = mcol[i*4+j].r;
+				finalCol[i*4+j].r = mcol[i*4+j].r;
 				finalCol[i*4+j].g = mcol[i*4+j].g;
-				finalCol[i*4+j].r = mcol[i*4+j].b;
+				finalCol[i*4+j].b = mcol[i*4+j].b;
 			}
 		}
 	}

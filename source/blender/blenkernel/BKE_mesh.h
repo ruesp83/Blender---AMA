@@ -1,8 +1,4 @@
 /*
- * blenlib/BKE_mesh.h (mar-2001 nzc)
- *	
- * $Id: BKE_mesh.h 40382 2011-09-20 06:25:15Z campbellbarton $ 
- *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
  * This program is free software; you can redistribute it and/or
@@ -24,7 +20,7 @@
  *
  * The Original Code is: all of this file.
  *
- * Contributor(s): none yet.
+ * Contributor(s): (mar-2001 nzc)
  *
  * ***** END GPL LICENSE BLOCK *****
  */
@@ -160,6 +156,8 @@ int BKE_mesh_validate(struct Mesh *me, int do_verbose);
 int BKE_mesh_validate_dm(struct DerivedMesh *dm);
 
 void BKE_mesh_calc_edges(struct Mesh *mesh, int update);
+
+void BKE_mesh_ensure_navmesh(struct Mesh *me);
 
 #ifdef __cplusplus
 }

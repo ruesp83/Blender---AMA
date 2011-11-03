@@ -1,6 +1,4 @@
 /*
- * $Id: wm_init_exit.c 40709 2011-09-30 07:47:45Z campbellbarton $
- *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
  * This program is free software; you can redistribute it and/or
@@ -63,9 +61,11 @@
 #include "BKE_sequencer.h" /* free seq clipboard */
 #include "BKE_material.h" /* clear_matcopybuf */
 
-#include "BLI_blenlib.h"
-#include "BLI_winstuff.h"
+#include "BLI_listbase.h"
+#include "BLI_string.h"
+#include "BLI_utildefines.h"
 
+#include "RE_engine.h"
 #include "RE_pipeline.h"		/* RE_ free stuff */
 
 #ifdef WITH_PYTHON
@@ -159,7 +159,7 @@ void WM_init(bContext *C, int argc, const char **argv)
 	BPY_python_start(argc, argv);
 
 	BPY_driver_reset();
-	BPY_app_handlers_reset(); /* causes addon callbacks to be freed [#28068],
+	BPY_app_handlers_reset(FALSE); /* causes addon callbacks to be freed [#28068],
 	                           * but this is actually what we want. */
 	BPY_modules_load_user(C);
 #else

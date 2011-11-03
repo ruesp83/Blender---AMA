@@ -1,6 +1,4 @@
 /*
- * $Id: rna_scene.c 40732 2011-10-01 15:40:32Z campbellbarton $
- *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
  * This program is free software; you can redistribute it and/or
@@ -42,6 +40,7 @@
 #include "BLI_math.h"
 
 /* Include for Bake Options */
+#include "RE_engine.h"
 #include "RE_pipeline.h"
 
 #ifdef WITH_QUICKTIME
@@ -56,6 +55,8 @@
 #include <libavcodec/avcodec.h> 
 #include <libavformat/avformat.h>
 #endif
+
+#include "ED_render.h"
 
 #include "WM_api.h"
 #include "WM_types.h"
@@ -175,7 +176,6 @@ EnumPropertyItem image_color_mode_items[] ={
 
 #include "BLI_threads.h"
 #include "BLI_editVert.h"
-#include "BLI_blenlib.h"
 
 #include "BKE_context.h"
 #include "BKE_global.h"
@@ -200,7 +200,7 @@ EnumPropertyItem image_color_mode_items[] ={
 #include "ED_mesh.h"
 #include "ED_keyframing.h"
 
-#include "RE_pipeline.h"
+#include "RE_engine.h"
 
 static int rna_Scene_object_bases_lookup_string(PointerRNA *ptr, const char *key, PointerRNA *r_ptr)
 {
@@ -776,6 +776,11 @@ static int rna_RenderSettings_engine_get(PointerRNA *ptr)
 	return 0;
 }
 
+static void rna_RenderSettings_engine_update(Main *bmain, Scene *UNUSED(unused), PointerRNA *UNUSED(ptr))
+{
+	ED_render_engine_changed(bmain);
+}
+
 static void rna_Scene_glsl_update(Main *UNUSED(bmain), Scene *UNUSED(scene), PointerRNA *ptr)
 {
 	Scene *scene= (Scene*)ptr->id.data;
@@ -812,8 +817,8 @@ static void rna_SceneRenderLayer_name_set(PointerRNA *ptr, const char *value)
 {
 	Scene *scene= (Scene*)ptr->id.data;
 	SceneRenderLayer *rl= (SceneRenderLayer*)ptr->data;
-
 	BLI_strncpy_utf8(rl->name, value, sizeof(rl->name));
+	BLI_uniquename(&scene->r.layers, rl, "RenderLayer", '.', offsetof(SceneRenderLayer, name), sizeof(rl->name));
 
 	if(scene->nodetree) {
 		bNode *node;
@@ -831,6 +836,12 @@ static void rna_SceneRenderLayer_name_set(PointerRNA *ptr, const char *value)
 static int rna_RenderSettings_multiple_engines_get(PointerRNA *UNUSED(ptr))
 {
 	return (BLI_countlist(&R_engines) > 1);
+}
+
+static int rna_RenderSettings_use_shading_nodes_get(PointerRNA *ptr)
+{
+	Scene *scene= (Scene*)ptr->id.data;
+	return scene_use_new_shading_nodes(scene);
 }
 
 static int rna_RenderSettings_use_game_engine_get(PointerRNA *ptr)
@@ -1054,7 +1065,7 @@ static KeyingSet *rna_Scene_keying_set_new(Scene *sce, ReportList *reports, cons
  * is not for general use and only for the few cases where changing scene
  * settings and NOT for general purpose updates, possibly this should be
  * given its own notifier. */
-static void rna_Scene_update_active_object_data(Main *bmain, Scene *scene, PointerRNA *ptr)
+static void rna_Scene_update_active_object_data(Main *UNUSED(bmain), Scene *scene, PointerRNA *UNUSED(ptr))
 {
 	Object *ob= OBACT;
 	if(ob) {
@@ -1739,13 +1750,13 @@ static void rna_def_scene_game_recast_data(BlenderRNA *brna)
 	RNA_def_property_ui_text(prop, "Agent Radius", "Radius of the agent");
 	RNA_def_property_update(prop, NC_SCENE, NULL);
 
-	prop= RNA_def_property(srna, "max_climb", PROP_FLOAT, PROP_NONE);
+	prop= RNA_def_property(srna, "climb_max", PROP_FLOAT, PROP_NONE);
 	RNA_def_property_float_sdna(prop, NULL, "agentmaxclimb");
 	RNA_def_property_ui_range(prop, 0.1, 5, 1, 2);
 	RNA_def_property_ui_text(prop, "Max Climb", "Maximum height between grid cells the agent can climb");
 	RNA_def_property_update(prop, NC_SCENE, NULL);
 
-	prop= RNA_def_property(srna, "max_slope", PROP_FLOAT, PROP_ANGLE);
+	prop= RNA_def_property(srna, "slope_max", PROP_FLOAT, PROP_ANGLE);
 	RNA_def_property_float_sdna(prop, NULL, "agentmaxslope");
 	RNA_def_property_range(prop, 0, M_PI/2);
 	RNA_def_property_ui_text(prop, "Max Slope", "Maximum walkable slope angle in degrees");
@@ -1755,13 +1766,13 @@ static void rna_def_scene_game_recast_data(BlenderRNA *brna)
 	prop= RNA_def_property(srna, "region_min_size", PROP_FLOAT, PROP_NONE);
 	RNA_def_property_float_sdna(prop, NULL, "regionminsize");
 	RNA_def_property_ui_range(prop, 0, 150, 1, 2);
-	RNA_def_property_ui_text(prop, "Min Region Size", "Minimum regions size. Smaller regions will be deleted");
+	RNA_def_property_ui_text(prop, "Min Region Size", "Minimum regions size (smaller regions will be deleted)");
 	RNA_def_property_update(prop, NC_SCENE, NULL);
 
 	prop= RNA_def_property(srna, "region_merge_size", PROP_FLOAT, PROP_NONE);
 	RNA_def_property_float_sdna(prop, NULL, "regionmergesize");
 	RNA_def_property_ui_range(prop, 0, 150, 1, 2);
-	RNA_def_property_ui_text(prop, "Merged Region Size", "Minimum regions size. Smaller regions will be merged");
+	RNA_def_property_ui_text(prop, "Merged Region Size", "Minimum regions size (smaller regions will be merged)");
 	RNA_def_property_update(prop, NC_SCENE, NULL);
 
 	prop= RNA_def_property(srna, "edge_max_len", PROP_FLOAT, PROP_NONE);
@@ -1977,7 +1988,7 @@ static void rna_def_scene_game_data(BlenderRNA *brna)
 	RNA_def_property_int_sdna(prop, NULL, "occlusionRes");
 	RNA_def_property_range(prop, 128.0, 1024.0);
 	RNA_def_property_ui_text(prop, "Occlusion Resolution",
-	                         "The size of the occlusion buffer in pixel, use higher value for better precision (slower)");
+	                         "Size of the occlusion buffer in pixel, use higher value for better precision (slower)");
 	RNA_def_property_update(prop, NC_SCENE, NULL);
 
 	prop= RNA_def_property(srna, "fps", PROP_INT, PROP_NONE);
@@ -1985,7 +1996,7 @@ static void rna_def_scene_game_data(BlenderRNA *brna)
 	RNA_def_property_ui_range(prop, 1, 60, 1, 1);
 	RNA_def_property_range(prop, 1, 250);
 	RNA_def_property_ui_text(prop, "Frames Per Second",
-	                         "The nominal number of game frames per second "
+	                         "Nominal number of game frames per second "
 	                         "(physics fixed timestep = 1/fps, independently of actual frame rate)");
 	RNA_def_property_update(prop, NC_SCENE, NULL);
 
@@ -1994,7 +2005,7 @@ static void rna_def_scene_game_data(BlenderRNA *brna)
 	RNA_def_property_ui_range(prop, 1, 5, 1, 1);
 	RNA_def_property_range(prop, 1, 5);
 	RNA_def_property_ui_text(prop, "Max Logic Steps",
-	                         "Sets the maximum number of logic frame per game frame if graphics slows down the game, "
+	                         "Maximum number of logic frame per game frame if graphics slows down the game, "
 	                         "higher value allows better synchronization with physics");
 	RNA_def_property_update(prop, NC_SCENE, NULL);
 
@@ -2003,7 +2014,7 @@ static void rna_def_scene_game_data(BlenderRNA *brna)
 	RNA_def_property_ui_range(prop, 1, 5, 1, 1);
 	RNA_def_property_range(prop, 1, 5);
 	RNA_def_property_ui_text(prop, "Max Physics Steps",
-	                         "Sets the maximum number of physics step per game frame if graphics slows down the game, "
+	                         "Maximum number of physics step per game frame if graphics slows down the game, "
 	                         "higher value allows physics to keep up with realtime");
 	RNA_def_property_update(prop, NC_SCENE, NULL);
 
@@ -2012,7 +2023,7 @@ static void rna_def_scene_game_data(BlenderRNA *brna)
 	RNA_def_property_ui_range(prop, 1, 5, 1, 1);
 	RNA_def_property_range(prop, 1, 5);
 	RNA_def_property_ui_text(prop, "Physics Sub Steps",
-	                         "Sets the number of simulation substep per physic timestep, "
+	                         "Number of simulation substep per physic timestep, "
 	                         "higher value give better physics precision");
 	RNA_def_property_update(prop, NC_SCENE, NULL);
 
@@ -2066,7 +2077,7 @@ static void rna_def_scene_game_data(BlenderRNA *brna)
 
 	prop= RNA_def_property(srna, "use_animation_record", PROP_BOOLEAN, PROP_NONE);
 	RNA_def_property_boolean_sdna(prop, NULL, "flag", GAME_ENABLE_ANIMATION_RECORD);
-	RNA_def_property_ui_text(prop, "Record Animation", "Record animation to fcurves");
+	RNA_def_property_ui_text(prop, "Record Animation", "Record animation to F-Curves");
 
 	prop= RNA_def_property(srna, "use_auto_start", PROP_BOOLEAN, PROP_NONE);
 	RNA_def_property_boolean_funcs(prop, "rna_GameSettings_auto_start_get", "rna_GameSettings_auto_start_set");
@@ -2075,8 +2086,8 @@ static void rna_def_scene_game_data(BlenderRNA *brna)
 	prop= RNA_def_property(srna, "restrict_animation_updates", PROP_BOOLEAN, PROP_NONE);
 	RNA_def_property_boolean_sdna(prop, NULL, "flag", GAME_RESTRICT_ANIM_UPDATES);
 	RNA_def_property_ui_text(prop, "Restrict Animation Updates",
-	                         "Restrict the number of animation updates to the animation FPS. This is "
-	                         "better for performance, but can cause issues with smooth playback");
+	                         "Restrict the number of animation updates to the animation FPS (this is "
+	                         "better for performance, but can cause issues with smooth playback)");
 	
 	/* materials */
 	prop= RNA_def_property(srna, "material_mode", PROP_ENUM, PROP_NONE);
@@ -3215,12 +3226,17 @@ static void rna_def_scene_render_data(BlenderRNA *brna)
 	RNA_def_property_enum_funcs(prop, "rna_RenderSettings_engine_get", "rna_RenderSettings_engine_set",
 	                            "rna_RenderSettings_engine_itemf");
 	RNA_def_property_ui_text(prop, "Engine", "Engine to use for rendering");
-	RNA_def_property_update(prop, NC_WINDOW, NULL);
+	RNA_def_property_update(prop, NC_WINDOW, "rna_RenderSettings_engine_update");
 
 	prop= RNA_def_property(srna, "has_multiple_engines", PROP_BOOLEAN, PROP_NONE);
 	RNA_def_property_boolean_funcs(prop, "rna_RenderSettings_multiple_engines_get", NULL);
 	RNA_def_property_clear_flag(prop, PROP_EDITABLE);
 	RNA_def_property_ui_text(prop, "Multiple Engines", "More than one rendering engine is available");
+
+	prop= RNA_def_property(srna, "use_shading_nodes", PROP_BOOLEAN, PROP_NONE);
+	RNA_def_property_boolean_funcs(prop, "rna_RenderSettings_use_shading_nodes_get", NULL);
+	RNA_def_property_clear_flag(prop, PROP_EDITABLE);
+	RNA_def_property_ui_text(prop, "Use Shading Nodes", "Active render engine uses new shading nodes system");
 
 	prop= RNA_def_property(srna, "use_game_engine", PROP_BOOLEAN, PROP_NONE);
 	RNA_def_property_boolean_funcs(prop, "rna_RenderSettings_use_game_engine_get", NULL);

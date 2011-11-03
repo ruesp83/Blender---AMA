@@ -1,6 +1,4 @@
 /*
- * $Id: node_texture_texture.c 39944 2011-09-05 22:04:30Z gsrb3d $
- *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
  * This program is free software; you can redistribute it and/or
@@ -56,8 +54,14 @@ static void colorfn(float *out, TexParams *p, bNode *node, bNodeStack **in, shor
 	float co[3], dxt[3], dyt[3];
 	
 	copy_v3_v3(co, p->co);
-	copy_v3_v3(dxt, p->dxt);
-	copy_v3_v3(dyt, p->dyt);
+	if (p->osatex) {
+		copy_v3_v3(dxt, p->dxt);
+		copy_v3_v3(dyt, p->dyt);
+	}
+	else {
+		zero_v3(dxt);
+		zero_v3(dyt);
+	}
 	
 	if(node->custom2 || node->need_exec==0) {
 		/* this node refers to its own texture tree! */

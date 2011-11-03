@@ -1,6 +1,4 @@
 /*
- * $Id: ED_mesh.h 40368 2011-09-19 16:13:34Z jason_hays22 $
- *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
  * This program is free software; you can redistribute it and/or
@@ -211,7 +209,7 @@ void					ED_vgroup_select_by_name(struct Object *ob, const char *name);
 int						ED_vgroup_data_create(struct ID *id);
 int						ED_vgroup_give_array(struct ID *id, struct MDeformVert **dvert_arr, int *dvert_tot);
 int						ED_vgroup_copy_array(struct Object *ob, struct Object *ob_from);
-void					ED_vgroup_mirror(struct Object *ob, const short mirror_weights, const short flip_vgroups);
+void					ED_vgroup_mirror(struct Object *ob, const short mirror_weights, const short flip_vgroups, const short all_vgroups);
 
 int						ED_vgroup_object_is_edit_mode(struct Object *ob);
 

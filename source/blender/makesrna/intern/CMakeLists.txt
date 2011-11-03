@@ -1,5 +1,4 @@
 # -*- mode: cmake; indent-tabs-mode: t; -*-
-# $Id: CMakeLists.txt 17433 2008-11-12 21:16:53Z blendix $
 # ***** BEGIN GPL LICENSE BLOCK *****
 #
 # This program is free software; you can redistribute it and/or
@@ -196,8 +195,8 @@ if(WITH_CODEC_FFMPEG)
 	add_definitions(-DWITH_FFMPEG)
 endif()
 
-if(NOT WITH_MOD_FLUID)
-	add_definitions(-DDISABLE_ELBEEM)
+if(WITH_MOD_FLUID)
+	add_definitions(-DWITH_MOD_FLUID)
 endif()
 
 if(WITH_FFTW3)

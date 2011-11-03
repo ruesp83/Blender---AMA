@@ -1,6 +1,4 @@
 /*
- * $Id: graph_intern.h 35765 2011-03-25 03:58:21Z aligorith $
- *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
  * This program is free software; you can redistribute it and/or
@@ -57,10 +55,6 @@ void graph_draw_channel_names(struct bContext *C, struct bAnimContext *ac, struc
 
 void graph_draw_curves(struct bAnimContext *ac, struct SpaceIpo *sipo, struct ARegion *ar, struct View2DGrid *grid, short sel);
 void graph_draw_ghost_curves(struct bAnimContext *ac, struct SpaceIpo *sipo, struct ARegion *ar);
-
-/* ***************************************** */
-/* graph_header.c */
-void graph_header_buttons(const bContext *C, struct ARegion *ar);
 
 /* ***************************************** */
 /* graph_select.c */

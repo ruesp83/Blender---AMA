@@ -1,34 +1,32 @@
 /*
-* $Id: MOD_fluidsim_util.c 37441 2011-06-12 23:51:30Z genscher $
-*
-* ***** BEGIN GPL LICENSE BLOCK *****
-*
-* This program is free software; you can redistribute it and/or
-* modify it under the terms of the GNU General Public License
-* as published by the Free Software Foundation; either version 2
-* of the License, or (at your option) any later version.
-*
-* This program is distributed in the hope that it will be useful,
-* but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-* GNU General Public License for more details.
-*
-* You should have received a copy of the GNU General Public License
-* along with this program; if not, write to the Free Software  Foundation,
-* Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
-*
-* The Original Code is Copyright (C) 2005 by the Blender Foundation.
-* All rights reserved.
-*
-* Contributor(s): Daniel Dunbar
-*                 Ton Roosendaal,
-*                 Ben Batt,
-*                 Brecht Van Lommel,
-*                 Campbell Barton
-*
-* ***** END GPL LICENSE BLOCK *****
-*
-*/
+ * ***** BEGIN GPL LICENSE BLOCK *****
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software  Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+ *
+ * The Original Code is Copyright (C) 2005 by the Blender Foundation.
+ * All rights reserved.
+ *
+ * Contributor(s): Daniel Dunbar
+ *                 Ton Roosendaal,
+ *                 Ben Batt,
+ *                 Brecht Van Lommel,
+ *                 Campbell Barton
+ *
+ * ***** END GPL LICENSE BLOCK *****
+ *
+ */
 
 /** \file blender/modifiers/intern/MOD_fluidsim_util.c
  *  \ingroup modifiers
@@ -64,9 +62,10 @@
 // headers for fluidsim bobj meshes
 #include "LBM_fluidsim.h"
 
+
 void fluidsim_init(FluidsimModifierData *fluidmd)
 {
-#ifndef DISABLE_ELBEEM
+#ifdef WITH_MOD_FLUID
 	if(fluidmd)
 	{
 		FluidsimSettings *fss = MEM_callocN(sizeof(FluidsimSettings), "fluidsimsettings");
@@ -105,7 +104,7 @@ void fluidsim_init(FluidsimModifierData *fluidmd)
 
 		/*  elubie: changed this to default to the same dir as the render output
 		to prevent saving to C:\ on Windows */
-		BLI_strncpy(fss->surfdataPath, btempdir, FILE_MAX);
+		BLI_strncpy(fss->surfdataPath, BLI_temporary_dir(), FILE_MAX);
 
 		// first init of bounding box
 		// no bounding box needed
@@ -154,7 +153,7 @@ void fluidsim_init(FluidsimModifierData *fluidmd)
 
 void fluidsim_free(FluidsimModifierData *fluidmd)
 {
-#ifndef DISABLE_ELBEEM
+#ifdef WITH_MOD_FLUID
 	if(fluidmd)
 	{
 		if(fluidmd->fss->meshVelocities)
@@ -171,7 +170,7 @@ void fluidsim_free(FluidsimModifierData *fluidmd)
 	return;
 }
 
-#ifndef DISABLE_ELBEEM
+#ifdef WITH_MOD_FLUID
 /* read .bobj.gz file into a fluidsimDerivedMesh struct */
 static DerivedMesh *fluidsim_read_obj(const char *filename)
 {
@@ -536,14 +535,14 @@ static DerivedMesh *fluidsim_read_cache(DerivedMesh *orgdm, FluidsimModifierData
 
 	return dm;
 }
-#endif // DISABLE_ELBEEM
+#endif // WITH_MOD_FLUID
 
 DerivedMesh *fluidsimModifier_do(FluidsimModifierData *fluidmd, Scene *scene,
 						Object *UNUSED(ob),
 						DerivedMesh *dm,
 						int useRenderParams, int UNUSED(isFinalCalc))
 {
-#ifndef DISABLE_ELBEEM
+#ifdef WITH_MOD_FLUID
 	DerivedMesh *result = NULL;
 	int framenr;
 	FluidsimSettings *fss = NULL;

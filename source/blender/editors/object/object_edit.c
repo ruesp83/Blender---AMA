@@ -1,6 +1,4 @@
 /*
- * $Id: object_edit.c 40776 2011-10-03 17:29:43Z campbellbarton $
- *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
  * This program is free software; you can redistribute it and/or
@@ -147,6 +145,7 @@ static int object_hide_view_clear_exec(bContext *C, wmOperator *UNUSED(op))
 		}
 	}
 	if (changed) {
+		DAG_id_type_tag(bmain, ID_OB);
 		DAG_scene_sort(bmain, scene);
 		WM_event_add_notifier(C, NC_SCENE|ND_OB_SELECT, scene);
 	}
@@ -199,6 +198,7 @@ static int object_hide_view_set_exec(bContext *C, wmOperator *op)
 	CTX_DATA_END;
 
 	if (changed) {
+		DAG_id_type_tag(bmain, ID_OB);
 		DAG_scene_sort(bmain, scene);
 		
 		WM_event_add_notifier(C, NC_SCENE|ND_OB_SELECT, CTX_data_scene(C));
@@ -585,7 +585,7 @@ void OBJECT_OT_posemode_toggle(wmOperatorType *ot)
 	/* identifiers */
 	ot->name= "Toggle Pose Mode";
 	ot->idname= "OBJECT_OT_posemode_toggle";
-	ot->description= "Enables or disables posing/selecting bones";
+	ot->description= "Enable or disable posing/selecting bones";
 	
 	/* api callbacks */
 	ot->exec= posemode_exec;
@@ -1221,7 +1221,7 @@ static void copy_attr(Main *bmain, Scene *scene, View3D *v3d, short event)
 						cu1->vfontbi= cu->vfontbi;
 						id_us_plus((ID *)cu1->vfontbi);						
 
-						BKE_text_to_curve(scene, base->object, 0);		/* needed? */
+						BKE_text_to_curve(bmain, scene, base->object, 0); /* needed? */
 
 						
 						BLI_strncpy(cu1->family, cu->family, sizeof(cu1->family));

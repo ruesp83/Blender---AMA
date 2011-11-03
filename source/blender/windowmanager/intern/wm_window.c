@@ -1,6 +1,4 @@
 /*
- * $Id: wm_window.c 40470 2011-09-22 18:42:16Z campbellbarton $
- *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
  * This program is free software; you can redistribute it and/or
@@ -506,11 +504,11 @@ void WM_window_open_temp(bContext *C, rcti *position, int type)
 	ED_screen_set(C, win->screen);
 	
 	if(sa->spacetype==SPACE_IMAGE)
-		GHOST_SetTitle(win->ghostwin, UI_translate_do_iface(N_("Blender Render")));
+		GHOST_SetTitle(win->ghostwin, IFACE_("Blender Render"));
 	else if(ELEM(sa->spacetype, SPACE_OUTLINER, SPACE_USERPREF))
-		GHOST_SetTitle(win->ghostwin, UI_translate_do_iface(N_("Blender User Preferences")));
+		GHOST_SetTitle(win->ghostwin, IFACE_("Blender User Preferences"));
 	else if(sa->spacetype==SPACE_FILE)
-		GHOST_SetTitle(win->ghostwin, UI_translate_do_iface(N_("Blender File View")));
+		GHOST_SetTitle(win->ghostwin, IFACE_("Blender File View"));
 	else
 		GHOST_SetTitle(win->ghostwin, "Blender");
 }
@@ -650,7 +648,8 @@ static int ghost_event_proc(GHOST_EventHandle evt, GHOST_TUserDataPtr private)
 //				window_handle(win, INPUTCHANGE, win->active);
 				
 				/* bad ghost support for modifier keys... so on activate we set the modifiers again */
-				kdata.ascii= 0;
+				kdata.ascii= '\0';
+				kdata.utf8_buf[0]= '\0';
 				if (win->eventstate->shift && !query_qual(SHIFT)) {
 					kdata.key= GHOST_kKeyLeftShift;
 					wm_event_add_ghostevent(wm, win, GHOST_kEventKeyUp, time, &kdata);

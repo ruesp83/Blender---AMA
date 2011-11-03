@@ -1,8 +1,4 @@
-/*  effect.c
- * 
- * 
- * $Id: effect.c 40289 2011-09-17 09:43:51Z campbellbarton $
- *
+/*
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
  * This program is free software; you can redistribute it and/or
@@ -35,7 +31,6 @@
 
 
 #include <stddef.h>
-#include "BLI_storage.h" /* _LARGEFILE_SOURCE */
 
 #include <math.h>
 #include <stdlib.h>
@@ -61,8 +56,6 @@
 #include "BLI_math.h"
 #include "BLI_blenlib.h"
 #include "BLI_jitter.h"
-#include "BLI_listbase.h"
-#include "BLI_noise.h"
 #include "BLI_rand.h"
 #include "BLI_utildefines.h"
 
@@ -98,12 +91,12 @@
 #include "RE_shader_ext.h"
 
 /* fluid sim particle import */
-#ifndef DISABLE_ELBEEM
+#ifdef WITH_MOD_FLUID
 #include "DNA_object_fluidsim.h"
 #include "LBM_fluidsim.h"
 #include <zlib.h>
 #include <string.h>
-#endif // DISABLE_ELBEEM
+#endif // WITH_MOD_FLUID
 
 //XXX #include "BIF_screen.h"
 

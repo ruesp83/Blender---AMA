@@ -1,6 +1,4 @@
 /*
- * $Id: rna_object.c 40732 2011-10-01 15:40:32Z campbellbarton $
- *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
  * This program is free software; you can redistribute it and/or
@@ -83,8 +81,8 @@ static EnumPropertyItem collision_bounds_items[] = {
 	{OB_BOUND_SPHERE, "SPHERE", 0, "Sphere", ""},
 	{OB_BOUND_CYLINDER, "CYLINDER", 0, "Cylinder", ""},
 	{OB_BOUND_CONE, "CONE", 0, "Cone", ""},
-	{OB_BOUND_POLYT, "CONVEX_HULL", 0, "Convex Hull", ""},
-	{OB_BOUND_POLYH, "TRIANGLE_MESH", 0, "Triangle Mesh", ""},
+	{OB_BOUND_CONVEX_HULL, "CONVEX_HULL", 0, "Convex Hull", ""},
+	{OB_BOUND_TRIANGLE_MESH, "TRIANGLE_MESH", 0, "Triangle Mesh", ""},
 	{OB_BOUND_CAPSULE, "CAPSULE", 0, "Capsule", ""},
 	//{OB_DYN_MESH, "DYNAMIC_MESH", 0, "Dynamic Mesh", ""},
 	{0, NULL, 0, NULL, NULL}};
@@ -250,16 +248,20 @@ void rna_Object_active_shape_update(Main *bmain, Scene *scene, PointerRNA *ptr)
 static void rna_Object_dependency_update(Main *bmain, Scene *scene, PointerRNA *ptr)
 {
 	DAG_id_tag_update(ptr->id.data, OB_RECALC_OB);
-	DAG_scene_sort(bmain, scene);
+	if (scene) {
+		DAG_scene_sort(bmain, scene);
+	}
 	WM_main_add_notifier(NC_OBJECT|ND_PARENT, ptr->id.data);
 }
 
 /* when changing the selection flag the scene needs updating */
 static void rna_Object_select_update(Main *UNUSED(bmain), Scene *scene, PointerRNA *ptr)
 {
-	Object *ob= (Object*)ptr->id.data;
-	short mode = ob->flag & SELECT ? BA_SELECT : BA_DESELECT;
-	ED_base_object_select(object_in_scene(ob, scene), mode);
+	if (scene) {
+		Object *ob= (Object*)ptr->id.data;
+		short mode = ob->flag & SELECT ? BA_SELECT : BA_DESELECT;
+		ED_base_object_select(object_in_scene(ob, scene), mode);
+	}
 }
 
 static void rna_Base_select_update(Main *UNUSED(bmain), Scene *UNUSED(scene), PointerRNA *ptr)
@@ -284,6 +286,8 @@ static void rna_Object_layer_update__internal(Main *bmain, Scene *scene, Base *b
 	else {
 		DAG_scene_sort(bmain, scene);
 	}
+
+	DAG_id_type_tag(bmain, ID_OB);
 }
 
 static void rna_Object_layer_update(Main *bmain, Scene *scene, PointerRNA *ptr)
@@ -426,8 +430,8 @@ static EnumPropertyItem *rna_Object_collision_bounds_itemf(bContext *UNUSED(C), 
 	EnumPropertyItem *item= NULL;
 	int totitem= 0;
 
-	RNA_enum_items_add_value(&item, &totitem, collision_bounds_items, OB_BOUND_POLYH);
-	RNA_enum_items_add_value(&item, &totitem, collision_bounds_items, OB_BOUND_POLYT);
+	RNA_enum_items_add_value(&item, &totitem, collision_bounds_items, OB_BOUND_TRIANGLE_MESH);
+	RNA_enum_items_add_value(&item, &totitem, collision_bounds_items, OB_BOUND_CONVEX_HULL);
 
 	if(ob->body_type!=OB_BODY_TYPE_SOFT) {
 		RNA_enum_items_add_value(&item, &totitem, collision_bounds_items, OB_BOUND_CONE);
@@ -886,6 +890,7 @@ static int rna_GameObjectSettings_physics_type_get(PointerRNA *ptr)
 static void rna_GameObjectSettings_physics_type_set(PointerRNA *ptr, int value)
 {
 	Object *ob= (Object*)ptr->id.data;
+	const int was_navmesh= (ob->gameflag & OB_NAVMESH);
 	ob->body_type= value;
 
 	switch (ob->body_type) {
@@ -901,6 +906,12 @@ static void rna_GameObjectSettings_physics_type_set(PointerRNA *ptr, int value)
 	case OB_BODY_TYPE_NAVMESH:
 		ob->gameflag |= OB_NAVMESH;
 		ob->gameflag &= ~(OB_SENSOR|OB_COLLISION|OB_DYNAMIC|OB_OCCLUDER);
+
+		if (ob->type == OB_MESH) {
+			/* could be moved into mesh UI but for now ensure mesh data layer */
+			BKE_mesh_ensure_navmesh(ob->data);
+		}
+
 		break;
 	case OB_BODY_TYPE_NO_COLLISION:
 		ob->gameflag &= ~(OB_SENSOR|OB_COLLISION|OB_OCCLUDER|OB_DYNAMIC|OB_NAVMESH);
@@ -923,15 +934,24 @@ static void rna_GameObjectSettings_physics_type_set(PointerRNA *ptr, int value)
 		ob->gameflag &= ~(OB_RIGID_BODY|OB_OCCLUDER|OB_SENSOR|OB_NAVMESH);
 
 		/* assume triangle mesh, if no bounds chosen for soft body */
-		if ((ob->gameflag & OB_BOUNDS) && (ob->boundtype<OB_BOUND_POLYH))
+		if ((ob->gameflag & OB_BOUNDS) && (ob->boundtype<OB_BOUND_TRIANGLE_MESH))
 		{
-			ob->boundtype=OB_BOUND_POLYH;
+			ob->boundtype= OB_BOUND_TRIANGLE_MESH;
 		}
 		/* create a BulletSoftBody structure if not already existing */
 		if (!ob->bsoft)
 			ob->bsoft = bsbNew();
 		break;
 	}
+
+	if (was_navmesh != (ob->gameflag & OB_NAVMESH)) {
+		if (ob->type == OB_MESH) {
+			/* this is needed to refresh the derived meshes draw func */
+			DAG_id_tag_update(ptr->id.data, OB_RECALC_DATA);
+			WM_main_add_notifier(NC_OBJECT|ND_DRAW, ptr->id.data);
+		}
+	}
+
 }
 
 static PointerRNA rna_Object_active_particle_system_get(PointerRNA *ptr)
@@ -1377,7 +1397,7 @@ static void rna_def_object_game_settings(BlenderRNA *brna)
 	prop= RNA_def_property(srna, "controllers", PROP_COLLECTION, PROP_NONE);
 	RNA_def_property_struct_type(prop, "Controller");
 	RNA_def_property_ui_text(prop, "Controllers",
-	                         "Game engine controllers to process events, connecting sensor to actuators");
+	                         "Game engine controllers to process events, connecting sensors to actuators");
 
 	prop= RNA_def_property(srna, "actuators", PROP_COLLECTION, PROP_NONE);
 	RNA_def_property_struct_type(prop, "Actuator");
@@ -1405,9 +1425,8 @@ static void rna_def_object_game_settings(BlenderRNA *brna)
 	prop= RNA_def_property(srna, "physics_type", PROP_ENUM, PROP_NONE);
 	RNA_def_property_enum_sdna(prop, NULL, "body_type");
 	RNA_def_property_enum_items(prop, body_type_items);
-	RNA_def_property_enum_funcs(prop, "rna_GameObjectSettings_physics_type_get",
-	                            "rna_GameObjectSettings_physics_type_set", NULL);
-	RNA_def_property_ui_text(prop, "Physics Type",  "Selects the type of physical representation");
+	RNA_def_property_enum_funcs(prop, "rna_GameObjectSettings_physics_type_get", "rna_GameObjectSettings_physics_type_set", NULL);
+	RNA_def_property_ui_text(prop, "Physics Type", "Select the type of physical representation");
 	RNA_def_property_update(prop, NC_LOGIC, NULL);
 
 	prop= RNA_def_property(srna, "use_actor", PROP_BOOLEAN, PROP_NONE);
@@ -1469,20 +1488,20 @@ static void rna_def_object_game_settings(BlenderRNA *brna)
 	/* lock rotation */
 	prop= RNA_def_property(srna, "lock_rotation_x", PROP_BOOLEAN, PROP_NONE);
 	RNA_def_property_boolean_sdna(prop, NULL, "gameflag2", OB_LOCK_RIGID_BODY_X_ROT_AXIS);
-	RNA_def_property_ui_text(prop, "Lock X Rotation Axis", "Disable simulation of angular  motion along the X axis");
+	RNA_def_property_ui_text(prop, "Lock X Rotation Axis", "Disable simulation of angular motion along the X axis");
 	
 	prop= RNA_def_property(srna, "lock_rotation_y", PROP_BOOLEAN, PROP_NONE);
 	RNA_def_property_boolean_sdna(prop, NULL, "gameflag2", OB_LOCK_RIGID_BODY_Y_ROT_AXIS);
-	RNA_def_property_ui_text(prop, "Lock Y Rotation Axis", "Disable simulation of angular  motion along the Y axis");
+	RNA_def_property_ui_text(prop, "Lock Y Rotation Axis", "Disable simulation of angular motion along the Y axis");
 	
 	prop= RNA_def_property(srna, "lock_rotation_z", PROP_BOOLEAN, PROP_NONE);
 	RNA_def_property_boolean_sdna(prop, NULL, "gameflag2", OB_LOCK_RIGID_BODY_Z_ROT_AXIS);
-	RNA_def_property_ui_text(prop, "Lock Z Rotation Axis", "Disable simulation of angular  motion along the Z axis");
+	RNA_def_property_ui_text(prop, "Lock Z Rotation Axis", "Disable simulation of angular motion along the Z axis");
 	
 	/* is this used anywhere ? */
 	prop= RNA_def_property(srna, "use_activity_culling", PROP_BOOLEAN, PROP_NONE);
 	RNA_def_property_boolean_negative_sdna(prop, NULL, "gameflag2", OB_NEVER_DO_ACTIVITY_CULLING);
-	RNA_def_property_ui_text(prop, "Lock Z Rotation Axis", "Disable simulation of angular  motion along the Z axis");
+	RNA_def_property_ui_text(prop, "Lock Z Rotation Axis", "Disable simulation of angular motion along the Z axis");
 	
 
 	prop= RNA_def_property(srna, "use_material_physics_fh", PROP_BOOLEAN, PROP_NONE);
@@ -1507,7 +1526,7 @@ static void rna_def_object_game_settings(BlenderRNA *brna)
 	RNA_def_property_float_sdna(prop, NULL, "anisotropicFriction");
 	RNA_def_property_range(prop, 0.0, 1.0);
 	RNA_def_property_ui_text(prop, "Friction Coefficients",
-	                         "Relative friction coefficient in the in the X, Y and Z directions, "
+	                         "Relative friction coefficients in the in the X, Y and Z directions, "
 	                         "when anisotropic friction is enabled");
 
 	prop= RNA_def_property(srna, "use_collision_bounds", PROP_BOOLEAN, PROP_NONE);
@@ -1518,7 +1537,7 @@ static void rna_def_object_game_settings(BlenderRNA *brna)
 	RNA_def_property_enum_sdna(prop, NULL, "boundtype");
 	RNA_def_property_enum_items(prop, collision_bounds_items);
 	RNA_def_property_enum_funcs(prop, NULL, NULL, "rna_Object_collision_bounds_itemf");
-	RNA_def_property_ui_text(prop, "Collision Bounds",  "Selects the collision type");
+	RNA_def_property_ui_text(prop, "Collision Bounds",  "Select the collision type");
 	RNA_def_property_update(prop, NC_OBJECT|ND_DRAW, NULL);
 
 	prop= RNA_def_property(srna, "use_collision_compound", PROP_BOOLEAN, PROP_NONE);
@@ -1776,7 +1795,6 @@ static void rna_def_object(BlenderRNA *brna)
 		{OB_BOUNDBOX, "BOUNDS", 0, "Bounds", "Draw the bounding box of the object"},
 		{OB_WIRE, "WIRE", 0, "Wire", "Draw the object as a wireframe"},
 		{OB_SOLID, "SOLID", 0, "Solid", "Draw the object as a solid (if solid drawing is enabled in the viewport)"},
-		// disabled {OB_SHADED, "SHADED", 0, "Shaded", ""},
 		{OB_TEXTURE, "TEXTURED", 0, "Textured", "Draw the object with textures (if textures are enabled in the viewport)"},
 		{0, NULL, 0, NULL, NULL}};
 
@@ -1785,7 +1803,7 @@ static void rna_def_object(BlenderRNA *brna)
 		{OB_BOUND_SPHERE, "SPHERE", 0, "Sphere", "Draw bounds as sphere"},
 		{OB_BOUND_CYLINDER, "CYLINDER", 0, "Cylinder", "Draw bounds as cylinder"},
 		{OB_BOUND_CONE, "CONE", 0, "Cone", "Draw bounds as cone"},
-		{OB_BOUND_POLYH, "POLYHEDRON", 0, "Polyhedron", "Draw bounds as polyhedron"},
+		{OB_BOUND_TRIANGLE_MESH, "POLYHEDRON", 0, "Polyhedron", "Draw bounds as polyhedron"},
 		{OB_BOUND_CAPSULE, "CAPSULE", 0, "Capsule", "Draw bounds as capsule"},
 		{0, NULL, 0, NULL, NULL}};
 

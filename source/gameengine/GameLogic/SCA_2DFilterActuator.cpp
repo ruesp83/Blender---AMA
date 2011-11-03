@@ -1,7 +1,6 @@
 /*
  * SCA_2DFilterActuator.cpp
  *
- * $Id: SCA_2DFilterActuator.cpp 39834 2011-09-01 02:12:53Z campbellbarton $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -134,7 +133,7 @@ PyTypeObject SCA_2DFilterActuator::Type = {
 
 PyMethodDef SCA_2DFilterActuator::Methods[] = {
 	/* add python functions to deal with m_msg... */
-    {NULL,NULL}
+	{NULL,NULL}
 };
 
 PyAttributeDef SCA_2DFilterActuator::Attributes[] = {

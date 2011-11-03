@@ -1,6 +1,4 @@
 /*
-* $Id: GPG_ghost.cpp 40563 2011-09-26 10:35:47Z campbellbarton $
-*
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
  * This program is free software; you can redistribute it and/or
@@ -25,8 +23,8 @@
  * Contributor(s): none yet.
  *
  * ***** END GPL LICENSE BLOCK *****
-* Start up of the Blender Player on GHOST.
-*/
+ * Start up of the Blender Player on GHOST.
+ */
 
 /** \file gameengine/GamePlayer/ghost/GPG_ghost.cpp
  *  \ingroup player
@@ -76,9 +74,6 @@ extern "C"
 	
 	int GHOST_HACK_getFirstFile(char buf[]);
 	
-extern char bprogname[];	/* holds a copy of argv[0], from creator.c */
-extern char btempdir[];		/* use this to store a valid temp directory */
-
 // For BLF
 #include "BLF_api.h"
 #include "BLF_translation.h"
@@ -115,8 +110,6 @@ extern char datatoc_bfont_ttf[];
 
 const int kMinWindowWidth = 100;
 const int kMinWindowHeight = 100;
-
-char bprogname[FILE_MAX];
 
 static void mem_error_cb(const char *errorStr)
 {
@@ -183,8 +176,8 @@ static BOOL scr_saver_init(int argc, char **argv)
 void usage(const char* program, bool isBlenderPlayer)
 {
 	const char * consoleoption;
-	const char * filename = "";
-	const char * pathname = "";
+	const char * example_filename = "";
+	const char * example_pathname = "";
 
 #ifdef _WIN32
 	consoleoption = "-c ";
@@ -193,16 +186,16 @@ void usage(const char* program, bool isBlenderPlayer)
 #endif
 
 	if (isBlenderPlayer) {
-		filename = "filename.blend";
+		example_filename = "filename.blend";
 #ifdef _WIN32
-		pathname = "c:\\";
+		example_pathname = "c:\\";
 #else
-		pathname = "//home//user//";
+		example_pathname = "/home/user/";
 #endif
 	}
 	
 	printf("usage:   %s [-w [w h l t]] [-f [fw fh fb ff]] %s[-g gamengineoptions] "
-		"[-s stereomode] [-m aasamples] %s\n", program, consoleoption, filename);
+		"[-s stereomode] [-m aasamples] %s\n", program, consoleoption, example_filename);
 	printf("  -h: Prints this command summary\n\n");
 	printf("  -w: display in a window\n");
 	printf("       --Optional parameters--\n"); 
@@ -257,9 +250,9 @@ void usage(const char* program, bool isBlenderPlayer)
 	printf("\n");
 	printf("  - : all arguments after this are ignored, allowing python to access them from sys.argv\n");
 	printf("\n");
-	printf("example: %s -w 320 200 10 10 -g noaudio%s%s\n", program, pathname, filename);
-	printf("example: %s -g show_framerate = 0 %s%s\n", program, pathname, filename);
-	printf("example: %s -i 232421 -m 16 %s%s\n\n", program, pathname, filename);
+	printf("example: %s -w 320 200 10 10 -g noaudio%s%s\n", program, example_pathname, example_filename);
+	printf("example: %s -g show_framerate = 0 %s%s\n", program, example_pathname, example_filename);
+	printf("example: %s -i 232421 -m 16 %s%s\n\n", program, example_pathname, example_filename);
 }
 
 static void get_filename(int argc, char **argv, char *filename)
@@ -309,7 +302,7 @@ static void get_filename(int argc, char **argv, char *filename)
 #endif // !_APPLE
 }
 
-static BlendFileData *load_game_data(char *progname, char *filename = NULL, char *relativename = NULL)
+static BlendFileData *load_game_data(const char *progname, char *filename = NULL, char *relativename = NULL)
 {
 	ReportList reports;
 	BlendFileData *bfd = NULL;
@@ -321,7 +314,7 @@ static BlendFileData *load_game_data(char *progname, char *filename = NULL, char
 		bfd= BLO_read_runtime(progname, &reports);
 		if (bfd) {
 			bfd->type= BLENFILETYPE_RUNTIME;
-			strcpy(bfd->main->name, progname);
+			BLI_strncpy(bfd->main->name, progname, sizeof(bfd->main->name));
 		}
 	} else {
 		bfd= BLO_read_from_file(progname, &reports);
@@ -379,7 +372,8 @@ int main(int argc, char** argv)
 	signal (SIGFPE, SIG_IGN);
 #endif /* __alpha__ */
 #endif /* __linux__ */
-	BLI_where_am_i(bprogname, sizeof(bprogname), argv[0]);
+	BLI_init_program_path(argv[0]);
+	BLI_init_temporary_dir(NULL);
 #ifdef __APPLE__
 	// Can't use Carbon right now because of double defined type ID (In Carbon.h and DNA_ID.h, sigh)
 	/*
@@ -766,7 +760,7 @@ int main(int argc, char** argv)
 						char basedpath[240];
 						
 						// base the actuator filename relative to the last file
-						strcpy(basedpath, exitstring.Ptr());
+						BLI_strncpy(basedpath, exitstring.Ptr(), sizeof(basedpath));
 						BLI_path_abs(basedpath, pathname);
 						
 						bfd = load_game_data(basedpath);
@@ -784,7 +778,7 @@ int main(int argc, char** argv)
 					}
 					else
 					{
-						bfd = load_game_data(bprogname, filename[0]? filename: NULL);
+						bfd = load_game_data(BLI_program_path(), filename[0]? filename: NULL);
 					}
 					
 					//::printf("game data loaded from %s\n", filename);

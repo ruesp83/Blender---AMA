@@ -1,4 +1,3 @@
-# $Id: CMakeLists.txt 40610 2011-09-27 12:08:35Z campbellbarton $
 # ***** BEGIN GPL LICENSE BLOCK *****
 #
 # This program is free software; you can redistribute it and/or
@@ -107,6 +106,10 @@ if(WITH_INPUT_NDOF)
 	list(APPEND INC_SYS
 		${NDOF_INCLUDE_DIRS}
 	)
+endif()
+
+if(WITH_XDG_USER_DIRS)
+	add_definitions(-DWITH_XDG_USER_DIRS)
 endif()
 
 if(WITH_HEADLESS OR WITH_GHOST_SDL)

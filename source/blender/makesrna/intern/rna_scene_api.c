@@ -1,6 +1,4 @@
 /*
- * $Id: rna_scene_api.c 40354 2011-09-19 13:23:58Z mont29 $
- *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
  * This program is free software; you can redistribute it and/or
@@ -71,6 +69,7 @@ static void rna_Scene_frame_set(Scene *scene, int frame, float subframe)
 static void rna_Scene_update_tagged(Scene *scene)
 {
 	scene_update_tagged(G.main, scene);
+	scene_clear_tagged(G.main, scene);
 }
 
 static void rna_SceneRender_get_frame_path(RenderData *rd, int frame, char *name)

@@ -1,6 +1,4 @@
 /*
- * $Id: MOD_util.c 40080 2011-09-09 21:28:56Z ben2610 $
- *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
  * This program is free software; you can redistribute it and/or
@@ -295,7 +293,6 @@ void modifier_type_init(ModifierTypeInfo *types[])
 	INIT_TYPE(Solidify);
 	INIT_TYPE(Screw);
 	INIT_TYPE(Warp);
-	INIT_TYPE(NavMesh);
 	INIT_TYPE(WeightVGEdit);
 	INIT_TYPE(WeightVGMix);
 	INIT_TYPE(WeightVGProximity);

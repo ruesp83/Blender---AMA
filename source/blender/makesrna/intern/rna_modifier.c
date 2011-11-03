@@ -1,6 +1,4 @@
 /*
- * $Id: rna_modifier.c 40732 2011-10-01 15:40:32Z campbellbarton $
- *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
  * This program is free software; you can redistribute it and/or
@@ -55,6 +53,11 @@
 #include "WM_types.h"
 
 EnumPropertyItem modifier_type_items[] ={
+	{0, "", 0, "Modify", ""},
+	{eModifierType_UVProject, "UV_PROJECT", ICON_MOD_UVPROJECT, "UV Project", ""},
+	{eModifierType_WeightVGEdit, "VERTEX_WEIGHT_EDIT", ICON_MOD_VERTEX_WEIGHT, "Vertex Weight Edit", ""},
+	{eModifierType_WeightVGMix, "VERTEX_WEIGHT_MIX", ICON_MOD_VERTEX_WEIGHT, "Vertex Weight Mix", ""},
+	{eModifierType_WeightVGProximity, "VERTEX_WEIGHT_PROXIMITY", ICON_MOD_VERTEX_WEIGHT, "Vertex Weight Proximity", ""},
 	{0, "", 0, "Generate", ""},
 	{eModifierType_Array, "ARRAY", ICON_MOD_ARRAY, "Array", ""},
 	{eModifierType_Bevel, "BEVEL", ICON_MOD_BEVEL, "Bevel", ""},
@@ -68,11 +71,6 @@ EnumPropertyItem modifier_type_items[] ={
 	{eModifierType_Screw, "SCREW", ICON_MOD_SCREW, "Screw", ""},
 	{eModifierType_Solidify, "SOLIDIFY", ICON_MOD_SOLIDIFY, "Solidify", ""},
 	{eModifierType_Subsurf, "SUBSURF", ICON_MOD_SUBSURF, "Subdivision Surface", ""},
-	{0, "", 0, "Modify", ""},
-	{eModifierType_UVProject, "UV_PROJECT", ICON_MOD_UVPROJECT, "UV Project", ""},
-	{eModifierType_WeightVGEdit, "VERTEX_WEIGHT_EDIT", ICON_MOD_VERTEX_WEIGHT, "Vertex Weight Edit", ""},
-	{eModifierType_WeightVGMix, "VERTEX_WEIGHT_MIX", ICON_MOD_VERTEX_WEIGHT, "Vertex Weight Mix", ""},
-	{eModifierType_WeightVGProximity, "VERTEX_WEIGHT_PROXIMITY", ICON_MOD_VERTEX_WEIGHT, "Vertex Weight Proximity", ""},
 	{0, "", 0, "Deform", ""},
 	{eModifierType_Armature, "ARMATURE", ICON_MOD_ARMATURE, "Armature", ""},
 	{eModifierType_Cast, "CAST", ICON_MOD_CAST, "Cast", ""},
@@ -91,7 +89,6 @@ EnumPropertyItem modifier_type_items[] ={
 	{eModifierType_Collision, "COLLISION", ICON_MOD_PHYSICS, "Collision", ""},
 	{eModifierType_Explode, "EXPLODE", ICON_MOD_EXPLODE, "Explode", ""},
 	{eModifierType_Fluidsim, "FLUID_SIMULATION", ICON_MOD_FLUIDSIM, "Fluid Simulation", ""},
-	{eModifierType_NavMesh, "NAVMESH", ICON_MOD_PHYSICS, "Navigation mesh", ""},
 	{eModifierType_ParticleInstance, "PARTICLE_INSTANCE", ICON_MOD_PARTICLES, "Particle Instance", ""},
 	{eModifierType_ParticleSystem, "PARTICLE_SYSTEM", ICON_MOD_PARTICLES, "Particle System", ""},
 	{eModifierType_Smoke, "SMOKE", ICON_MOD_SMOKE, "Smoke", ""},
@@ -189,8 +186,6 @@ static StructRNA* rna_Modifier_refine(struct PointerRNA *ptr)
 			return &RNA_ScrewModifier;
 		case eModifierType_Warp:
 			return &RNA_WarpModifier;
-		case eModifierType_NavMesh:
-			return &RNA_NavMeshModifier;
 		case eModifierType_WeightVGEdit:
 			return &RNA_VertexWeightEditModifier;
 		case eModifierType_WeightVGMix:
@@ -275,7 +270,7 @@ static void rna_Smoke_set_type(Main *bmain, Scene *scene, PointerRNA *ptr)
 					part->end = 250.0f;
 					part->ren_as = PART_DRAW_NOT;
 					part->draw_as = PART_DRAW_DOT;
-					sprintf(psys->name, "SmokeParticles");
+					BLI_strncpy(psys->name, "SmokeParticles", sizeof(psys->name));
 					psys->recalc |= (PSYS_RECALC_RESET|PSYS_RECALC_PHYS);
 					DAG_id_tag_update(ptr->id.data, OB_RECALC_DATA);
 				}
@@ -589,14 +584,14 @@ static void rna_ArrayModifier_end_cap_set(PointerRNA *ptr, PointerRNA value)
 	modifier_object_set(ptr->id.data, &((ArrayModifierData*)ptr->data)->end_cap, OB_MESH, value);
 }
 
-static void rna_ArrayModifier_start_cap_set(PointerRNA *ptr, PointerRNA value)
-{
-	modifier_object_set(ptr->id.data, &((ArrayModifierData*)ptr->data)->start_cap, OB_MESH, value);
-}
-
 static void rna_ArrayModifier_mid_cap_set(PointerRNA *ptr, PointerRNA value)
 {
 	modifier_object_set(ptr->id.data, &((ArrayModifierData*)ptr->data)->mid_cap, OB_MESH, value);
+}
+
+static void rna_ArrayModifier_start_cap_set(PointerRNA *ptr, PointerRNA value)
+{
+	modifier_object_set(ptr->id.data, &((ArrayModifierData*)ptr->data)->start_cap, OB_MESH, value);
 }
 
 static void rna_ArrayModifier_curve_set(PointerRNA *ptr, PointerRNA value)
@@ -1371,6 +1366,7 @@ static void rna_def_modifier_array(BlenderRNA *brna)
 	static EnumPropertyItem prop_mid_cap_items[] = {
 		{MOD_ARR_DIST_SEQ, "SEQUENCE", 0, "Sequence", "Use the mid cap in sequence"},
 		{MOD_ARR_DIST_HALF, "HALF", 0, "Half", "Use the mid cap from the center"},
+		{MOD_ARR_DIST_CURVE, "CURVE", 0, "Curve", "Use the mid cap on points of the curve"},
 		{0, NULL, 0, NULL, NULL}};
 
 	static EnumPropertyItem prop_fit_type_items[] = {
@@ -2641,17 +2637,6 @@ static void rna_def_modifier_screw(BlenderRNA *brna)
 	RNA_def_property_update(prop, 0, "rna_Modifier_update");*/
 }
 
-static void rna_def_modifier_navmesh(BlenderRNA *brna)
-{
-	StructRNA *srna;
-	/* PropertyRNA *prop; */ /* UNUSED */
-
-	srna= RNA_def_struct(brna, "NavMeshModifier", "Modifier");
-	RNA_def_struct_ui_text(srna, "NavMesh Modifier", "NavMesh modifier");
-	RNA_def_struct_sdna(srna, "NavMeshModifierData");
-	RNA_def_struct_ui_icon(srna, ICON_MOD_DECIM);
-}
-
 static void rna_def_modifier_weightvg_mask(BlenderRNA *brna, StructRNA *srna)
 {
 	static EnumPropertyItem weightvg_mask_tex_map_items[] = {
@@ -3044,7 +3029,6 @@ void RNA_def_modifier(BlenderRNA *brna)
 	rna_def_modifier_smoke(brna);
 	rna_def_modifier_solidify(brna);
 	rna_def_modifier_screw(brna);
-	rna_def_modifier_navmesh(brna);
 	rna_def_modifier_weightvgedit(brna);
 	rna_def_modifier_weightvgmix(brna);
 	rna_def_modifier_weightvgproximity(brna);

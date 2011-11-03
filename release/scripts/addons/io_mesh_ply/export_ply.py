@@ -47,7 +47,7 @@ def save(operator,
         return round(v[0], 6), round(v[1], 6)
 
     scene = context.scene
-    obj = context.object
+    obj = context.active_object
 
     if not obj:
         raise Exception("Error, Select 1 active object")
@@ -98,7 +98,7 @@ def save(operator,
         else:
             active_col_layer = active_col_layer.data
 
-    # incase
+    # in case
     color = uvcoord = uvcoord_key = normal = normal_key = None
 
     mesh_verts = mesh.vertices  # save a lookup

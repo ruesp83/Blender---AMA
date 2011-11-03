@@ -1,6 +1,4 @@
 /*
- * $Id: curve_ops.c 40255 2011-09-16 08:20:21Z campbellbarton $
- *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
  * This program is free software; you can redistribute it and/or
@@ -225,7 +223,6 @@ void ED_keymap_curve(wmKeyConfig *keyconf)
 
 	WM_keymap_add_item(keymap, "CURVE_OT_tilt_clear", TKEY, KM_PRESS, KM_ALT, 0);
 	WM_keymap_add_item(keymap, "TRANSFORM_OT_tilt", TKEY, KM_PRESS, KM_CTRL, 0);
-	RNA_enum_set(WM_keymap_add_item(keymap, "TRANSFORM_OT_transform", TKEY, KM_PRESS, KM_CTRL, 0)->ptr, "mode", TFM_TILT);
 
 	RNA_enum_set(WM_keymap_add_item(keymap, "TRANSFORM_OT_transform", SKEY, KM_PRESS, KM_ALT, 0)->ptr, "mode", TFM_CURVE_SHRINKFATTEN);
 

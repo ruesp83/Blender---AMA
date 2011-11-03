@@ -1,5 +1,4 @@
 /* 
-	$Id: BKE_displist.h 37504 2011-06-15 10:17:06Z blendix $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *

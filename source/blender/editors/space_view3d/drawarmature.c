@@ -1,6 +1,4 @@
 /*
- * $Id: drawarmature.c 40532 2011-09-25 05:48:16Z campbellbarton $
- *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
  * This program is free software; you can redistribute it and/or
@@ -438,39 +436,39 @@ static void draw_bonevert_solid(void)
 }
 
 static float bone_octahedral_verts[6][3]= {
-    { 0.0f, 0.0f,  0.0f},
-    { 0.1f, 0.1f,  0.1f},
-    { 0.1f, 0.1f, -0.1f},
-    {-0.1f, 0.1f, -0.1f},
-    {-0.1f, 0.1f,  0.1f},
-    { 0.0f, 1.0f,  0.0f}
+	{ 0.0f, 0.0f,  0.0f},
+	{ 0.1f, 0.1f,  0.1f},
+	{ 0.1f, 0.1f, -0.1f},
+	{-0.1f, 0.1f, -0.1f},
+	{-0.1f, 0.1f,  0.1f},
+	{ 0.0f, 1.0f,  0.0f}
 };
 
 static unsigned int bone_octahedral_wire_sides[8]= {0, 1, 5, 3, 0, 4, 5, 2};
 static unsigned int bone_octahedral_wire_square[8]= {1, 2, 3, 4, 1};
 
 static unsigned int bone_octahedral_solid_tris[8][3]= {
-    {2, 1, 0}, /* bottom */
-    {3, 2, 0},
-    {4, 3, 0},
-    {1, 4, 0},
+	{2, 1, 0}, /* bottom */
+	{3, 2, 0},
+	{4, 3, 0},
+	{1, 4, 0},
 
-    {5, 1, 2}, /* top */
-    {5, 2, 3},
-    {5, 3, 4},
-    {5, 4, 1}
+	{5, 1, 2}, /* top */
+	{5, 2, 3},
+	{5, 3, 4},
+	{5, 4, 1}
 };
 
 /* aligned with bone_octahedral_solid_tris */
 static float bone_octahedral_solid_normals[8][3]= {
-    { 0.70710683f, -0.70710683f,  0.00000000f},
-    {-0.00000000f, -0.70710683f, -0.70710683f},
-    {-0.70710683f, -0.70710683f,  0.00000000f},
-    { 0.00000000f, -0.70710683f,  0.70710683f},
-    { 0.99388373f,  0.11043154f, -0.00000000f},
-    { 0.00000000f,  0.11043154f, -0.99388373f},
-    {-0.99388373f,  0.11043154f,  0.00000000f},
-    { 0.00000000f,  0.11043154f,  0.99388373f}
+	{ 0.70710683f, -0.70710683f,  0.00000000f},
+	{-0.00000000f, -0.70710683f, -0.70710683f},
+	{-0.70710683f, -0.70710683f,  0.00000000f},
+	{ 0.00000000f, -0.70710683f,  0.70710683f},
+	{ 0.99388373f,  0.11043154f, -0.00000000f},
+	{ 0.00000000f,  0.11043154f, -0.99388373f},
+	{-0.99388373f,  0.11043154f,  0.00000000f},
+	{ 0.00000000f,  0.11043154f,  0.99388373f}
 };
 
 static void draw_bone_octahedral(void)
@@ -1839,7 +1837,7 @@ static void draw_pose_bones(Scene *scene, View3D *v3d, ARegion *ar, Base *base, 
 	}
 	
 	/* wire draw over solid only in posemode */
-	if ((dt <= OB_WIRE) || (arm->flag & ARM_POSEMODE) || (arm->drawtype==ARM_LINE)) {
+	if ((dt <= OB_WIRE) || (arm->flag & ARM_POSEMODE) || ELEM(arm->drawtype, ARM_LINE, ARM_WIRE)) {
 		/* draw line check first. we do selection indices */
 		if ELEM(arm->drawtype, ARM_LINE, ARM_WIRE) {
 			if (arm->flag & ARM_POSEMODE) 
@@ -2512,7 +2510,7 @@ int draw_armature(Scene *scene, View3D *v3d, ARegion *ar, Base *base, int dt, in
 	if(v3d->flag2 & V3D_RENDER_OVERRIDE)
 		return 1;
 	
-	if(dt>OB_WIRE && arm->drawtype!=ARM_LINE) {
+	if(dt>OB_WIRE && !ELEM(arm->drawtype, ARM_LINE, ARM_WIRE)) {
 		/* we use color for solid lighting */
 		glColorMaterial(GL_FRONT_AND_BACK, GL_SPECULAR);
 		glEnable(GL_COLOR_MATERIAL);

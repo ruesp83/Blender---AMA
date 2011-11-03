@@ -1,8 +1,4 @@
-/*  displist.c
- * 
- * 
- * $Id: displist.c 40641 2011-09-28 05:53:40Z campbellbarton $
- *
+/*
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
  * This program is free software; you can redistribute it and/or
@@ -1207,7 +1203,7 @@ static void do_makeDispListCurveTypes(Scene *scene, Object *ob, ListBase *dispba
 		if(cu->path) free_path(cu->path);
 		cu->path= NULL;
 
-		if(ob->type==OB_FONT) BKE_text_to_curve(scene, ob, 0);
+		if(ob->type==OB_FONT) BKE_text_to_curve(G.main, scene, ob, 0);
 
 		if(!forOrco) curve_calc_modifiers_pre(scene, ob, forRender, &originalVerts, &deformedVerts, &numVerts);
 

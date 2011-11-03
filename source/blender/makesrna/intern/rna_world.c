@@ -1,6 +1,4 @@
 /*
- * $Id: rna_world.c 39972 2011-09-06 15:44:44Z dingto $
- *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
  * This program is free software; you can redistribute it and/or
@@ -47,6 +45,8 @@
 #include "BKE_depsgraph.h"
 #include "BKE_main.h"
 #include "BKE_texture.h"
+
+#include "ED_node.h"
 
 #include "WM_api.h"
 
@@ -121,6 +121,15 @@ static void rna_World_stars_update(Main *UNUSED(bmain), Scene *UNUSED(scene), Po
 	WM_main_add_notifier(NC_WORLD|ND_WORLD_STARS, wo);
 }
 
+static void rna_World_use_nodes_update(Main *bmain, Scene *scene, PointerRNA *ptr)
+{
+	World *wrld= (World*)ptr->data;
+
+	if(wrld->use_nodes && wrld->nodetree==NULL)
+		ED_node_shader_default(scene, &wrld->id);
+	
+	rna_World_update(bmain, scene, ptr);
+}
 
 #else
 
@@ -162,11 +171,6 @@ static void rna_def_world_mtex(BlenderRNA *brna)
 	RNA_def_property_boolean_sdna(prop, NULL, "mapto", WOMAP_ZENDOWN);
 	RNA_def_property_ui_text(prop, "Zenith Down", "Affect the color of the zenith below");
 	RNA_def_property_update(prop, 0, "rna_World_update");
-
-	/* unused
-	prop= RNA_def_property(srna, "map_mist", PROP_BOOLEAN, PROP_NONE);
-	RNA_def_property_boolean_sdna(prop, NULL, "mapto", WOMAP_MIST);
-	RNA_def_property_ui_text(prop, "Mist", "Causes the texture to affect the intensity of the mist");*/
 
 	prop= RNA_def_property(srna, "texture_coords", PROP_ENUM, PROP_NONE);
 	RNA_def_property_enum_sdna(prop, NULL, "texco");
@@ -395,7 +399,7 @@ static void rna_def_world_mist(BlenderRNA *brna)
 	prop= RNA_def_property(srna, "intensity", PROP_FLOAT, PROP_NONE);
 	RNA_def_property_float_sdna(prop, NULL, "misi");
 	RNA_def_property_range(prop, 0, 1);
-	RNA_def_property_ui_text(prop, "Intensity", "Intensity of the mist effect");
+	RNA_def_property_ui_text(prop, "Minimum", "Overall minimum intensity of the mist effect");
 	RNA_def_property_update(prop, 0, "rna_World_update");
 
 	prop= RNA_def_property(srna, "start", PROP_FLOAT, PROP_DISTANCE);
@@ -409,7 +413,7 @@ static void rna_def_world_mist(BlenderRNA *brna)
 	RNA_def_property_float_sdna(prop, NULL, "mistdist");
 	RNA_def_property_range(prop, 0, FLT_MAX);
 	RNA_def_property_ui_range(prop, 0, 10000, 10, 2);
-	RNA_def_property_ui_text(prop, "Depth", "The distance over which the mist effect fades in");
+	RNA_def_property_ui_text(prop, "Depth", "Distance over which the mist effect fades in");
 	RNA_def_property_update(prop, 0, "rna_World_draw_mist_update");
 
 	prop= RNA_def_property(srna, "height", PROP_FLOAT, PROP_DISTANCE);
@@ -433,7 +437,7 @@ static void rna_def_world_stars(BlenderRNA *brna)
 	srna= RNA_def_struct(brna, "WorldStarsSettings", NULL);
 	RNA_def_struct_sdna(srna, "World");
 	RNA_def_struct_nested(brna, srna, "World");
-	RNA_def_struct_ui_text(srna, "World Stars", "Stars setting for a World data-block");
+	RNA_def_struct_ui_text(srna, "World Stars", "Stars settings for a World data-block");
 
 	prop= RNA_def_property(srna, "use_stars", PROP_BOOLEAN, PROP_NONE);
 	RNA_def_property_boolean_sdna(prop, NULL, "mode", WO_STARS);
@@ -463,13 +467,6 @@ static void rna_def_world_stars(BlenderRNA *brna)
 	RNA_def_property_range(prop, 0, 1);
 	RNA_def_property_ui_text(prop, "Color Randomization", "Randomize star colors");
 	RNA_def_property_update(prop, 0, "rna_World_stars_update");
-	
-	/* unused
-	prop= RNA_def_property(srna, "color", PROP_FLOAT, PROP_COLOR);
-	RNA_def_property_float_sdna(prop, NULL, "starr");
-	RNA_def_property_array(prop, 3);
-	RNA_def_property_ui_text(prop, "Color", "Stars color");
-	RNA_def_property_update(prop, 0, "rna_World_update");*/
 }
 
 void RNA_def_world(BlenderRNA *brna)
@@ -565,6 +562,17 @@ void RNA_def_world(BlenderRNA *brna)
 	RNA_def_property_struct_type(prop, "WorldStarsSettings");
 	RNA_def_property_pointer_funcs(prop, "rna_World_stars_get", NULL, NULL, NULL);
 	RNA_def_property_ui_text(prop, "Stars", "World stars settings");
+
+	/* nodes */
+	prop= RNA_def_property(srna, "node_tree", PROP_POINTER, PROP_NONE);
+	RNA_def_property_pointer_sdna(prop, NULL, "nodetree");
+	RNA_def_property_ui_text(prop, "Node Tree", "Node tree for node based worlds");
+
+	prop= RNA_def_property(srna, "use_nodes", PROP_BOOLEAN, PROP_NONE);
+	RNA_def_property_boolean_sdna(prop, NULL, "use_nodes", 1);
+	RNA_def_property_clear_flag(prop, PROP_ANIMATABLE);
+	RNA_def_property_ui_text(prop, "Use Nodes", "Use shader nodes to render the world");
+	RNA_def_property_update(prop, 0, "rna_World_use_nodes_update");
 
 	rna_def_lighting(brna);
 	rna_def_world_mist(brna);

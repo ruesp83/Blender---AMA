@@ -1,6 +1,4 @@
 /*
- * $Id: node_shader_geom.c 40147 2011-09-12 04:14:12Z campbellbarton $
- *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
  * This program is free software; you can redistribute it and/or
@@ -141,6 +139,7 @@ void register_node_type_sh_geom(ListBase *lb)
 	static bNodeType ntype;
 
 	node_type_base(&ntype, SH_NODE_GEOMETRY, "Geometry", NODE_CLASS_INPUT, NODE_OPTIONS);
+	node_type_compatibility(&ntype, NODE_OLD_SHADING);
 	node_type_socket_templates(&ntype, NULL, sh_node_geom_out);
 	node_type_size(&ntype, 120, 80, 160);
 	node_type_init(&ntype, node_shader_init_geometry);

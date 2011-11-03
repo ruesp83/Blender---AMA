@@ -1,4 +1,3 @@
-# $Id: CMakeLists.txt 40610 2011-09-27 12:08:35Z campbellbarton $
 # ***** BEGIN GPL LICENSE BLOCK *****
 #
 # This program is free software; you can redistribute it and/or
@@ -23,11 +22,6 @@
 # Contributor(s): Jacques Beaurain.
 #
 # ***** END GPL LICENSE BLOCK *****
-
-if(WITH_CODEC_FFMPEG)
-	# FFMPEG gives warnigns which are hard to avoid across multiple versions.
-	remove_strict_flags()
-endif()
 
 set(INC 
 	.
@@ -307,6 +301,10 @@ if(WITH_CODEC_FFMPEG)
 		${FFMPEG_INCLUDE_DIRS}
 	)
 	add_definitions(-DWITH_FFMPEG)
+
+	remove_strict_flags_file(
+		intern/writeffmpeg.c
+	)
 endif()
 
 if(WITH_PYTHON)
@@ -327,8 +325,8 @@ if(WITH_OPENMP)
 	add_definitions(-DPARALLEL=1)
 endif()
 
-if(NOT WITH_MOD_FLUID)
-	add_definitions(-DDISABLE_ELBEEM)
+if(WITH_MOD_FLUID)
+	add_definitions(-DWITH_MOD_FLUID)
 endif()
 
 if(WITH_MOD_SMOKE)
@@ -355,12 +353,14 @@ endif()
 
 if(WITH_GAMEENGINE)
 	list(APPEND INC_SYS
-	../../../extern/recastnavigation
+		../../../extern/recastnavigation
 	)
 	list(APPEND SRC
 		intern/navmesh_conversion.c
 		BKE_navmesh_conversion.h
 	)
+
+	add_definitions(-DWITH_GAMEENGINE)
 endif()
 
 ## Warnings as errors, this is too strict!

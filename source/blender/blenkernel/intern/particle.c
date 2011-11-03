@@ -1,8 +1,4 @@
-/* particle.c
- *
- *
- * $Id: particle.c 40537 2011-09-25 11:51:28Z z0r $
- *
+/*
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
  * This program is free software; you can redistribute it and/or
@@ -56,6 +52,8 @@
 #include "BLI_kdtree.h"
 #include "BLI_rand.h"
 #include "BLI_threads.h"
+#include "BLI_linklist.h"
+#include "BLI_bpath.h"
 
 #include "BKE_anim.h"
 #include "BKE_animsys.h"
@@ -3604,7 +3602,7 @@ void make_local_particlesettings(ParticleSettings *part)
 {
 	Main *bmain= G.main;
 	Object *ob;
-	int local=0, lib=0;
+	int is_local= FALSE, is_lib= FALSE;
 
 	/* - only lib users: do nothing
 	 * - only local users: set flag
@@ -3613,34 +3611,34 @@ void make_local_particlesettings(ParticleSettings *part)
 	
 	if(part->id.lib==0) return;
 	if(part->id.us==1) {
-		part->id.lib= 0;
-		part->id.flag= LIB_LOCAL;
-		new_id(&bmain->particle, (ID *)part, 0);
+		id_clear_lib_data(bmain, &part->id);
 		expand_local_particlesettings(part);
 		return;
 	}
 
 	/* test objects */
-	for(ob= bmain->object.first; ob && ELEM(0, lib, local); ob= ob->id.next) {
+	for(ob= bmain->object.first; ob && ELEM(FALSE, is_lib, is_local); ob= ob->id.next) {
 		ParticleSystem *psys=ob->particlesystem.first;
 		for(; psys; psys=psys->next){
 			if(psys->part==part) {
-				if(ob->id.lib) lib= 1;
-				else local= 1;
+				if(ob->id.lib) is_lib= TRUE;
+				else is_local= TRUE;
 			}
 		}
 	}
 	
-	if(local && lib==0) {
-		part->id.lib= 0;
-		part->id.flag= LIB_LOCAL;
-		new_id(&bmain->particle, (ID *)part, 0);
+	if(is_local && is_lib==FALSE) {
+		id_clear_lib_data(bmain, &part->id);
 		expand_local_particlesettings(part);
 	}
-	else if(local && lib) {
+	else if(is_local && is_lib) {
 		ParticleSettings *partn= psys_copy_settings(part);
+
 		partn->id.us= 0;
-		
+
+		/* Remap paths of new ID using old library as base. */
+		BKE_id_lib_local_paths(bmain, &partn->id);
+
 		/* do objects */
 		for(ob= bmain->object.first; ob; ob= ob->id.next) {
 			ParticleSystem *psys;
@@ -4386,33 +4384,50 @@ void psys_get_dupli_path_transform(ParticleSimulationData *sim, ParticleData *pa
 		psys_particle_on_emitter(psmd,sim->psys->part->from,pa->num,pa->num_dmcache,pa->fuv,pa->foffset,loc,nor,0,0,0,0);
 	else
 		psys_particle_on_emitter(psmd,PART_FROM_FACE,cpa->num,DMCACHE_ISCHILD,cpa->fuv,cpa->foffset,loc,nor,0,0,0,0);
-		
-	copy_m3_m4(nmat, ob->imat);
-	transpose_m3(nmat);
-	mul_m3_v3(nmat, nor);
-	normalize_v3(nor);
 
-	/* make sure that we get a proper side vector */
-	if(fabs(dot_v3v3(nor,vec))>0.999999) {
-		if(fabs(dot_v3v3(nor,xvec))>0.999999) {
-			nor[0] = 0.0f;
-			nor[1] = 1.0f;
-			nor[2] = 0.0f;
+	if(psys->part->rotmode == PART_ROT_VEL) {
+		copy_m3_m4(nmat, ob->imat);
+		transpose_m3(nmat);
+		mul_m3_v3(nmat, nor);
+		normalize_v3(nor);
+
+		/* make sure that we get a proper side vector */
+		if(fabs(dot_v3v3(nor,vec))>0.999999) {
+			if(fabs(dot_v3v3(nor,xvec))>0.999999) {
+				nor[0] = 0.0f;
+				nor[1] = 1.0f;
+				nor[2] = 0.0f;
+			}
+			else {
+				nor[0] = 1.0f;
+				nor[1] = 0.0f;
+				nor[2] = 0.0f;
+			}
 		}
-		else {
-			nor[0] = 1.0f;
-			nor[1] = 0.0f;
-			nor[2] = 0.0f;
+		cross_v3_v3v3(side, nor, vec);
+		normalize_v3(side);
+
+		/* rotate side vector around vec */
+		if(psys->part->phasefac != 0) {
+			float q_phase[4];
+			float phasefac = psys->part->phasefac;
+			if(psys->part->randphasefac != 0.0f)
+				phasefac += psys->part->randphasefac * PSYS_FRAND((pa-psys->particles) + 20);
+			axis_angle_to_quat( q_phase, vec, phasefac*(float)M_PI);
+
+			mul_qt_v3(q_phase, side);
 		}
+
+		cross_v3_v3v3(nor, vec, side);
+
+		unit_m4(mat);
+		VECCOPY(mat[0], vec);
+		VECCOPY(mat[1], side);
+		VECCOPY(mat[2], nor);
 	}
-	cross_v3_v3v3(side, nor, vec);
-	normalize_v3(side);
-	cross_v3_v3v3(nor, vec, side);
-
-	unit_m4(mat);
-	VECCOPY(mat[0], vec);
-	VECCOPY(mat[1], side);
-	VECCOPY(mat[2], nor);
+	else {
+		quat_to_mat4(mat, pa->state.rot);
+	}
 
 	*scale= len;
 }

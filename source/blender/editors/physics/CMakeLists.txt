@@ -1,4 +1,3 @@
-# $Id: CMakeLists.txt 12931 2007-12-17 18:20:48Z theeth $
 # ***** BEGIN GPL LICENSE BLOCK *****
 #
 # This program is free software; you can redistribute it and/or
@@ -46,8 +45,8 @@ set(SRC
 	physics_intern.h
 )
 
-if(NOT WITH_MOD_FLUID)
-	add_definitions(-DDISABLE_ELBEEM)
+if(WITH_MOD_FLUID)
+	add_definitions(-DWITH_MOD_FLUID)
 endif()
 
 if(WITH_OPENMP)

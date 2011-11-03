@@ -1,6 +1,4 @@
 /*
- * $Id: ED_node.h 39941 2011-09-05 21:01:50Z lukastoenne $
- *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
  * This program is free software; you can redistribute it and/or
@@ -53,7 +51,7 @@ void ED_node_changed_update(struct ID *id, struct bNode *node);
 void ED_node_generic_update(struct Main *bmain, struct bNodeTree *ntree, struct bNode *node);
 
 /* node_edit.c */
-void ED_node_shader_default(struct Material *ma);
+void ED_node_shader_default(struct Scene *scene, struct ID *id);
 void ED_node_composit_default(struct Scene *sce);
 void ED_node_texture_default(struct Tex *tex);
 void ED_node_link_intersect_test(struct ScrArea *sa, int test);

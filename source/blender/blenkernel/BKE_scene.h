@@ -1,6 +1,4 @@
 /*
- * $Id: BKE_scene.h 35921 2011-03-31 14:33:59Z campbellbarton $ 
- *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
  * This program is free software; you can redistribute it and/or
@@ -90,6 +88,8 @@ int scene_check_setscene(struct Main *bmain, struct Scene *sce);
 float BKE_curframe(struct Scene *scene);
 
 void scene_update_tagged(struct Main *bmain, struct Scene *sce);
+void scene_clear_tagged(struct Main *bmain, struct Scene *sce);
+
 void scene_update_for_newframe(struct Main *bmain, struct Scene *sce, unsigned int lay);
 
 void scene_add_render_layer(struct Scene *sce);
@@ -99,6 +99,8 @@ int get_render_subsurf_level(struct RenderData *r, int level);
 int get_render_child_particle_number(struct RenderData *r, int num);
 int get_render_shadow_samples(struct RenderData *r, int samples);
 float get_render_aosss_error(struct RenderData *r, float error);
+
+int scene_use_new_shading_nodes(struct Scene *scene);
 
 #ifdef __cplusplus
 }

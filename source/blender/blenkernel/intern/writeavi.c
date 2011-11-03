@@ -1,9 +1,4 @@
 /*
- * Functions for writing avi-format files.
- * Added interface for generic movie support (ton)
- *
- * $Id: writeavi.c 38597 2011-07-22 00:34:03Z campbellbarton $
- *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
  * This program is free software; you can redistribute it and/or
@@ -28,7 +23,9 @@
  * Contributor(s): Robert Wenzlaff
  *
  * ***** END GPL LICENSE BLOCK *****
- * 
+ *
+ * Functions for writing avi-format files.
+ * Added interface for generic movie support (ton)
  */
 
 /** \file blender/blenkernel/intern/writeavi.c

@@ -1,6 +1,4 @@
 /*
- * $Id: RAS_OpenGLRasterizer.h 40372 2011-09-19 19:55:59Z dfelinto $
- *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
  * This program is free software; you can redistribute it and/or
@@ -149,7 +147,7 @@ public:
 	virtual void	SetRenderArea();
 
 	virtual void	SetStereoMode(const StereoMode stereomode);
-    virtual RAS_IRasterizer::StereoMode GetStereoMode();
+	virtual RAS_IRasterizer::StereoMode GetStereoMode();
 	virtual bool	Stereo();
 	virtual bool	InterlacedStereo();
 	virtual void	SetEye(const StereoEye eye);

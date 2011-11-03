@@ -368,7 +368,7 @@ static int where_on_path_deform(Object *ob, float ctime, float *vec, float *dir,
 	BevList *bl;
 	float ctime1;
 	int cycl=0;
-	
+
 	/* test for cyclic */
 	bl= cu->bev.first;
 	if (!bl->nr) return 0;

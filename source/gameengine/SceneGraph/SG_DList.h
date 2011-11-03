@@ -1,6 +1,4 @@
 /*
- * $Id: SG_DList.h 39883 2011-09-03 02:15:49Z campbellbarton $
- *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
  * This program is free software; you can redistribute it and/or
@@ -245,10 +243,10 @@ public:
 		}
 	}
 	virtual ~SG_DListHead() {}
-    T* Remove()
-    {
+	T* Remove()
+	{
 		return static_cast<T*>(SG_DList::Remove());
-    }
+	}
 
 };
 

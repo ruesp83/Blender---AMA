@@ -1,8 +1,4 @@
-/* particle_system.c
- *
- *
- * $Id: particle_system.c 40537 2011-09-25 11:51:28Z z0r $
- *
+/*
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
  * This program is free software; you can redistribute it and/or
@@ -38,7 +34,6 @@
 
 
 #include <stddef.h>
-#include "BLI_storage.h" /* _LARGEFILE_SOURCE */
 
 #include <stdlib.h>
 #include <math.h>
@@ -69,11 +64,9 @@
 #include "BLI_blenlib.h"
 #include "BLI_kdtree.h"
 #include "BLI_kdopbvh.h"
-#include "BLI_listbase.h"
 #include "BLI_threads.h"
-#include "BLI_storage.h" /* For _LARGEFILE64_SOURCE;  zlib needs this on some systems */
-#include "BLI_string.h"
 #include "BLI_utildefines.h"
+#include "BLI_linklist.h"
 
 #include "BKE_main.h"
 #include "BKE_animsys.h"
@@ -102,13 +95,13 @@
 #include "RE_shader_ext.h"
 
 /* fluid sim particle import */
-#ifndef DISABLE_ELBEEM
+#ifdef WITH_MOD_FLUID
 #include "DNA_object_fluidsim.h"
 #include "LBM_fluidsim.h"
 #include <zlib.h>
 #include <string.h>
 
-#endif // DISABLE_ELBEEM
+#endif // WITH_MOD_FLUID
 
 /************************************************/
 /*			Reacting to system events			*/
@@ -1609,8 +1602,8 @@ void psys_get_birth_coordinates(ParticleSimulationData *sim, ParticleData *pa, P
 	}
 		
 
-	/* -velocity							*/
-	if(part->randfac != 0.0f){
+	/* -velocity (boids need this even if there's no random velocity) */
+	if(part->randfac != 0.0f || (part->phystype==PART_PHYS_BOIDS && pa->boid)){
 		r_vel[0] = 2.0f * (PSYS_FRAND(p + 10) - 0.5f);
 		r_vel[1] = 2.0f * (PSYS_FRAND(p + 11) - 0.5f);
 		r_vel[2] = 2.0f * (PSYS_FRAND(p + 12) - 0.5f);
@@ -3860,8 +3853,9 @@ static void update_children(ParticleSimulationData *sim)
 	else if(sim->psys->part->childtype) {
 		if(sim->psys->totchild != get_psys_tot_child(sim->scene, sim->psys))
 			distribute_particles(sim, PART_FROM_CHILD);
-		else
-			; /* Children are up to date, nothing to do. */
+		else {
+			/* Children are up to date, nothing to do. */
+		}
 	}
 	else
 		psys_free_children(sim->psys);
@@ -3922,7 +3916,7 @@ static void particles_fluid_step(ParticleSimulationData *sim, int UNUSED(cfra))
 	}
 
 	/* fluid sim particle import handling, actual loading of particles from file */
-	#ifndef DISABLE_ELBEEM
+	#ifdef WITH_MOD_FLUID
 	{
 		FluidsimModifierData *fluidmd = (FluidsimModifierData *)modifiers_findByType(sim->ob, eModifierType_Fluidsim);
 		
@@ -4015,7 +4009,7 @@ static void particles_fluid_step(ParticleSimulationData *sim, int UNUSED(cfra))
 			
 		} // fluid sim particles done
 	}
-	#endif // DISABLE_ELBEEM
+	#endif // WITH_MOD_FLUID
 }
 
 static int emit_particles(ParticleSimulationData *sim, PTCacheID *pid, float UNUSED(cfra))

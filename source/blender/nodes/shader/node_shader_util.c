@@ -1,6 +1,4 @@
 /*
- * $Id: node_shader_util.c 39944 2011-09-05 22:04:30Z gsrb3d $
- *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
  * This program is free software; you can redistribute it and/or
@@ -206,6 +204,8 @@ void node_gpu_stack_from_data(struct GPUNodeStack *gs, int type, bNodeStack *ns)
 	else if (type == SOCK_VECTOR)
 		gs->type= GPU_VEC3;
 	else if (type == SOCK_RGBA)
+		gs->type= GPU_VEC4;
+	else if (type == SOCK_SHADER)
 		gs->type= GPU_VEC4;
 	else
 		gs->type= GPU_NONE;

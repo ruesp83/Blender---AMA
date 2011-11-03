@@ -1,6 +1,4 @@
 /*
- * $Id: script_intern.h 35242 2011-02-27 20:29:51Z jesterking $
- *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
  * This program is free software; you can redistribute it and/or
@@ -34,10 +32,6 @@
 #define ED_SCRIPT_INTERN_H
 
 /* internal exports only */
-
-
-/* script_header.c */
-void script_header_buttons(const bContext *C, ARegion *ar);
 
 /* script_ops.c */
 void script_operatortypes(void);

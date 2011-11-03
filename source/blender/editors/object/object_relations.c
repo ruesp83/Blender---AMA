@@ -1,6 +1,4 @@
 /*
- * $Id: object_relations.c 40776 2011-10-03 17:29:43Z campbellbarton $
- *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
  * This program is free software; you can redistribute it and/or
@@ -334,11 +332,9 @@ static int make_proxy_exec (bContext *C, wmOperator *op)
 		
 		/* Add new object for the proxy */
 		newob= add_object(scene, OB_EMPTY);
-		if (gob)
-			strcpy(name, gob->id.name+2);
-		else
-			strcpy(name, ob->id.name+2);
-		strcat(name, "_proxy");
+
+		BLI_snprintf(name, sizeof(name), "%s_proxy", ((ID *)(gob ? gob : ob))->name);
+
 		rename_id(&newob->id, name);
 		
 		/* set layers OK */
@@ -605,7 +601,7 @@ static int parent_set_exec(bContext *C, wmOperator *op)
 				
 				/* handle types */
 				if (pchan)
-					strcpy(ob->parsubstr, pchan->name);
+					BLI_strncpy(ob->parsubstr, pchan->name, sizeof(ob->parsubstr));
 				else
 					ob->parsubstr[0]= 0;
 					
@@ -1717,6 +1713,7 @@ static void make_local_makelocalmaterial(Material *ma)
 
 static int make_local_exec(bContext *C, wmOperator *op)
 {
+	Main *bmain= CTX_data_main(C);
 	AnimData *adt;
 	ParticleSystem *psys;
 	Material *ma, ***matarar;
@@ -1725,7 +1722,7 @@ static int make_local_exec(bContext *C, wmOperator *op)
 	int a, b, mode= RNA_enum_get(op->ptr, "type");
 	
 	if(mode==3) {
-		all_local(NULL, 0);	/* NULL is all libs */
+		BKE_library_make_local(bmain, NULL, 0);	/* NULL is all libs */
 		WM_event_add_notifier(C, NC_WINDOW, NULL);
 		return OPERATOR_FINISHED;
 	}

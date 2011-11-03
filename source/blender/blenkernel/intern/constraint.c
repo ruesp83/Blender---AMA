@@ -39,7 +39,6 @@
 #include "MEM_guardedalloc.h"
 
 #include "BLI_blenlib.h"
-#include "BLI_listbase.h"
 #include "BLI_math.h"
 #include "BLI_editVert.h"
 #include "BLI_utildefines.h"
@@ -704,7 +703,7 @@ static void default_get_tarmat (bConstraint *con, bConstraintOb *UNUSED(cob), bC
 				ct->type = CONSTRAINT_OBTYPE_BONE; \
 				ct->rotOrder= (pchan) ? (pchan->rotmode) : EULER_ORDER_DEFAULT; \
 			}\
-			else if (ELEM(ct->tar->type, OB_MESH, OB_LATTICE) && (ct->subtarget[0])) { \
+			else if (OB_TYPE_SUPPORT_VGROUP(ct->tar->type) && (ct->subtarget[0])) { \
 				ct->type = CONSTRAINT_OBTYPE_VERT; \
 				ct->rotOrder = EULER_ORDER_DEFAULT; \
 			} \
@@ -1065,7 +1064,7 @@ static void trackto_evaluate (bConstraint *con, bConstraintOb *cob, ListBase *ta
 		cob->matrix[2][2]=size[2];
 		
 		/* targetmat[2] instead of ownermat[2] is passed to vectomat
-		 * for backwards compatability it seems... (Aligorith)
+		 * for backwards compatibility it seems... (Aligorith)
 		 */
 		sub_v3_v3v3(vec, cob->matrix[3], ct->matrix[3]);
 		vectomat(vec, ct->matrix[2], 
@@ -1257,10 +1256,7 @@ static void followpath_get_tarmat (bConstraint *con, bConstraintOb *cob, bConstr
 			float quat[4];
 			if ((data->followflag & FOLLOWPATH_STATIC) == 0) {
 				/* animated position along curve depending on time */
-				if (cob->scene)
-					curvetime= bsystem_time(cob->scene, ct->tar, cu->ctime, 0.0) - data->offset;
-				else	
-					curvetime= cu->ctime - data->offset;
+				curvetime= cu->ctime - data->offset;
 				
 				/* ctime is now a proper var setting of Curve which gets set by Animato like any other var that's animated,
 				 * but this will only work if it actually is animated... 
@@ -2102,7 +2098,7 @@ static void actcon_new_data (void *cdata)
 {
 	bActionConstraint *data= (bActionConstraint *)cdata;
 	
-	/* set type to 20 (Loc X), as 0 is Rot X for backwards compatability */
+	/* set type to 20 (Loc X), as 0 is Rot X for backwards compatibility */
 	data->type = 20;
 }
 
@@ -2159,7 +2155,7 @@ static void actcon_get_tarmat (bConstraint *con, bConstraintOb *cob, bConstraint
 		constraint_target_to_mat4(ct->tar, ct->subtarget, tempmat, CONSTRAINT_SPACE_WORLD, ct->space, con->headtail);
 		
 		/* determine where in transform range target is */
-		/* data->type is mapped as follows for backwards compatability:
+		/* data->type is mapped as follows for backwards compatibility:
 		 *	00,01,02	- rotation (it used to be like this)
 		 * 	10,11,12	- scaling
 		 *	20,21,22	- location
@@ -4349,7 +4345,7 @@ short proxylocked_constraints_owner (Object *ob, bPoseChannel *pchan)
  * constraints either had one or no targets. It used to be called during the main constraint solving
  * loop, but is now only used for the remaining cases for a few constraints. 
  *
- * None of the actual calculations of the matricies should be done here! Also, this function is 
+ * None of the actual calculations of the matrices should be done here! Also, this function is
  * not to be used by any new constraints, particularly any that have multiple targets.
  */
 void get_constraint_target_matrix (struct Scene *scene, bConstraint *con, int n, short ownertype, void *ownerdata, float mat[][4], float ctime)

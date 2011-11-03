@@ -1,6 +1,4 @@
 /*
- * $Id: node_texture_scale.c 39944 2011-09-05 22:04:30Z gsrb3d $
- *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
  * This program is free software; you can redistribute it and/or
@@ -37,7 +35,7 @@
 
 static bNodeSocketTemplate inputs[]= { 
 	{ SOCK_RGBA,   1, "Color", 0.0f, 0.0f, 0.0f, 1.0f },
-	{ SOCK_VECTOR, 1, "Scale", 1.0f, 1.0f, 1.0f, 0.0f,  -10.0f, 10.0f, PROP_FACTOR },
+	{ SOCK_VECTOR, 1, "Scale", 1.0f, 1.0f, 1.0f, 0.0f,  -10.0f, 10.0f, PROP_XYZ },
 	{ -1, 0, "" } 
 };
 

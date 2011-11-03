@@ -1,6 +1,4 @@
 /*
- * $Id: GPC_Engine.cpp 36523 2011-05-06 20:18:42Z blendix $
- *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
  * This program is free software; you can redistribute it and/or
@@ -133,7 +131,7 @@ GPC_Engine::~GPC_Engine()
 }
 
 
-bool GPC_Engine::Start(char *filename)
+bool GPC_Engine::Start(const char *filename)
 {
 	ReportList reports;
 	BlendFileData *bfd;

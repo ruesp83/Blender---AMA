@@ -1,6 +1,4 @@
 /*
- * $Id: node_shader_squeeze.c 39944 2011-09-05 22:04:30Z gsrb3d $
- *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
  * This program is free software; you can redistribute it and/or
@@ -69,6 +67,7 @@ void register_node_type_sh_squeeze(ListBase *lb)
 	static bNodeType ntype;
 
 	node_type_base(&ntype, SH_NODE_SQUEEZE, "Squeeze Value", NODE_CLASS_CONVERTOR, NODE_OPTIONS);
+	node_type_compatibility(&ntype, NODE_OLD_SHADING);
 	node_type_socket_templates(&ntype, sh_node_squeeze_in, sh_node_squeeze_out);
 	node_type_size(&ntype, 120, 110, 160);
 	node_type_storage(&ntype, "node_squeeze", NULL, NULL);

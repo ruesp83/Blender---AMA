@@ -1,6 +1,4 @@
 /*
- * $Id: BLI_callbacks.h 40605 2011-09-27 10:43:45Z campbellbarton $
- *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
  * This program is free software; you can redistribute it and/or
@@ -49,6 +47,8 @@ typedef enum {
 	BLI_CB_EVT_LOAD_POST,
 	BLI_CB_EVT_SAVE_PRE,
 	BLI_CB_EVT_SAVE_POST,
+	BLI_CB_EVT_SCENE_UPDATE_PRE,
+	BLI_CB_EVT_SCENE_UPDATE_POST,
 	BLI_CB_EVT_TOT
 } eCbEvent;
 

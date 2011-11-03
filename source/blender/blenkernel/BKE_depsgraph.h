@@ -1,6 +1,4 @@
 /*
- * $Id: BKE_depsgraph.h 37466 2011-06-14 04:05:58Z campbellbarton $
- *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
  * This program is free software; you can redistribute it and/or
@@ -122,6 +120,12 @@ void	DAG_ids_flush_update(struct Main *bmain, int time);
 void	DAG_id_tag_update(struct ID *id, short flag);
 		/* flush all tagged updates */
 void	DAG_ids_flush_tagged(struct Main *bmain);
+		/* check and clear ID recalc flags */
+void	DAG_ids_check_recalc(struct Main *bmain);
+void	DAG_ids_clear_recalc(struct Main *bmain);
+		/* test if any of this id type is tagged for update */
+void	DAG_id_type_tag(struct Main *bmain, short idtype);
+int		DAG_id_type_tagged(struct Main *bmain, short idtype);
 
 		/* (re)-create dependency graph for armature pose */
 void	DAG_pose_sort(struct Object *ob);

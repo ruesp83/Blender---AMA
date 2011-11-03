@@ -1,6 +1,4 @@
 /*
- * $Id: node_shader_invert.c 39944 2011-09-05 22:04:30Z gsrb3d $
- *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
  * This program is free software; you can redistribute it and/or
@@ -79,6 +77,7 @@ void register_node_type_sh_invert(ListBase *lb)
 	static bNodeType ntype;
 
 	node_type_base(&ntype, SH_NODE_INVERT, "Invert", NODE_CLASS_OP_COLOR, NODE_OPTIONS);
+	node_type_compatibility(&ntype, NODE_OLD_SHADING);
 	node_type_socket_templates(&ntype, sh_node_invert_in, sh_node_invert_out);
 	node_type_size(&ntype, 90, 80, 100);
 	node_type_exec(&ntype, node_shader_exec_invert);

@@ -1,4 +1,3 @@
-# $Id: CMakeLists.txt 40080 2011-09-09 21:28:56Z ben2610 $
 # ***** BEGIN GPL LICENSE BLOCK *****
 #
 # This program is free software; you can redistribute it and/or
@@ -51,7 +50,7 @@ set(INC
 	../../blender/makesrna
 	../../blender/windowmanager
 	../../../extern/bullet2/src
-	../../../extern/Eigen2
+	../../../extern/Eigen3
 	../../../intern/container
 	../../../intern/guardedalloc
 	../../../intern/moto/include

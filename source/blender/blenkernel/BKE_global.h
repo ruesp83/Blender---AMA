@@ -1,6 +1,4 @@
 /*
- * $Id: BKE_global.h 40341 2011-09-19 08:02:17Z campbellbarton $ 
- *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
  * This program is free software; you can redistribute it and/or
@@ -60,7 +58,7 @@ typedef struct Global {
 	/* flag: if != 0 G.main->name contains valid relative base path */
 	int relbase_valid;
 
-	/* strings of recent opend files */
+	/* strings of recent opened files */
 	struct ListBase recent_files;
         
 	short afbreek, moving, file_loaded;

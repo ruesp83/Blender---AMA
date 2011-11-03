@@ -63,7 +63,7 @@ def draw_gpencil_tools(context, layout):
     row.prop(context.tool_settings, "use_grease_pencil_sessions")
 
 
-# ********** default tools for objectmode ****************
+# ********** default tools for object-mode ****************
 
 class VIEW3D_PT_tools_objectmode(View3DPanel, Panel):
     bl_context = "objectmode"
@@ -209,7 +209,7 @@ class VIEW3D_PT_tools_curveedit(View3DPanel, Panel):
         col.operator("transform.resize", text="Scale")
 
         col = layout.column(align=True)
-        col.operator("transform.transform", text="Tilt").mode = 'TILT'
+        col.operator("transform.tilt", text="Tilt")
         col.operator("transform.transform", text="Shrink/Fatten").mode = 'CURVE_SHRINKFATTEN'
 
         col = layout.column(align=True)
@@ -385,7 +385,7 @@ class VIEW3D_PT_tools_latticeedit(View3DPanel, Panel):
         draw_gpencil_tools(context, layout)
 
 
-# ********** default tools for posemode ****************
+# ********** default tools for pose-mode ****************
 
 
 class VIEW3D_PT_tools_posemode(View3DPanel, Panel):
@@ -481,19 +481,18 @@ class VIEW3D_PT_tools_brush(PaintPanel, Panel):
             col.template_ID_preview(settings, "brush", new="brush.add", rows=3, cols=8)
 
         # Particle Mode #
-
-        # XXX This needs a check if psys is editable.
         if context.particle_edit_object:
-            # XXX Select Particle System
+            tool = settings.tool
+
             layout.column().prop(settings, "tool", expand=True)
 
-            if settings.tool != 'NONE':
+            if tool != 'NONE':
                 col = layout.column()
                 col.prop(brush, "size", slider=True)
-                if settings.tool != 'ADD':
+                if tool != 'ADD':
                     col.prop(brush, "strength", slider=True)
 
-            if settings.tool == 'ADD':
+            if tool == 'ADD':
                 col.prop(brush, "count")
                 col = layout.column()
                 col.prop(settings, "use_default_interpolate")
@@ -501,15 +500,16 @@ class VIEW3D_PT_tools_brush(PaintPanel, Panel):
                 sub.active = settings.use_default_interpolate
                 sub.prop(brush, "steps", slider=True)
                 sub.prop(settings, "default_key_count", slider=True)
-            elif settings.tool == 'LENGTH':
+            elif tool == 'LENGTH':
                 layout.prop(brush, "length_mode", expand=True)
-            elif settings.tool == 'PUFF':
+            elif tool == 'PUFF':
                 layout.prop(brush, "puff_mode", expand=True)
                 layout.prop(brush, "use_puff_volume")
 
         # Sculpt Mode #
 
         elif context.sculpt_object and brush:
+            tool = brush.sculpt_tool
 
             col = layout.column()
 
@@ -526,12 +526,12 @@ class VIEW3D_PT_tools_brush(PaintPanel, Panel):
 
             row.prop(brush, "use_pressure_size", toggle=True, text="")
 
-            if brush.sculpt_tool not in {'SNAKE_HOOK', 'GRAB', 'ROTATE'}:
+            if tool not in {'SNAKE_HOOK', 'GRAB', 'ROTATE'}:
                 col.separator()
 
                 row = col.row(align=True)
 
-                if brush.use_space and brush.sculpt_tool not in {'SMOOTH'}:
+                if brush.use_space and tool != 'SMOOTH':
                     if brush.use_space_atten:
                         row.prop(brush, "use_space_atten", toggle=True, text="", icon='LOCKED')
                     else:
@@ -540,26 +540,26 @@ class VIEW3D_PT_tools_brush(PaintPanel, Panel):
                 row.prop(brush, "strength", text="Strength", slider=True)
                 row.prop(brush, "use_pressure_strength", text="")
 
-            if brush.sculpt_tool not in {'SMOOTH'}:
+            if tool != 'SMOOTH':
                 col.separator()
 
                 row = col.row(align=True)
                 row.prop(brush, "auto_smooth_factor", slider=True)
                 row.prop(brush, "use_inverse_smooth_pressure", toggle=True, text="")
 
-            if brush.sculpt_tool in {'GRAB', 'SNAKE_HOOK'}:
+            if tool in {'GRAB', 'SNAKE_HOOK'}:
                 col.separator()
 
                 row = col.row(align=True)
                 row.prop(brush, "normal_weight", slider=True)
 
-            if brush.sculpt_tool in {'CREASE', 'BLOB'}:
+            if tool in {'CREASE', 'BLOB'}:
                 col.separator()
 
                 row = col.row(align=True)
                 row.prop(brush, "crease_pinch_factor", slider=True, text="Pinch")
 
-            if brush.sculpt_tool not in {'PINCH', 'INFLATE', 'SMOOTH'}:
+            if tool not in {'PINCH', 'INFLATE', 'SMOOTH'}:
                 row = col.row(align=True)
 
                 col.separator()
@@ -571,8 +571,8 @@ class VIEW3D_PT_tools_brush(PaintPanel, Panel):
 
                 row.prop(brush, "sculpt_plane", text="")
 
-            #if brush.sculpt_tool in {'CLAY', 'CLAY_TUBES', 'FLATTEN', 'FILL', 'SCRAPE'}:
-            if brush.sculpt_tool in {'CLAY', 'FLATTEN', 'FILL', 'SCRAPE'}:
+            #if tool in {'CLAY', 'CLAY_TUBES', 'FLATTEN', 'FILL', 'SCRAPE'}:
+            if tool in {'CLAY', 'FLATTEN', 'FILL', 'SCRAPE'}:
                 row = col.row(align=True)
                 row.prop(brush, "plane_offset", slider=True)
                 row.prop(brush, "use_offset_pressure", text="")
@@ -585,7 +585,7 @@ class VIEW3D_PT_tools_brush(PaintPanel, Panel):
                 row.active = brush.use_plane_trim
                 row.prop(brush, "plane_trim", slider=True, text="Distance")
 
-            if brush.sculpt_tool == 'LAYER':
+            if tool == 'LAYER':
                 row = col.row()
                 row.prop(brush, "height", slider=True, text="Height")
 
@@ -597,12 +597,12 @@ class VIEW3D_PT_tools_brush(PaintPanel, Panel):
             col.separator()
             col.row().prop(brush, "direction", expand=True)
 
-            if brush.sculpt_tool in {'DRAW', 'CREASE', 'BLOB', 'INFLATE', 'LAYER', 'CLAY'}:
+            if tool in {'DRAW', 'CREASE', 'BLOB', 'INFLATE', 'LAYER', 'CLAY'}:
                 col.separator()
 
                 col.prop(brush, "use_accumulate")
 
-            if brush.sculpt_tool == 'LAYER':
+            if tool == 'LAYER':
                 col.separator()
 
                 ob = context.sculpt_object
@@ -708,19 +708,14 @@ class VIEW3D_PT_tools_brush_texture(PaintPanel, Panel):
         if context.sculpt_object:
             #XXX duplicated from properties_texture.py
 
-            col.separator()
-
             col.label(text="Brush Mapping:")
-            row = col.row(align=True)
-            row.prop(tex_slot, "map_mode", expand=True)
+            col.row().prop(tex_slot, "map_mode", expand=True)
 
             col.separator()
 
             col = layout.column()
             col.active = tex_slot.map_mode in {'FIXED'}
             col.label(text="Angle:")
-
-            col = layout.column()
             if not brush.use_anchor and brush.sculpt_tool not in {'GRAB', 'SNAKE_HOOK', 'THUMB', 'ROTATE'} and tex_slot.map_mode in {'FIXED'}:
                 col.prop(brush, "texture_angle_source_random", text="")
             else:
@@ -737,47 +732,33 @@ class VIEW3D_PT_tools_brush_texture(PaintPanel, Panel):
             #col.prop(brush, "use_rake", toggle=True, icon='PARTICLEMODE', text="")
 
             col = layout.column()
-            col.prop(tex_slot, "angle", text="")
             col.active = tex_slot.map_mode in {'FIXED', 'TILED'}
+            col.prop(tex_slot, "angle", text="")
 
             #col = layout.column()
             #col.prop(brush, "use_random_rotation")
             #col.active = (not brush.use_rake) and (not brush.use_anchor) and (brush.sculpt_tool not in {'GRAB', 'SNAKE_HOOK', 'THUMB', 'ROTATE'}) and tex_slot.map_mode in {'FIXED'}
 
             split = layout.split()
+            split.prop(tex_slot, "offset")
+            split.prop(tex_slot, "scale")
 
-            col = split.column()
-            col.prop(tex_slot, "offset")
+            col = layout.column(align=True)
+            col.label(text="Sample Bias:")
+            col.prop(brush, "texture_sample_bias", slider=True, text="")
 
-            col = split.column()
-
-            col.prop(tex_slot, "scale")
-
-            col = layout.column()
-
-            row = col.row(align=True)
-            row.label(text="Sample Bias:")
-            row = col.row(align=True)
-            row.prop(brush, "texture_sample_bias", slider=True, text="")
-
-            row = col.row(align=True)
-            row.label(text="Overlay:")
-            row.active = tex_slot.map_mode in {'FIXED', 'TILED'}
-
-            row = col.row(align=True)
-
-            col = row.column()
-
-            if brush.use_texture_overlay:
-                col.prop(brush, "use_texture_overlay", toggle=True, text="", icon='RESTRICT_VIEW_OFF')
-            else:
-                col.prop(brush, "use_texture_overlay", toggle=True, text="", icon='RESTRICT_VIEW_ON')
-
+            col = layout.column(align=True)
             col.active = tex_slot.map_mode in {'FIXED', 'TILED'}
+            col.label(text="Overlay:")
 
-            col = row.column()
-            col.prop(brush, "texture_overlay_alpha", text="Alpha")
-            col.active = tex_slot.map_mode in {'FIXED', 'TILED'} and brush.use_texture_overlay
+            row = col.row()
+            if brush.use_texture_overlay:
+                row.prop(brush, "use_texture_overlay", toggle=True, text="", icon='RESTRICT_VIEW_OFF')
+            else:
+                row.prop(brush, "use_texture_overlay", toggle=True, text="", icon='RESTRICT_VIEW_ON')
+            sub = row.row()
+            sub.active = tex_slot.map_mode in {'FIXED', 'TILED'} and brush.use_texture_overlay
+            sub.prop(brush, "texture_overlay_alpha", text="Alpha")
 
 
 class VIEW3D_PT_tools_brush_tool(PaintPanel, Panel):
@@ -841,13 +822,11 @@ class VIEW3D_PT_tools_brush_stroke(PaintPanel, Panel):
 
             if brush.use_anchor:
                 col.separator()
-                row = col.row()
-                row.prop(brush, "use_edge_to_edge", "Edge To Edge")
+                col.prop(brush, "use_edge_to_edge", "Edge To Edge")
 
             if brush.use_airbrush:
                 col.separator()
-                row = col.row()
-                row.prop(brush, "rate", text="Rate", slider=True)
+                col.prop(brush, "rate", text="Rate", slider=True)
 
             if brush.use_space:
                 col.separator()
@@ -873,8 +852,7 @@ class VIEW3D_PT_tools_brush_stroke(PaintPanel, Panel):
                 row.prop(brush, "use_pressure_jitter", toggle=True, text="")
 
         else:
-            row = col.row()
-            row.prop(brush, "use_airbrush")
+            col.prop(brush, "use_airbrush")
 
             row = col.row()
             row.active = brush.use_airbrush and (not brush.use_space) and (not brush.use_anchor)
@@ -883,8 +861,7 @@ class VIEW3D_PT_tools_brush_stroke(PaintPanel, Panel):
             col.separator()
 
             if not image_paint:
-                row = col.row()
-                row.prop(brush, "use_smooth_stroke")
+                col.prop(brush, "use_smooth_stroke")
 
                 col = layout.column()
                 col.active = brush.use_smooth_stroke
@@ -895,9 +872,7 @@ class VIEW3D_PT_tools_brush_stroke(PaintPanel, Panel):
 
             col = layout.column()
             col.active = (not brush.use_anchor) and (brush.sculpt_tool not in {'GRAB', 'THUMB', 'ROTATE', 'SNAKE_HOOK'})
-
-            row = col.row()
-            row.prop(brush, "use_space")
+            col.prop(brush, "use_space")
 
             row = col.row()
             row.active = brush.use_space
@@ -982,18 +957,14 @@ class VIEW3D_PT_sculpt_symmetry(PaintPanel, Panel):
 
         sculpt = context.tool_settings.sculpt
 
-        split = layout.split()
-
-        col = split.column()
+        col = layout.column(align=True)
         col.label(text="Mirror:")
-        col.prop(sculpt, "use_symmetry_x", text="X")
-        col.prop(sculpt, "use_symmetry_y", text="Y")
-        col.prop(sculpt, "use_symmetry_z", text="Z")
+        row = col.row()
+        row.prop(sculpt, "use_symmetry_x", text="X", toggle=True)
+        row.prop(sculpt, "use_symmetry_y", text="Y", toggle=True)
+        row.prop(sculpt, "use_symmetry_z", text="Z", toggle=True)
 
-        split.prop(sculpt, "radial_symmetry", text="Radial")
-
-        layout.separator()
-
+        layout.column().prop(sculpt, "radial_symmetry", text="Radial")
         layout.prop(sculpt, "use_symmetry_feather", text="Feather")
 
 
@@ -1031,16 +1002,12 @@ class VIEW3D_PT_tools_brush_appearance(PaintPanel, Panel):
         else:
             col.prop(brush, "cursor_color_add", text="Color")
 
-        col = layout.column()
-        col.label(text="Icon:")
-
-        row = col.row(align=True)
-        row.prop(brush, "use_custom_icon")
+        col = layout.column(align=True)
+        col.prop(brush, "use_custom_icon")
         if brush.use_custom_icon:
-            row = col.row(align=True)
-            row.prop(brush, "icon_filepath", text="")
+            col.prop(brush, "icon_filepath", text="")
 
-# ********** default tools for weightpaint ****************
+# ********** default tools for weight-paint ****************
 
 
 class VIEW3D_PT_tools_weightpaint(View3DPanel, Panel):
@@ -1056,6 +1023,7 @@ class VIEW3D_PT_tools_weightpaint(View3DPanel, Panel):
         col.active = ob.vertex_groups.active is not None
         col.operator("object.vertex_group_normalize_all", text="Normalize All")
         col.operator("object.vertex_group_normalize", text="Normalize")
+        col.operator("object.vertex_group_mirror", text="Mirror")
         col.operator("object.vertex_group_invert", text="Invert")
         col.operator("object.vertex_group_clean", text="Clean")
         col.operator("object.vertex_group_levels", text="Levels")
@@ -1094,9 +1062,9 @@ class VIEW3D_PT_tools_weightpaint_options(View3DPanel, Panel):
 #		col.prop(wpaint, "mul", text="")
 
 # Also missing now:
-# Soft, Vgroup, X-Mirror and "Clear" Operator.
+# Soft, Vertex-Group, X-Mirror and "Clear" Operator.
 
-# ********** default tools for vertexpaint ****************
+# ********** default tools for vertex-paint ****************
 
 
 class VIEW3D_PT_tools_vertexpaint(View3DPanel, Panel):
@@ -1125,7 +1093,7 @@ class VIEW3D_PT_tools_vertexpaint(View3DPanel, Panel):
 #		col.label(text="Multiply:")
 #		col.prop(vpaint, "mul", text="")
 
-# ********** default tools for texturepaint ****************
+# ********** default tools for texture-paint ****************
 
 
 class VIEW3D_PT_tools_projectpaint(View3DPanel, Panel):
@@ -1152,53 +1120,46 @@ class VIEW3D_PT_tools_projectpaint(View3DPanel, Panel):
         use_projection = ipaint.use_projection
 
         col = layout.column()
-        sub = col.column()
-        sub.active = use_projection
-        sub.prop(ipaint, "use_occlude")
-        sub.prop(ipaint, "use_backface_culling")
+        col.active = use_projection
+        col.prop(ipaint, "use_occlude")
+        col.prop(ipaint, "use_backface_culling")
+
+        row = layout.row()
+        row.active = (use_projection)
+        row.prop(ipaint, "use_normal_falloff")
+
+        sub = row.row()
+        sub.active = (ipaint.use_normal_falloff)
+        sub.prop(ipaint, "normal_angle", text="")
 
         split = layout.split()
+        
+        split.active = (use_projection)
+        split.prop(ipaint, "use_stencil_layer", text="Stencil")
 
-        col = split.column()
-        col.active = (use_projection)
-        col.prop(ipaint, "use_normal_falloff")
+        row = split.row()
+        row.active = (ipaint.use_stencil_layer)
+        row.menu("VIEW3D_MT_tools_projectpaint_stencil", text=mesh.uv_texture_stencil.name)
+        row.prop(ipaint, "invert_stencil", text="", icon='IMAGE_ALPHA')
 
-        col = split.column()
-        col.active = (ipaint.use_normal_falloff and use_projection)
-        col.prop(ipaint, "normal_angle", text="")
-
-        col = layout.column(align=False)
-        row = col.row()
-        row.active = (use_projection)
-        row.prop(ipaint, "use_stencil_layer", text="Stencil")
-
-        row2 = row.row(align=False)
-        row2.active = (use_projection and ipaint.use_stencil_layer)
-        row2.menu("VIEW3D_MT_tools_projectpaint_stencil", text=mesh.uv_texture_stencil.name)
-        row2.prop(ipaint, "invert_stencil", text="", icon='IMAGE_ALPHA')
-
-        col = layout.column()
-        sub = col.column()
-        row = sub.row()
+        row = layout.row()
         row.active = (settings.brush.image_tool == 'CLONE')
-
         row.prop(ipaint, "use_clone_layer", text="Layer")
         row.menu("VIEW3D_MT_tools_projectpaint_clone", text=mesh.uv_texture_clone.name)
 
-        sub = col.column()
-        sub.prop(ipaint, "seam_bleed")
-
-        col.label(text="External Editing")
+        layout.prop(ipaint, "seam_bleed")
+        
+        col = layout.column()
+        col.label(text="External Editing:")
+        
         row = col.split(align=True, percentage=0.55)
         row.operator("image.project_edit", text="Quick Edit")
         row.operator("image.project_apply", text="Apply")
-        row = col.row(align=True)
-        row.prop(ipaint, "screen_grab_size", text="")
 
-        sub = col.column()
-        sub.operator("paint.project_image", text="Apply Camera Image")
+        col.row().prop(ipaint, "screen_grab_size", text="")
 
-        sub.operator("image.save_dirty", text="Save All Edited")
+        col.operator("paint.project_image", text="Apply Camera Image")
+        col.operator("image.save_dirty", text="Save All Edited")
 
 
 class VIEW3D_PT_imagepaint_options(PaintPanel):

@@ -1,6 +1,4 @@
 /*
- * $Id: DNA_modifier_types.h 40538 2011-09-25 12:31:21Z campbellbarton $ 
- *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
  * This program is free software; you can redistribute it and/or
@@ -74,7 +72,7 @@ typedef enum ModifierType {
 	eModifierType_WeightVGEdit,
 	eModifierType_WeightVGMix,
 	eModifierType_WeightVGProximity,
-	eModifierType_NavMesh,
+	eModifierType_EmptySlot,    /* keep so DynamicPaint keep loading, can re-use later */
 	eModifierType_DynamicPaint, /* reserve slot */
 	NUM_MODIFIER_TYPES
 } ModifierType;
@@ -309,8 +307,9 @@ typedef struct ArrayModifierData {
 #define MOD_ARR_DIST_SEGMENT   (1<<1)
 
 /* ArrayModifierData->distribution_mid_cap */
-#define MOD_ARR_DIST_SEQ    (1<<0)
-#define MOD_ARR_DIST_HALF   (1<<1)
+#define MOD_ARR_DIST_SEQ     (1<<0)
+#define MOD_ARR_DIST_HALF    (1<<1)
+#define MOD_ARR_DIST_CURVE   (1<<2)
 
 typedef struct MirrorModifierData {
 	ModifierData modifier;
@@ -826,10 +825,6 @@ typedef struct ScrewModifierData {
 #define MOD_SCREW_NORMAL_CALC	(1<<1)
 #define MOD_SCREW_OBJECT_OFFSET	(1<<2)
 // #define MOD_SCREW_OBJECT_ANGLE	(1<<4)
-
-typedef struct NavMeshModifierData {
-	ModifierData modifier;
-} NavMeshModifierData;
 
 typedef struct WarpModifierData {
 	ModifierData modifier;

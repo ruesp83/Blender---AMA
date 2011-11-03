@@ -1,6 +1,4 @@
 /*
- * $Id: ED_space_api.h 35016 2011-02-21 07:25:24Z jesterking $
- *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
  * This program is free software; you can redistribute it and/or
@@ -48,7 +46,6 @@ void ED_spacetype_node(void);
 void ED_spacetype_buttons(void);
 void ED_spacetype_info(void);
 void ED_spacetype_file(void);
-void ED_spacetype_sound(void);
 void ED_spacetype_action(void);
 void ED_spacetype_nla(void);
 void ED_spacetype_script(void);

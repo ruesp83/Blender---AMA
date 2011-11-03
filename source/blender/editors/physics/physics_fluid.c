@@ -1,7 +1,6 @@
 /*
  * fluidsim.c
  * 
- * $Id: physics_fluid.c 40647 2011-09-28 08:31:02Z nazgul $
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
@@ -50,7 +49,6 @@
 #include "DNA_object_fluidsim.h"	
 
 #include "BLI_blenlib.h"
-#include "BLI_fileops.h"
 #include "BLI_threads.h"
 #include "BLI_math.h"
 #include "BLI_utildefines.h"
@@ -87,7 +85,7 @@
 #include "physics_intern.h" // own include
 
 /* enable/disable overall compilation */
-#ifndef DISABLE_ELBEEM
+#ifdef WITH_MOD_FLUID
 
 #include "WM_api.h"
 
@@ -833,7 +831,7 @@ static void fluidsim_delete_until_lastframe(FluidsimSettings *fss)
 
 		curFrame++;
 
-		if((exists = BLI_exist(targetFile)))
+		if((exists = BLI_exists(targetFile)))
 		{
 			BLI_delete(targetFile, 0, 0);
 			BLI_delete(targetFileVel, 0, 0);
@@ -1113,7 +1111,7 @@ void fluidsimFreeBake(Object *UNUSED(ob))
 	/* not implemented yet */
 }
 
-#else /* DISABLE_ELBEEM */
+#else /* WITH_MOD_FLUID */
 
 /* compile dummy functions for disabled fluid sim */
 
@@ -1137,7 +1135,7 @@ static int fluidsimBake(bContext *UNUSED(C), ReportList *UNUSED(reports), Object
 	return 0;
 }
 
-#endif /* DISABLE_ELBEEM */
+#endif /* WITH_MOD_FLUID */
 
 /***************************** Operators ******************************/
 

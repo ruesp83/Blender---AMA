@@ -1,8 +1,4 @@
-/**
- * $Id: qtkit_import.m 33167 2010-11-19 02:14:18Z campbellbarton $
- *
- * qtkit_import.m
- *
+/*
  * Code to use Quicktime to load images/movies as texture.
  *
  * ***** BEGIN GPL LICENSE BLOCK *****
@@ -35,7 +31,9 @@
 #include "IMB_anim.h"
 #include "BLO_sys_types.h"
 #include "BKE_global.h"
+
 #include "BLI_dynstr.h"
+#include "BLI_path_util.h"
 
 #import <Cocoa/Cocoa.h>
 #import <QTKit/QTKit.h>

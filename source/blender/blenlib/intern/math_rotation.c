@@ -1,6 +1,4 @@
 /*
- * $Id: math_rotation.c 40352 2011-09-19 13:08:01Z campbellbarton $
- *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
  * This program is free software; you can redistribute it and/or
@@ -55,7 +53,7 @@ void unit_qt(float q[4])
 	q[1]= q[2]= q[3]= 0.0f;
 }
 
-void copy_qt_qt(float *q1, const float *q2)
+void copy_qt_qt(float q1[4], const float q2[4])
 {
 	q1[0]= q2[0];
 	q1[1]= q2[1];

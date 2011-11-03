@@ -1,6 +1,4 @@
 /*
- * $Id: ED_datafiles.h 35016 2011-02-21 07:25:24Z jesterking $
- *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
  * This program is free software; you can redistribute it and/or
@@ -38,8 +36,8 @@
 extern int datatoc_startup_blend_size;
 extern char datatoc_startup_blend[];
 
-extern int datatoc_blenderbuttons_size;
-extern char datatoc_blenderbuttons[];
+extern int datatoc_blender_icons_png_size;
+extern char datatoc_blender_icons_png[];
 
 extern int datatoc_prvicons_size;
 extern char datatoc_prvicons[];

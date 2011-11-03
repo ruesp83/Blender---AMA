@@ -1,6 +1,4 @@
-/* 
- * $Id: library.c 39792 2011-08-30 09:15:55Z nexyon $
- * 
+/*
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
  * This program is free software; you can redistribute it and/or
@@ -76,7 +74,7 @@
 #include "BLI_blenlib.h"
 #include "BLI_dynstr.h"
 #include "BLI_utildefines.h"
-
+#include "BLI_bpath.h"
 
 #include "BKE_animsys.h"
 #include "BKE_context.h"
@@ -110,6 +108,7 @@
 #include "BKE_gpencil.h"
 #include "BKE_fcurve.h"
 #include "BKE_speaker.h"
+#include "BKE_utildefines.h"
 
 #include "RNA_access.h"
 
@@ -127,6 +126,21 @@
 #define GS(a)	(*((short *)(a)))
 
 /* ************* general ************************ */
+
+
+/* this has to be called from each make_local_* func, we could call
+ * from id_make_local() but then the make local functions would not be self
+ * contained.
+ * also note that the id _must_ have a library - campbell */
+void BKE_id_lib_local_paths(Main *bmain, ID *id)
+{
+	char *bpath_user_data[2]= {bmain->name, (id)->lib->filepath};
+
+	bpath_traverse_id(bmain, id,
+					  bpath_relocate_visitor,
+					  BPATH_TRAVERSE_SKIP_MULTIFILE,
+					  bpath_user_data);
+}
 
 void id_lib_extern(ID *id)
 {
@@ -196,7 +210,8 @@ int id_make_local(ID *id, int test)
 			if(!test) make_local_texture((Tex*)id);
 			return 1;
 		case ID_IM:
-			return 0; /* not implemented */
+			if(!test) make_local_image((Image*)id);
+			return 1;
 		case ID_LT:
 			if(!test) {
 				make_local_lattice((Lattice*)id);
@@ -941,9 +956,9 @@ static void get_flags_for_id(ID *id, char *buf)
 		isnode= ((Tex *)id)->use_nodes;
 	
 	if (id->us<0)
-		sprintf(buf, "-1W ");
+		strcpy(buf, "-1W ");
 	else if (!id->lib && !isfake && id->us && !isnode)
-		sprintf(buf, "     ");
+		strcpy(buf, "     ");
 	else if(isnode)
 		sprintf(buf, "%c%cN%c ", id->lib?'L':' ', isfake?'F':' ', (id->us==0)?'O':' ');
 	else
@@ -1248,6 +1263,17 @@ int new_id(ListBase *lb, ID *id, const char *tname)
 	return result;
 }
 
+/* Pull an ID out of a library (make it local). Only call this for IDs that
+   don't have other library users. */
+void id_clear_lib_data(Main *bmain, ID *id)
+{
+	BKE_id_lib_local_paths(bmain, id);
+
+	id->lib= NULL;
+	id->flag= LIB_LOCAL;
+	new_id(which_libbase(bmain, GS(id->name)), id, NULL);
+}
+
 /* next to indirect usage in read/writefile also in editobject.c scene.c */
 void clear_id_newpoins(void)
 {
@@ -1263,16 +1289,6 @@ void clear_id_newpoins(void)
 			id->flag &= ~LIB_NEW;
 			id= id->next;
 		}
-	}
-}
-
-/* only for library fixes */
-static void image_fix_relative_path(Image *ima)
-{
-	if(ima->id.lib==NULL) return;
-	if(strncmp(ima->name, "//", 2)==0) {
-		BLI_path_abs(ima->name, ima->id.lib->filepath);
-		BLI_path_rel(ima->name, G.main->name);
 	}
 }
 
@@ -1350,14 +1366,15 @@ void tag_main(struct Main *mainvar, const short tag)
 	}
 }
 
-/* if lib!=NULL, only all from lib local */
-void all_local(Library *lib, int untagged_only)
+/* if lib!=NULL, only all from lib local
+ * bmain is almost certainly G.main */
+void BKE_library_make_local(Main *bmain, Library *lib, int untagged_only)
 {
 	ListBase *lbarray[MAX_LIBARRAY], tempbase={NULL, NULL};
 	ID *id, *idn;
 	int a;
 
-	a= set_listbasepointers(G.main, lbarray);
+	a= set_listbasepointers(bmain, lbarray);
 	while(a--) {
 		id= lbarray[a]->first;
 		
@@ -1374,16 +1391,15 @@ void all_local(Library *lib, int untagged_only)
 			  (untagged_only==0 || !(id->flag & LIB_PRE_EXISTING)))
 			{
 				if(lib==NULL || id->lib==lib) {
-					id->flag &= ~(LIB_EXTERN|LIB_INDIRECT|LIB_NEW);
-
 					if(id->lib) {
-						/* relative file patch */
-						if(GS(id->name)==ID_IM)
-							image_fix_relative_path((Image *)id);
-						
-						id->lib= NULL;
-						new_id(lbarray[a], id, NULL);	/* new_id only does it with double names */
+						id_clear_lib_data(bmain, id); /* sets 'id->flag' */
+
+						/* why sort alphabetically here but not in
+						 * id_clear_lib_data() ? - campbell */
 						sort_alpha_id(lbarray[a], id);
+					}
+					else {
+						id->flag &= ~(LIB_EXTERN|LIB_INDIRECT|LIB_NEW);
 					}
 				}
 			}
@@ -1399,7 +1415,7 @@ void all_local(Library *lib, int untagged_only)
 	}
 
 	/* patch 3: make sure library data isn't indirect falsely... */
-	a= set_listbasepointers(G.main, lbarray);
+	a= set_listbasepointers(bmain, lbarray);
 	while(a--) {
 		for(id= lbarray[a]->first; id; id=id->next)
 			lib_indirect_test_id(id, lib);
@@ -1462,4 +1478,27 @@ void name_uiprefix_id(char *name, ID *id)
 	name[2] = ' ';
 
 	strcpy(name+3, id->name+2);
+}
+
+void BKE_library_filepath_set(Library *lib, const char *filepath)
+{
+	/* in some cases this is used to update the absolute path from the
+	 * relative */
+	if (lib->name != filepath) {
+		BLI_strncpy(lib->name, filepath, sizeof(lib->name));
+	}
+
+	BLI_strncpy(lib->filepath, filepath, sizeof(lib->filepath));
+
+	/* not essential but set filepath is an absolute copy of value which
+	 * is more useful if its kept in sync */
+	if (strncmp(lib->filepath, "//", 2) == 0) {
+		/* note that the file may be unsaved, in this case, setting the
+		 * filepath on an indirectly linked path is not allowed from the
+		 * outliner, and its not really supported but allow from here for now
+		 * since making local could cause this to be directly linked - campbell
+		 */
+		const char *basepath= lib->parent ? lib->parent->filepath : G.main->name;
+		BLI_path_abs(lib->filepath, basepath);
+	}
 }

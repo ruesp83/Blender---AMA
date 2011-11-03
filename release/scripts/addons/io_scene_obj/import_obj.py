@@ -619,9 +619,8 @@ def create_mesh(new_objects,
                         image, has_data = unique_material_images[context_material]
                         if image:  # Can be none if the material dosnt have an image.
                             blender_tface.image = image
-                            blender_tface.use_image = True
                             if has_data and image.depth == 32:
-                                blender_tface.blend_type = 'ALPHA'
+                                blender_tface.alpha_blend = 'ALPHA'
 
                     # BUG - Evil eekadoodle problem where faces that have vert index 0 location at 3 or 4 are shuffled.
                     if len(face_vert_loc_indices) == 4:
@@ -805,7 +804,7 @@ def get_float_func(filepath):
                 return float
 
     file.close()
-    # incase all vert values were ints
+    # in case all vert values were ints
     return float
 
 
@@ -1022,7 +1021,7 @@ def load(operator, context, filepath,
         elif line.startswith(b'curv ') or context_multi_line == b'curv':
             line_split = line.split()
 
-            curv_idx = context_nurbs[b'curv_idx'] = context_nurbs.get(b'curv_idx', [])  # incase were multiline
+            curv_idx = context_nurbs[b'curv_idx'] = context_nurbs.get(b'curv_idx', [])  # in case were multiline
 
             if not context_multi_line:
                 context_nurbs[b'curv_range'] = float_func(line_split[1]), float_func(line_split[2])

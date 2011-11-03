@@ -1,6 +1,4 @@
 /*
- * $Id: node_shader_mapping.c 39944 2011-09-05 22:04:30Z gsrb3d $
- *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
  * This program is free software; you can redistribute it and/or
@@ -93,6 +91,7 @@ void register_node_type_sh_mapping(ListBase *lb)
 	static bNodeType ntype;
 	
 	node_type_base(&ntype, SH_NODE_MAPPING, "Mapping", NODE_CLASS_OP_VECTOR, NODE_OPTIONS);
+	node_type_compatibility(&ntype, NODE_OLD_SHADING);
 	node_type_socket_templates(&ntype, sh_node_mapping_in, sh_node_mapping_out);
 	node_type_size(&ntype, 240, 160, 320);
 	node_type_init(&ntype, node_shader_init_mapping);

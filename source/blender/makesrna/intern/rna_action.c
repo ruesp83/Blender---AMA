@@ -95,15 +95,15 @@ static void rna_Action_groups_remove(bAction *act, ReportList *reports, bActionG
 
 static FCurve *rna_Action_fcurve_new(bAction *act, ReportList *reports, const char *data_path, int index, const char *group)
 {
-	if(group && group[0]=='\0') group= NULL;
+	if (group && group[0]=='\0') group= NULL;
 
-	if(data_path[0] == '\0') {
+	if (data_path[0] == '\0') {
 		BKE_report(reports, RPT_ERROR, "F-Curve data path empty, invalid argument");
 		return NULL;
 	}
 
 	/* annoying, check if this exists */
-	if(verify_fcurve(act, group, data_path, index, 0)) {
+	if (verify_fcurve(act, group, data_path, index, 0)) {
 		BKE_reportf(reports, RPT_ERROR, "F-Curve '%s[%d]' already exists in action '%s'", data_path, index, act->id.name+2);
 		return NULL;
 	}
@@ -132,7 +132,7 @@ static void rna_Action_fcurve_remove(bAction *act, ReportList *reports, FCurve *
 	}
 }
 
-static TimeMarker *rna_Action_pose_markers_new(bAction *act, ReportList *reports, const char name[])
+static TimeMarker *rna_Action_pose_markers_new(bAction *act, const char name[])
 {
 	TimeMarker *marker = MEM_callocN(sizeof(TimeMarker), "TimeMarker");
 	marker->flag= 1;
@@ -550,7 +550,6 @@ static void rna_def_action_pose_markers(BlenderRNA *brna, PropertyRNA *cprop)
 
 	func= RNA_def_function(srna, "new", "rna_Action_pose_markers_new");
 	RNA_def_function_ui_description(func, "Add a pose marker to the action");
-	RNA_def_function_flag(func, FUNC_USE_REPORTS);
 	parm= RNA_def_string(func, "name", "Marker", 0, "", "New name for the marker (not unique)");
 	RNA_def_property_flag(parm, PROP_REQUIRED);
 

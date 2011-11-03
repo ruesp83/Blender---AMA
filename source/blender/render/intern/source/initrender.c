@@ -1,6 +1,4 @@
 /*
- * $Id: initrender.c 39570 2011-08-20 17:39:13Z campbellbarton $
- *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
  * This program is free software; you can redistribute it and/or
@@ -453,7 +451,7 @@ struct Object *RE_GetCamera(Render *re)
 }
 
 /* call this after InitState() */
-/* per render, there's one persistant viewplane. Parts will set their own viewplanes */
+/* per render, there's one persistent viewplane. Parts will set their own viewplanes */
 void RE_SetCamera(Render *re, Object *camera)
 {
 	object_camera_mode(&re->r, camera);

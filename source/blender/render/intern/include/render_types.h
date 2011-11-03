@@ -1,6 +1,4 @@
 /*
- * $Id: render_types.h 40675 2011-09-28 19:18:29Z blendix $
- *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
  * This program is free software; you can redistribute it and/or
@@ -603,6 +601,7 @@ typedef struct LampRen {
 #define R_NEED_TANGENT	16
 #define R_BAKE_TRACE	32
 #define R_BAKING		64
+#define R_ANIMATION		128
 
 /* vlakren->flag (vlak = face in dutch) char!!! */
 #define R_SMOOTH		1

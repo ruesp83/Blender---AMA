@@ -1,5 +1,4 @@
-/* $Id: BKE_subsurf.h 36773 2011-05-19 11:24:56Z blendix $ 
- *
+/*
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
  * This program is free software; you can redistribute it and/or

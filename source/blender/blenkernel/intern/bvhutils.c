@@ -1,7 +1,4 @@
 /*
- *
- * $Id: bvhutils.c 37787 2011-06-24 05:34:03Z campbellbarton $
- *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
  * This program is free software; you can redistribute it and/or
@@ -41,6 +38,7 @@
 
 #include "BLI_editVert.h"
 #include "BLI_utildefines.h"
+#include "BLI_linklist.h"
 
 #include "BKE_DerivedMesh.h"
 

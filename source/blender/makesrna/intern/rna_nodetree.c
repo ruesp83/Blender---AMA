@@ -1,6 +1,4 @@
 /*
- * $Id: rna_nodetree.c 40754 2011-10-02 20:09:45Z campbellbarton $
- *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
  * This program is free software; you can redistribute it and/or
@@ -58,7 +56,7 @@
 #include "MEM_guardedalloc.h"
 
 EnumPropertyItem nodetree_type_items[] = {
-	{NTREE_SHADER,		"MATERIAL",		ICON_MATERIAL,		"Material",		"Material nodes"	},
+	{NTREE_SHADER,		"SHADER",		ICON_MATERIAL,		"Shader",		"Shader nodes"	},
 	{NTREE_TEXTURE,		"TEXTURE",		ICON_TEXTURE,		"Texture",		"Texture nodes"		},
 	{NTREE_COMPOSIT,	"COMPOSITING",	ICON_RENDERLAYERS,	"Compositing",	"Compositing nodes"	},
 	{0, NULL, 0, NULL, NULL}
@@ -191,7 +189,7 @@ static StructRNA *rna_NodeTree_refine(struct PointerRNA *ptr)
 		case NTREE_TEXTURE:
 			return &RNA_TextureNodeTree;
 		default:
-			return &RNA_UnknownType;
+			return &RNA_NodeTree;
 	}
 }
 
@@ -234,6 +232,8 @@ static StructRNA *rna_NodeSocket_refine(PointerRNA *ptr)
 		case SOCK_RGBA:
 			return &RNA_NodeSocketRGBA;
 			break;
+		case SOCK_SHADER:
+			return &RNA_NodeSocketShader;
 		}
 		
 		#undef SUBTYPE
@@ -568,7 +568,7 @@ static bNode *rna_NodeTree_node_new(bNodeTree *ntree, bContext *UNUSED(C), Repor
 	}
 	else {
 		ntreeUpdateTree(ntree); /* update group node socket links*/
-		NodeTagChanged(ntree, node);
+		nodeUpdate(ntree, node);
 		WM_main_add_notifier(NC_NODE|NA_EDITED, ntree);
 
 		if (group)
@@ -651,7 +651,7 @@ static bNodeLink *rna_NodeTree_link_new(bNodeTree *ntree, ReportList *reports, b
 	ret= nodeAddLink(ntree, fromnode, in, tonode, out);
 	
 	if(ret) {
-		NodeTagChanged(ntree, tonode);
+		nodeUpdate(ntree, tonode);
 
 		ntreeUpdateTree(ntree);
 
@@ -1403,19 +1403,19 @@ static void def_cmp_image(StructRNA *srna)
 	prop = RNA_def_property(srna, "frame_duration", PROP_INT, PROP_NONE);
 	RNA_def_property_int_sdna(prop, NULL, "frames");
 	RNA_def_property_range(prop, 0, MAXFRAMEF);
-	RNA_def_property_ui_text(prop, "Frames", "Sets the number of images of a movie to use"); /* copied from the rna_image.c */
+	RNA_def_property_ui_text(prop, "Frames", "Number of images of a movie to use"); /* copied from the rna_image.c */
 	RNA_def_property_update(prop, NC_NODE|NA_EDITED, "rna_Node_update");
 	
 	prop = RNA_def_property(srna, "frame_start", PROP_INT, PROP_NONE);
 	RNA_def_property_int_sdna(prop, NULL, "sfra");
 	RNA_def_property_range(prop, MINAFRAMEF, MAXFRAMEF);
-	RNA_def_property_ui_text(prop, "Start Frame", "Sets the global starting frame of the movie/sequence, assuming first picture has a #1"); /* copied from the rna_image.c */
+	RNA_def_property_ui_text(prop, "Start Frame", "Global starting frame of the movie/sequence, assuming first picture has a #1"); /* copied from the rna_image.c */
 	RNA_def_property_update(prop, NC_NODE|NA_EDITED, "rna_Node_update");
 	
 	prop = RNA_def_property(srna, "frame_offset", PROP_INT, PROP_NONE);
 	RNA_def_property_int_sdna(prop, NULL, "offset");
 	RNA_def_property_range(prop, MINAFRAMEF, MAXFRAMEF);
-	RNA_def_property_ui_text(prop, "Offset", "Offsets the number of the frame to use in the animation"); /* copied from the rna_image.c */
+	RNA_def_property_ui_text(prop, "Offset", "Offset the number of the frame to use in the animation"); /* copied from the rna_image.c */
 	RNA_def_property_update(prop, NC_NODE|NA_EDITED, "rna_Node_update");
 	
 	prop = RNA_def_property(srna, "use_cyclic", PROP_BOOLEAN, PROP_NONE);
@@ -1871,7 +1871,7 @@ static void def_cmp_id_mask(StructRNA *srna)
 	
 	prop = RNA_def_property(srna, "index", PROP_INT, PROP_NONE);
 	RNA_def_property_int_sdna(prop, NULL, "custom1");
-	RNA_def_property_range(prop, 0, 10000);
+	RNA_def_property_range(prop, 0, 32767);
 	RNA_def_property_ui_text(prop, "Index", "Pass index number to convert to alpha");
 	RNA_def_property_update(prop, NC_NODE|NA_EDITED, "rna_Node_update");
 
@@ -3000,6 +3000,7 @@ void RNA_def_nodetree(BlenderRNA *brna)
 	#undef SUBTYPE
 	rna_def_node_socket_subtype(brna, SOCK_BOOLEAN, 0, "NodeSocketBoolean", "Boolean Node Socket");
 	rna_def_node_socket_subtype(brna, SOCK_RGBA, 0, "NodeSocketRGBA", "RGBA Node Socket");
+	rna_def_node_socket_subtype(brna, SOCK_SHADER, 0, "NodeSocketShader", "Shader Closure Node Socket");
 	
 	rna_def_node(brna);
 	rna_def_node_link(brna);

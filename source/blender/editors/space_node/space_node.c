@@ -1,6 +1,4 @@
 /*
- * $Id: space_node.c 40453 2011-09-22 12:45:25Z blendix $
- *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
  * This program is free software; you can redistribute it and/or
@@ -34,10 +32,12 @@
 #include <string.h>
 #include <stdio.h>
 
+#include "DNA_lamp_types.h"
+#include "DNA_material_types.h"
 #include "DNA_node_types.h"
 #include "DNA_object_types.h"
-#include "DNA_material_types.h"
 #include "DNA_scene_types.h"
+#include "DNA_world_types.h"
 
 #include "MEM_guardedalloc.h"
 
@@ -214,6 +214,12 @@ static void node_area_listener(ScrArea *sa, wmNotifier *wmn)
 					ED_area_tag_refresh(sa);
 			}
 			break;
+		case NC_OBJECT:
+			if(type==NTREE_SHADER) {
+				if(wmn->data==ND_OB_SHADING)
+					ED_area_tag_refresh(sa);
+			}
+			break;
 		case NC_TEXT:
 			/* pynodes */
 			if(wmn->data==ND_SHADING)
@@ -244,10 +250,10 @@ static void node_area_listener(ScrArea *sa, wmNotifier *wmn)
 				if(type==NTREE_COMPOSIT) {
 					Scene *scene= wmn->window->screen->scene;
 					
-					/* note that NodeTagIDChanged is already called by BKE_image_signal() on all
+					/* note that nodeUpdateID is already called by BKE_image_signal() on all
 					 * scenes so really this is just to know if the images is used in the compo else
 					 * painting on images could become very slow when the compositor is open. */
-					if(NodeTagIDChanged(scene->nodetree, wmn->reference))
+					if(nodeUpdateID(scene->nodetree, wmn->reference))
 						ED_area_tag_refresh(sa);
 				}
 			}
@@ -264,9 +270,21 @@ static void node_area_refresh(const struct bContext *C, struct ScrArea *sa)
 	
 	if(snode->nodetree) {
 		if(snode->treetype==NTREE_SHADER) {
-			Material *ma= (Material *)snode->id;
-			if(ma->use_nodes)
-				ED_preview_shader_job(C, sa, snode->id, NULL, NULL, 100, 100, PR_NODE_RENDER);
+			if(GS(snode->id->name) == ID_MA) {
+				Material *ma= (Material *)snode->id;
+				if(ma->use_nodes)
+					ED_preview_shader_job(C, sa, snode->id, NULL, NULL, 100, 100, PR_NODE_RENDER);
+			}
+			else if(GS(snode->id->name) == ID_LA) {
+				Lamp *la= (Lamp *)snode->id;
+				if(la->use_nodes)
+					ED_preview_shader_job(C, sa, snode->id, NULL, NULL, 100, 100, PR_NODE_RENDER);
+			}
+			else if(GS(snode->id->name) == ID_WO) {
+				World *wo= (World *)snode->id;
+				if(wo->use_nodes)
+					ED_preview_shader_job(C, sa, snode->id, NULL, NULL, 100, 100, PR_NODE_RENDER);
+			}
 		}
 		else if(snode->treetype==NTREE_COMPOSIT) {
 			Scene *scene= (Scene *)snode->id;
@@ -421,6 +439,10 @@ static void node_region_listener(ARegion *ar, wmNotifier *wmn)
 		case NC_TEXTURE:
 		case NC_NODE:
 			ED_region_tag_redraw(ar);
+			break;
+		case NC_OBJECT:
+			if(wmn->data==ND_OB_SHADING)
+				ED_region_tag_redraw(ar);
 			break;
 		case NC_ID:
 			if(wmn->action == NA_RENAME)

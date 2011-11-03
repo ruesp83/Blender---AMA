@@ -1,34 +1,32 @@
 /*
-* $Id: MOD_array.c 39342 2011-08-12 18:11:22Z blendix $
-*
-* ***** BEGIN GPL LICENSE BLOCK *****
-*
-* This program is free software; you can redistribute it and/or
-* modify it under the terms of the GNU General Public License
-* as published by the Free Software Foundation; either version 2
-* of the License, or (at your option) any later version.
-*
-* This program is distributed in the hope that it will be useful,
-* but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-* GNU General Public License for more details.
-*
-* You should have received a copy of the GNU General Public License
-* along with this program; if not, write to the Free Software  Foundation,
-* Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
-*
-* The Original Code is Copyright (C) 2005 by the Blender Foundation.
-* All rights reserved.
-*
-* Contributor(s): Daniel Dunbar
-*                 Ton Roosendaal,
-*                 Ben Batt,
-*                 Brecht Van Lommel,
-*                 Campbell Barton
-*
-* ***** END GPL LICENSE BLOCK *****
-*
-*/
+ * ***** BEGIN GPL LICENSE BLOCK *****
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software  Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+ *
+ * The Original Code is Copyright (C) 2005 by the Blender Foundation.
+ * All rights reserved.
+ *
+ * Contributor(s): Daniel Dunbar
+ *                 Ton Roosendaal,
+ *                 Ben Batt,
+ *                 Brecht Van Lommel,
+ *                 Campbell Barton
+ *
+ * ***** END GPL LICENSE BLOCK *****
+ *
+ */
 
 /** \file blender/modifiers/intern/MOD_array.c
  *  \ingroup modifiers
@@ -97,6 +95,7 @@ static void initData(ModifierData *md)
 	amd->arr_group = NULL;
 	amd->rand_group = !MOD_ARR_RAND_GROUP;
 	amd->distribution = MOD_ARR_DIST_EVENLY;
+	amd->distribution_mid_cap = MOD_ARR_DIST_SEQ;
 }
 
 static void copyData(ModifierData *md, ModifierData *target)
@@ -134,6 +133,7 @@ static void copyData(ModifierData *md, ModifierData *target)
 	tamd->arr_group = amd->arr_group;
 	tamd->rand_group = amd->rand_group;
 	tamd->distribution = amd->distribution;
+	tamd->distribution_mid_cap = amd->distribution_mid_cap;
 }
 
 static void foreachObjectLink(
@@ -191,16 +191,16 @@ static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 					  struct Scene *scene, Object *ob, DerivedMesh *dm,
 	   int initFlags)
 {
-	int i, j, flag;
-	int dim, start;
 	/* offset matrix */
 	float offset[4][4];
 	float final_offset[4][4];
-	float mid_offset[4][4];
+	float mid_offset[4][4], half_offset[4][4];
 	float tmp_mat[4][4];
 	float length = amd->length;
 	float alpha, d_alp, circle;
 	float f_o;
+	int i, j, flag;
+	int dim, start, num_cp;
 	int count = amd->count;
 	int numVerts, numEdges, numFaces;
 	int maxVerts, maxEdges, maxFaces;
@@ -209,6 +209,7 @@ static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 	MVert *mvert, *src_mvert;
 	MEdge *medge;
 	MFace *mface;
+	Nurb *nu;
 
 	IndexMapEntry *indexMap;
 
@@ -221,6 +222,9 @@ static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 		mid_cap = amd->mid_cap->derivedFinal;
 	if(amd->end_cap && amd->end_cap != ob)
 		end_cap = amd->end_cap->derivedFinal;
+	
+	if (amd->cont_mid_cap < 1)
+			amd->cont_mid_cap = 1;
 
 	unit_m4(offset);
 
@@ -255,7 +259,7 @@ static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 	}
 
 	if ((amd->offset_type & MOD_ARR_OFF_BETW) && (amd->offset_ob)) {
-			float dist = sqrt(dot_v3v3(amd->offset_ob->obmat[3], amd->offset_ob->obmat[3]));
+			//float dist = sqrt(dot_v3v3(amd->offset_ob->obmat[3], amd->offset_ob->obmat[3]));
 			offset[3][0] = amd->offset_ob->obmat[3][0] / (count - 1);
 			offset[3][1] = amd->offset_ob->obmat[3][1] / (count - 1);
 			offset[3][2] = amd->offset_ob->obmat[3][2] / (count - 1);
@@ -275,16 +279,34 @@ static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 		count = length_to_count(length, offset[3]);
 		amd->count = count;
 	}
-
+	
 	if(count < 1)
 		count = 1;
+	
+	if (amd->cont_mid_cap >= count)
+			amd->cont_mid_cap = count - 1;
+
+	/**/
+	if (amd->distribution_mid_cap & MOD_ARR_DIST_CURVE && amd->curve_ob){
+		Curve *cu = amd->curve_ob->data;
+		EditNurb *editnurb = cu->editnurb;
+		nu = cu->nurb.first;
+		if (nu->bezt) {
+			num_cp = MEM_allocN_len(nu->bezt) / sizeof(*nu->bezt);
+			unit_m4(mid_offset);
+			copy_v3_v3(mid_offset[3], nu->bezt[0].vec[1]);
+		}
+		if (amd->cont_mid_cap > num_cp)
+			amd->cont_mid_cap = num_cp;
+	}
 
 	/* allocate memory for count duplicates (including original) plus
-		  * start and end caps
+		  * start, mid and end caps
 	*/
 	finalVerts = dm->getNumVerts(dm) * count;
 	finalEdges = dm->getNumEdges(dm) * count;
 	finalFaces = dm->getNumFaces(dm) * count;
+	
 	if(start_cap) {
 		finalVerts += start_cap->getNumVerts(start_cap);
 		finalEdges += start_cap->getNumEdges(start_cap);
@@ -300,7 +322,9 @@ static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 		finalEdges += end_cap->getNumEdges(end_cap);
 		finalFaces += end_cap->getNumFaces(end_cap);
 	}
+	
 	result = CDDM_from_template(dm, finalVerts, finalEdges, finalFaces);
+	
 	flag = 0;
 	if ((amd->mode & MOD_ARR_MOD_ADV) || (amd->mode & MOD_ARR_MOD_ADV_MAT)){
 		start = 0;
@@ -325,7 +349,7 @@ static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 			if (start!=0)// || (amd->mode & MOD_ARR_MOD_ADV_MAT))
 				init_offset(start, count, amd);
 	}
-
+	
 	f_o = count-1;
 
 	if (amd->rays>1) {
@@ -341,10 +365,20 @@ static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 		copy_m4_m4(final_offset, tmp_mat);
 	}
 	
-	copy_m4_m4(mid_offset, offset);
-	mid_offset[3][0] = mid_offset[3][0] / 2;
-	mid_offset[3][1] = mid_offset[3][1] / 2;
-	mid_offset[3][2] = mid_offset[3][2] / 2;
+	if (amd->distribution_mid_cap & MOD_ARR_DIST_SEQ){
+		copy_m4_m4(mid_offset, offset);
+		mid_offset[3][0] = mid_offset[3][0] / 2;
+		mid_offset[3][1] = mid_offset[3][1] / 2;
+		mid_offset[3][2] = mid_offset[3][2] / 2;
+	}
+	else if (amd->distribution_mid_cap & MOD_ARR_DIST_HALF){
+		copy_m4_m4(half_offset, final_offset);
+		half_offset[3][0] = half_offset[3][0] / (amd->cont_mid_cap + 1);
+		half_offset[3][1] = half_offset[3][1] / (amd->cont_mid_cap + 1);
+		half_offset[3][2] = half_offset[3][2] / (amd->cont_mid_cap + 1);
+		copy_m4_m4(mid_offset, half_offset);
+	}
+	
 	copy_m4_m4(amd->delta, offset);
 	numVerts = numEdges = numFaces = 0;
 	mvert = CDDM_get_verts(result);
@@ -725,7 +759,7 @@ static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 		MEM_freeN(vert_map);
 		start_cap->release(start_cap);
 	}
-
+	
 	/*insert_start_cap(amd, dm, result, start_cap, indexMap, edges, numVerts, numEdges, numFaces, offset);*/
 	if(mid_cap) {
 		MVert *cap_mvert;
@@ -744,8 +778,7 @@ static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 
 		vert_map = MEM_callocN(sizeof(*vert_map) * capVerts,
 		"arrayModifier_doArray vert_map");
-		if (amd->cont_mid_cap>=amd->count)
-			amd->cont_mid_cap = amd->count -1;
+
 		origindex = result->getVertDataArray(result, CD_ORIGINDEX);
 		for(j=0; j < amd->cont_mid_cap; j++) {
 			for(i = 0; i < capVerts; i++) {
@@ -759,7 +792,6 @@ static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 
 					copy_v3_v3(tmp_co, mv->co);
 					mul_m4_v3(mid_offset, tmp_co);
-
 					for(j = 0; j < maxVerts; j++) {
 						in_mv = &src_mvert[j];
 						/* if this vert is within merge limit, merge */
@@ -772,16 +804,12 @@ static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 				}
 
 				if(!merged) {
-					//for(j=0; j < amd->cont_mid_cap; j++) {
-						DM_copy_vert_data(mid_cap, result, i, numVerts, 1);
-						mvert[numVerts] = *mv;
-						mul_m4_v3(mid_offset, mvert[numVerts].co);
-						origindex[numVerts] = ORIGINDEX_NONE;
-
-						vert_map[i] = numVerts;
-
-						numVerts++;
-					//}
+					DM_copy_vert_data(mid_cap, result, i, numVerts, 1);
+					mvert[numVerts] = *mv;
+					mul_m4_v3(mid_offset, mvert[numVerts].co);
+					origindex[numVerts] = ORIGINDEX_NONE;
+					vert_map[i] = numVerts;
+					numVerts++;
 				}
 			}
 
@@ -825,8 +853,18 @@ static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 
 				numFaces++;
 			}
-			mul_m4_m4m4(tmp_mat, mid_offset, offset);
-			copy_m4_m4(mid_offset, tmp_mat);
+			if (amd->distribution_mid_cap & MOD_ARR_DIST_SEQ){
+				mul_m4_m4m4(tmp_mat, mid_offset, offset);
+				copy_m4_m4(mid_offset, tmp_mat);
+			}
+			else if (amd->distribution_mid_cap & MOD_ARR_DIST_HALF){
+				mul_m4_m4m4(tmp_mat, mid_offset, half_offset);
+				copy_m4_m4(mid_offset, tmp_mat);
+			}
+			else if (amd->distribution_mid_cap & MOD_ARR_DIST_CURVE){
+				if (j+1 < amd->cont_mid_cap)
+					copy_v3_v3(mid_offset[3], nu->bezt[j+1].vec[1]);
+			}
 		}
 		MEM_freeN(vert_map);
 		mid_cap->release(mid_cap);
@@ -965,13 +1003,11 @@ static DerivedMesh *applyModifier(ModifierData *md, Object *ob,
 	if(result != dm) {
 		CDDM_calc_normals(result);
 		
-		if(amd->arr_group!=NULL)
-		{	
+		if(amd->arr_group!=NULL) {	
 			ob->transflag = OB_DUPLIARRAY;
 			ob->dup_group = amd->arr_group;
 		}
-		else
-		{
+		else {
 			ob->transflag = 0;
 			ob->dup_group = NULL;
 		}

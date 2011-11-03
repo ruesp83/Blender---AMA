@@ -1,6 +1,4 @@
 /*
- * $Id: drawobject.c 40782 2011-10-04 08:28:37Z campbellbarton $
- *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
  * This program is free software; you can redistribute it and/or
@@ -106,7 +104,7 @@
 
 /* this condition has been made more complex since editmode can draw textures */
 #define CHECK_OB_DRAWTEXTURE(vd, dt) \
-((vd->drawtype==OB_TEXTURE && dt>OB_SOLID) || \
+	((vd->drawtype==OB_TEXTURE && dt>OB_SOLID) || \
 	(vd->drawtype==OB_SOLID && vd->flag2 & V3D_SOLID_TEX))
 
 static void draw_bounding_volume(Scene *scene, Object *ob);
@@ -765,7 +763,7 @@ void view3d_cached_text_draw_end(View3D *v3d, ARegion *ar, int depth_write, floa
 		else glDepthMask(0);
 		
 		for(vos= strings->first; vos; vos= vos->next) {
-#if 0       // too slow, reading opengl info while drawing is very bad, better to see if we cn use the zbuffer while in pixel space - campbell
+#if 0       // too slow, reading opengl info while drawing is very bad, better to see if we can use the zbuffer while in pixel space - campbell
 			if(v3d->zbuf && (vos->flag & V3D_CACHE_TEXT_ZBUF)) {
 				gluProject(vos->vec[0], vos->vec[1], vos->vec[2], mats.modelview, mats.projection, (GLint *)mats.viewport, &ux, &uy, &uz);
 				glReadPixels(ar->winrct.xmin+vos->mval[0]+vos->xoffs, ar->winrct.ymin+vos->mval[1], 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &depth);
@@ -1775,7 +1773,9 @@ static void mesh_foreachScreenFace__mapFunc(void *userData, int index, float *ce
 	if (efa && efa->h==0 && efa->fgonf!=EM_FGON) {
 		view3d_project_short_clip(data->vc.ar, cent, s, 1);
 
-		data->func(data->userData, efa, s[0], s[1], index);
+		if (s[0] != IS_CLIPPED) {
+			data->func(data->userData, efa, s[0], s[1], index);
+		}
 	}
 }
 
@@ -2696,8 +2696,7 @@ static void draw_mesh_fancy(Scene *scene, ARegion *ar, View3D *v3d, RegionView3D
 	totface = dm->getNumFaces(dm);
 	
 	/* vertexpaint, faceselect wants this, but it doesnt work for shaded? */
-	if(dt!=OB_SHADED)
-		glFrontFace((ob->transflag&OB_NEG_SCALE)?GL_CW:GL_CCW);
+	glFrontFace((ob->transflag&OB_NEG_SCALE)?GL_CW:GL_CCW);
 
 		// Unwanted combination.
 	if (is_paint_sel) draw_wire = 0;
@@ -2814,7 +2813,7 @@ static void draw_mesh_fancy(Scene *scene, ARegion *ar, View3D *v3d, RegionView3D
 				dm->drawLooseEdges(dm);
 		}
 	}
-	else if(dt==OB_SHADED) {
+	else if(dt==OB_PAINT) {
 		if(ob==OBACT) {
 			if(ob && ob->mode & OB_MODE_WEIGHT_PAINT) {
 				/* enforce default material settings */
@@ -5955,7 +5954,9 @@ void draw_object(Scene *scene, ARegion *ar, View3D *v3d, Base *base, int flag)
 	}
 
 	/* maximum drawtype */
-	dt= MIN2(v3d->drawtype, ob->dt);
+	dt= v3d->drawtype;
+	if(dt==OB_RENDER) dt= OB_SOLID;
+	dt= MIN2(dt, ob->dt);
 	if(v3d->zbuf==0 && dt>OB_WIRE) dt= OB_WIRE;
 	dtx= 0;
 
@@ -5970,7 +5971,7 @@ void draw_object(Scene *scene, ARegion *ar, View3D *v3d, Base *base, int flag)
 					dt= OB_SOLID;
 				}
 				else {
-					dt= OB_SHADED;
+					dt= OB_PAINT;
 				}
 
 				glEnable(GL_DEPTH_TEST);
@@ -6721,7 +6722,10 @@ void draw_object_backbufsel(Scene *scene, View3D *v3d, RegionView3D *rv3d, Objec
 		}
 		else {
 			Mesh *me= ob->data;
-			if(me->editflag & ME_EDIT_VERT_SEL) {
+			if(     (me->editflag & ME_EDIT_VERT_SEL) &&
+			        /* currently vertex select only supports weight paint */
+			        (ob->mode & OB_MODE_WEIGHT_PAINT))
+			{
 				DerivedMesh *dm = mesh_get_derived_final(scene, ob, scene->customdata_mask);
 				glColor3ub(0, 0, 0);
 
