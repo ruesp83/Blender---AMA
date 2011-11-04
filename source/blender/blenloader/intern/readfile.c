@@ -12135,8 +12135,7 @@ static void do_versions(FileData *fd, Library *lib, Main *main)
 
 	}
 
-	/* put compatibility code here until next subversion bump */
-	{
+	if (main->versionfile < 260){
 		{
 			/* set default alpha value of Image outputs in image and render layer nodes to 0 */
 			Scene *sce;
@@ -12169,6 +12168,11 @@ static void do_versions(FileData *fd, Library *lib, Main *main)
 				}
 			}
 		}
+	}
+
+	/* put compatibility code here until next subversion bump */
+	{
+		
 	}
 
 	/* WATCH IT!!!: pointers from libdata have not been converted yet here! */
