@@ -1,6 +1,6 @@
 Index: release/scripts/startup/bl_ui/properties_data_modifier.py
 ===================================================================
---- release/scripts/startup/bl_ui/properties_data_modifier.py	(revisione 40904)
+--- release/scripts/startup/bl_ui/properties_data_modifier.py	(revisione 41519)
 +++ release/scripts/startup/bl_ui/properties_data_modifier.py	(copia locale)
 @@ -81,10 +81,10 @@
              layout.prop(md, "curve")
@@ -215,9 +215,9 @@ Index: source/blender/blenkernel/BKE_ama.h
 +
 Index: source/blender/blenkernel/CMakeLists.txt
 ===================================================================
---- source/blender/blenkernel/CMakeLists.txt	(revisione 40904)
+--- source/blender/blenkernel/CMakeLists.txt	(revisione 41519)
 +++ source/blender/blenkernel/CMakeLists.txt	(copia locale)
-@@ -72,6 +72,7 @@
+@@ -66,6 +66,7 @@
  	intern/CCGSubSurf.c
  	intern/DerivedMesh.c
  	intern/action.c
@@ -225,7 +225,7 @@ Index: source/blender/blenkernel/CMakeLists.txt
  	intern/anim.c
  	intern/anim_sys.c
  	intern/armature.c
-@@ -152,6 +153,7 @@
+@@ -146,6 +147,7 @@
  	
  	BKE_DerivedMesh.h
  	BKE_action.h
@@ -869,9 +869,9 @@ Index: source/blender/blenkernel/intern/ama.c
 +}*/
 Index: source/blender/blenkernel/intern/anim.c
 ===================================================================
---- source/blender/blenkernel/intern/anim.c	(revisione 40904)
+--- source/blender/blenkernel/intern/anim.c	(revisione 41519)
 +++ source/blender/blenkernel/intern/anim.c	(copia locale)
-@@ -33,6 +33,7 @@
+@@ -31,6 +31,7 @@
  
  
  #include <stdio.h>
@@ -879,7 +879,7 @@ Index: source/blender/blenkernel/intern/anim.c
  #include <math.h>
  #include <string.h>
  
-@@ -49,6 +50,7 @@
+@@ -47,6 +48,7 @@
  #include "DNA_group_types.h"
  #include "DNA_key_types.h"
  #include "DNA_meshdata_types.h"
@@ -887,7 +887,7 @@ Index: source/blender/blenkernel/intern/anim.c
  #include "DNA_scene_types.h"
  #include "DNA_vfont_types.h"
  
-@@ -750,6 +752,137 @@
+@@ -748,6 +750,137 @@
  	}
  }
  
@@ -1025,7 +1025,7 @@ Index: source/blender/blenkernel/intern/anim.c
  static void frames_duplilist(ListBase *lb, Scene *scene, Object *ob, int level, int animated)
  {
  	extern int enable_cu_speed;	/* object.c */
-@@ -1598,6 +1731,15 @@
+@@ -1607,6 +1740,15 @@
  				if(dob->type == OB_DUPLIGROUP)
  					copy_m4_m4(dob->ob->obmat, dob->mat);
  		}
@@ -1043,9 +1043,9 @@ Index: source/blender/blenkernel/intern/anim.c
  
 Index: source/blender/blenloader/intern/readfile.c
 ===================================================================
---- source/blender/blenloader/intern/readfile.c	(revisione 40904)
+--- source/blender/blenloader/intern/readfile.c	(revisione 41519)
 +++ source/blender/blenloader/intern/readfile.c	(copia locale)
-@@ -3927,6 +3927,15 @@
+@@ -3946,6 +3946,15 @@
  				}
  			}
  
@@ -1061,7 +1061,7 @@ Index: source/blender/blenloader/intern/readfile.c
  			/* texture field */
  			if(ob->pd)
  				lib_link_partdeflect(fd, &ob->id, ob->pd);
-@@ -4206,6 +4215,11 @@
+@@ -4225,6 +4234,11 @@
  			if(wmd->cmap_curve)
  				direct_link_curvemapping(fd, wmd->cmap_curve);
  		}
@@ -1075,9 +1075,9 @@ Index: source/blender/blenloader/intern/readfile.c
  
 Index: source/blender/blenloader/intern/writefile.c
 ===================================================================
---- source/blender/blenloader/intern/writefile.c	(revisione 40904)
+--- source/blender/blenloader/intern/writefile.c	(revisione 41519)
 +++ source/blender/blenloader/intern/writefile.c	(copia locale)
-@@ -1361,6 +1361,11 @@
+@@ -1359,6 +1359,11 @@
  			if (wmd->cmap_curve)
  				write_curvemapping(wd, wmd->cmap_curve);
  		}
@@ -1091,9 +1091,9 @@ Index: source/blender/blenloader/intern/writefile.c
  
 Index: source/blender/editors/object/object_intern.h
 ===================================================================
---- source/blender/editors/object/object_intern.h	(revisione 40904)
+--- source/blender/editors/object/object_intern.h	(revisione 41519)
 +++ source/blender/editors/object/object_intern.h	(copia locale)
-@@ -161,6 +161,7 @@
+@@ -159,6 +159,7 @@
  void OBJECT_OT_multires_external_pack(struct wmOperatorType *ot);
  void OBJECT_OT_meshdeform_bind(struct wmOperatorType *ot);
  void OBJECT_OT_explode_refresh(struct wmOperatorType *ot);
@@ -1103,9 +1103,9 @@ Index: source/blender/editors/object/object_intern.h
  void OBJECT_OT_constraint_add(struct wmOperatorType *ot);
 Index: source/blender/editors/object/object_modifier.c
 ===================================================================
---- source/blender/editors/object/object_modifier.c	(revisione 40904)
+--- source/blender/editors/object/object_modifier.c	(revisione 41519)
 +++ source/blender/editors/object/object_modifier.c	(copia locale)
-@@ -203,6 +203,10 @@
+@@ -201,6 +201,10 @@
  	else if(md->type == eModifierType_Smoke) {
  		ob->dt = OB_TEXTURE;
  	}
@@ -1116,7 +1116,7 @@ Index: source/blender/editors/object/object_modifier.c
  	else if(md->type == eModifierType_Multires) {
  		int ok= 1;
  		Mesh *me= ob->data;
-@@ -1409,3 +1413,49 @@
+@@ -1404,3 +1408,49 @@
  	edit_modifier_properties(ot);
  }
  
@@ -1168,9 +1168,9 @@ Index: source/blender/editors/object/object_modifier.c
 +}
 Index: source/blender/editors/object/object_ops.c
 ===================================================================
---- source/blender/editors/object/object_ops.c	(revisione 40904)
+--- source/blender/editors/object/object_ops.c	(revisione 41519)
 +++ source/blender/editors/object/object_ops.c	(copia locale)
-@@ -144,7 +144,8 @@
+@@ -142,7 +142,8 @@
  	WM_operatortype_append(OBJECT_OT_multires_external_pack);
  	WM_operatortype_append(OBJECT_OT_meshdeform_bind);
  	WM_operatortype_append(OBJECT_OT_explode_refresh);
@@ -1182,9 +1182,9 @@ Index: source/blender/editors/object/object_ops.c
  	WM_operatortype_append(POSE_OT_constraint_add);
 Index: source/blender/makesdna/DNA_modifier_types.h
 ===================================================================
---- source/blender/makesdna/DNA_modifier_types.h	(revisione 40904)
+--- source/blender/makesdna/DNA_modifier_types.h	(revisione 41519)
 +++ source/blender/makesdna/DNA_modifier_types.h	(copia locale)
-@@ -178,11 +178,24 @@
+@@ -176,11 +176,24 @@
  /* Mask Modifier -> flag */
  #define MOD_MASK_INV			(1<<0)
  
@@ -1209,7 +1209,7 @@ Index: source/blender/makesdna/DNA_modifier_types.h
  	/* the object with which to cap the end of the array  */
  	struct Object *end_cap;
  	/* the curve object to use for MOD_ARR_FITCURVE */
-@@ -197,6 +210,7 @@
+@@ -195,6 +208,7 @@
  	   1 means the duplicates are 1 object-width apart
  	*/
  	float scale[3];
@@ -1217,7 +1217,7 @@ Index: source/blender/makesdna/DNA_modifier_types.h
  	/* the length over which to distribute the duplicates */
  	float length;
  	/* the limit below which to merge vertices in adjacent duplicates */
-@@ -220,6 +234,31 @@
+@@ -218,6 +232,31 @@
  	int flags;
  	/* the number of duplicates to generate for MOD_ARR_FIXEDCOUNT */
  	int count;
@@ -1249,7 +1249,7 @@ Index: source/blender/makesdna/DNA_modifier_types.h
  } ArrayModifierData;
  
  /* ArrayModifierData->fit_type */
-@@ -231,11 +270,49 @@
+@@ -229,11 +268,49 @@
  #define MOD_ARR_OFF_CONST    (1<<0)
  #define MOD_ARR_OFF_RELATIVE (1<<1)
  #define MOD_ARR_OFF_OBJ      (1<<2)
@@ -1303,9 +1303,9 @@ Index: source/blender/makesdna/DNA_modifier_types.h
  
 Index: source/blender/makesdna/DNA_object_types.h
 ===================================================================
---- source/blender/makesdna/DNA_object_types.h	(revisione 40904)
+--- source/blender/makesdna/DNA_object_types.h	(revisione 41519)
 +++ source/blender/makesdna/DNA_object_types.h	(copia locale)
-@@ -292,9 +292,10 @@
+@@ -290,9 +290,10 @@
  	struct DupliObject *next, *prev;
  	struct Object *ob;
  	unsigned int origlay;
@@ -1317,7 +1317,7 @@ Index: source/blender/makesdna/DNA_object_types.h
  } DupliObject;
  
  /* **************** OBJECT ********************* */
-@@ -340,7 +341,7 @@
+@@ -339,7 +340,7 @@
  /*#define OB_OFFS_LOCAL		1*/ /*UNUSED*/
  /* #define OB_QUAT				2 */ /* never used, free flag */
  #define OB_NEG_SCALE		4
@@ -1326,7 +1326,7 @@ Index: source/blender/makesdna/DNA_object_types.h
  #define OB_DUPLIFRAMES		8
  #define OB_DUPLIVERTS		16
  #define OB_DUPLIROT			32
-@@ -350,8 +351,9 @@
+@@ -349,8 +350,9 @@
  #define OB_DUPLIFACES		512
  #define OB_DUPLIFACES_SCALE	1024
  #define OB_DUPLIPARTS		2048
@@ -1340,9 +1340,9 @@ Index: source/blender/makesdna/DNA_object_types.h
  	// XXX depreceated - old animation system crap
 Index: source/blender/makesrna/intern/rna_modifier.c
 ===================================================================
---- source/blender/makesrna/intern/rna_modifier.c	(revisione 40904)
+--- source/blender/makesrna/intern/rna_modifier.c	(revisione 41519)
 +++ source/blender/makesrna/intern/rna_modifier.c	(copia locale)
-@@ -586,6 +586,11 @@
+@@ -584,6 +584,11 @@
  	modifier_object_set(ptr->id.data, &((ArrayModifierData*)ptr->data)->end_cap, OB_MESH, value);
  }
  
@@ -1354,7 +1354,7 @@ Index: source/blender/makesrna/intern/rna_modifier.c
  static void rna_ArrayModifier_start_cap_set(PointerRNA *ptr, PointerRNA value)
  {
  	modifier_object_set(ptr->id.data, &((ArrayModifierData*)ptr->data)->start_cap, OB_MESH, value);
-@@ -1355,12 +1360,29 @@
+@@ -1353,12 +1358,29 @@
  	StructRNA *srna;
  	PropertyRNA *prop;
  
@@ -1384,7 +1384,7 @@ Index: source/blender/makesrna/intern/rna_modifier.c
  	srna= RNA_def_struct(brna, "ArrayModifier", "Modifier");
  	RNA_def_struct_ui_text(srna, "Array Modifier", "Array duplication modifier");
  	RNA_def_struct_sdna(srna, "ArrayModifierData");
-@@ -1443,6 +1465,11 @@
+@@ -1441,6 +1463,11 @@
  	RNA_def_property_flag(prop, PROP_EDITABLE|PROP_ID_SELF_CHECK);
  	RNA_def_property_update(prop, 0, "rna_Modifier_dependency_update");
  	
@@ -1396,7 +1396,7 @@ Index: source/blender/makesrna/intern/rna_modifier.c
  	/* Caps */
  	prop= RNA_def_property(srna, "start_cap", PROP_POINTER, PROP_NONE);
  	RNA_def_property_ui_text(prop, "Start Cap", "Mesh object to use as a start cap");
-@@ -1450,11 +1477,136 @@
+@@ -1448,11 +1475,136 @@
  	RNA_def_property_flag(prop, PROP_EDITABLE|PROP_ID_SELF_CHECK);
  	RNA_def_property_update(prop, 0, "rna_Modifier_update");
  
@@ -1535,9 +1535,9 @@ Index: source/blender/makesrna/intern/rna_modifier.c
  static void rna_def_modifier_edgesplit(BlenderRNA *brna)
 Index: source/blender/modifiers/intern/MOD_array.c
 ===================================================================
---- source/blender/modifiers/intern/MOD_array.c	(revisione 40904)
+--- source/blender/modifiers/intern/MOD_array.c	(revisione 41519)
 +++ source/blender/modifiers/intern/MOD_array.c	(copia locale)
-@@ -37,6 +37,8 @@
+@@ -35,6 +35,8 @@
  
  /* Array modifier: duplicates the object multiple times along an axis */
  
@@ -1546,7 +1546,7 @@ Index: source/blender/modifiers/intern/MOD_array.c
  #include "MEM_guardedalloc.h"
  
  #include "BLI_math.h"
-@@ -45,6 +47,7 @@
+@@ -43,6 +45,7 @@
  #include "BLI_edgehash.h"
  
  #include "DNA_curve_types.h"
@@ -1554,7 +1554,7 @@ Index: source/blender/modifiers/intern/MOD_array.c
  #include "DNA_meshdata_types.h"
  #include "DNA_object_types.h"
  
-@@ -53,9 +56,12 @@
+@@ -51,9 +54,12 @@
  #include "BKE_mesh.h"
  #include "BKE_modifier.h"
  #include "BKE_object.h"
@@ -1568,7 +1568,7 @@ Index: source/blender/modifiers/intern/MOD_array.c
  #include "MOD_util.h"
  
  static void initData(ModifierData *md)
-@@ -65,7 +71,7 @@
+@@ -63,7 +69,7 @@
  	/* default to 2 duplicates distributed along the x-axis by an
  	offset of 1 object-width
  	*/
@@ -1577,7 +1577,7 @@ Index: source/blender/modifiers/intern/MOD_array.c
  	amd->count = 2;
  	amd->offset[0] = amd->offset[1] = amd->offset[2] = 0;
  	amd->scale[0] = 1;
-@@ -75,6 +81,23 @@
+@@ -73,6 +79,23 @@
  	amd->fit_type = MOD_ARR_FIXEDCOUNT;
  	amd->offset_type = MOD_ARR_OFF_RELATIVE;
  	amd->flags = 0;
@@ -1601,7 +1601,7 @@ Index: source/blender/modifiers/intern/MOD_array.c
  }
  
  static void copyData(ModifierData *md, ModifierData *target)
-@@ -83,6 +106,7 @@
+@@ -81,6 +104,7 @@
  	ArrayModifierData *tamd = (ArrayModifierData*) target;
  
  	tamd->start_cap = amd->start_cap;
@@ -1609,7 +1609,7 @@ Index: source/blender/modifiers/intern/MOD_array.c
  	tamd->end_cap = amd->end_cap;
  	tamd->curve_ob = amd->curve_ob;
  	tamd->offset_ob = amd->offset_ob;
-@@ -94,6 +118,24 @@
+@@ -92,6 +116,24 @@
  	tamd->fit_type = amd->fit_type;
  	tamd->offset_type = amd->offset_type;
  	tamd->flags = amd->flags;
@@ -1634,7 +1634,7 @@ Index: source/blender/modifiers/intern/MOD_array.c
  }
  
  static void foreachObjectLink(
-@@ -104,6 +146,7 @@
+@@ -102,6 +144,7 @@
  	ArrayModifierData *amd = (ArrayModifierData*) md;
  
  	walk(userData, ob, &amd->start_cap);
@@ -1642,7 +1642,7 @@ Index: source/blender/modifiers/intern/MOD_array.c
  	walk(userData, ob, &amd->end_cap);
  	walk(userData, ob, &amd->curve_ob);
  	walk(userData, ob, &amd->offset_ob);
-@@ -120,6 +163,12 @@
+@@ -118,6 +161,12 @@
  		dag_add_relation(forest, curNode, obNode,
  				 DAG_RL_DATA_DATA | DAG_RL_OB_DATA, "Array Modifier");
  	}
@@ -1655,7 +1655,7 @@ Index: source/blender/modifiers/intern/MOD_array.c
  	if (amd->end_cap) {
  		DagNode *curNode = dag_get_node(forest, amd->end_cap);
  
-@@ -140,115 +189,44 @@
+@@ -138,115 +187,44 @@
  	}
  }
  
@@ -1754,7 +1754,7 @@ Index: source/blender/modifiers/intern/MOD_array.c
 +	float alpha, d_alp, circle;
 +	float f_o;
 +	int i, j, flag;
-+	int dim, start, num_cp;
++	int dim, start;
  	int count = amd->count;
  	int numVerts, numEdges, numFaces;
  	int maxVerts, maxEdges, maxFaces;
@@ -1784,7 +1784,7 @@ Index: source/blender/modifiers/intern/MOD_array.c
  
  	unit_m4(offset);
  
-@@ -277,73 +255,133 @@
+@@ -275,73 +253,136 @@
  			unit_m4(obinv);
  
  		mul_serie_m4(result_mat, offset,
@@ -1845,23 +1845,26 @@ Index: source/blender/modifiers/intern/MOD_array.c
  	if(count < 1)
  		count = 1;
 +	
-+	if (amd->cont_mid_cap >= count)
-+			amd->cont_mid_cap = count - 1;
- 
 +	/**/
 +	if (amd->distribution_mid_cap & MOD_ARR_DIST_CURVE && amd->curve_ob){
 +		Curve *cu = amd->curve_ob->data;
-+		EditNurb *editnurb = cu->editnurb;
 +		nu = cu->nurb.first;
++		unit_m4(mid_offset);
 +		if (nu->bezt) {
-+			num_cp = MEM_allocN_len(nu->bezt) / sizeof(*nu->bezt);
-+			unit_m4(mid_offset);
 +			copy_v3_v3(mid_offset[3], nu->bezt[0].vec[1]);
++			if (amd->cont_mid_cap > nu->pntsu)
++				amd->cont_mid_cap = nu->pntsu;
 +		}
-+		if (amd->cont_mid_cap > num_cp)
-+			amd->cont_mid_cap = num_cp;
++		else {
++			copy_v3_v3(mid_offset[3], nu->bp[0].vec);
++			if (amd->cont_mid_cap > (nu->pntsu * nu->pntsv))
++				amd->cont_mid_cap = nu->pntsu * nu->pntsv;
++		}
 +	}
-+
++	else 
++		if (amd->cont_mid_cap >= count)
++			amd->cont_mid_cap = count - 1;
+ 
  	/* allocate memory for count duplicates (including original) plus
 -		  * start and end caps
 +		  * start, mid and end caps
@@ -1949,7 +1952,7 @@ Index: source/blender/modifiers/intern/MOD_array.c
  	numVerts = numEdges = numFaces = 0;
  	mvert = CDDM_get_verts(result);
  
-@@ -402,15 +440,68 @@
+@@ -400,15 +441,68 @@
  
  		/* if no merging, generate copies of this vert */
  		if(indexMap[i].merge < 0) {
@@ -2020,7 +2023,7 @@ Index: source/blender/modifiers/intern/MOD_array.c
  			}
  		} else if(indexMap[i].merge != i && indexMap[i].merge_final) {
  			/* if this vert is not merging with itself, and it is merging
-@@ -555,6 +646,12 @@
+@@ -553,6 +647,12 @@
  
  			numFaces++;
  
@@ -2033,7 +2036,7 @@ Index: source/blender/modifiers/intern/MOD_array.c
  			/* if the face has fewer than 3 vertices, don't create it */
  			if(test_index_face_maxvert(mf2, &result->faceData, numFaces-1, inMF.v4?4:3, numVerts) < 3) {
  				numFaces--;
-@@ -563,7 +660,7 @@
+@@ -561,7 +661,7 @@
  		}
  	}
  
@@ -2042,7 +2045,7 @@ Index: source/blender/modifiers/intern/MOD_array.c
  	if(start_cap) {
  		float startoffset[4][4];
  		MVert *cap_mvert;
-@@ -664,7 +761,117 @@
+@@ -662,7 +762,120 @@
  		MEM_freeN(vert_map);
  		start_cap->release(start_cap);
  	}
@@ -2150,7 +2153,10 @@ Index: source/blender/modifiers/intern/MOD_array.c
 +			}
 +			else if (amd->distribution_mid_cap & MOD_ARR_DIST_CURVE){
 +				if (j+1 < amd->cont_mid_cap)
-+					copy_v3_v3(mid_offset[3], nu->bezt[j+1].vec[1]);
++					if (nu->bezt)
++						copy_v3_v3(mid_offset[3], nu->bezt[j+1].vec[1]);
++					else
++						copy_v3_v3(mid_offset[3], nu->bp[j+1].vec);
 +			}
 +		}
 +		MEM_freeN(vert_map);
@@ -2160,7 +2166,7 @@ Index: source/blender/modifiers/intern/MOD_array.c
  	if(end_cap) {
  		float endoffset[4][4];
  		MVert *cap_mvert;
-@@ -765,6 +972,16 @@
+@@ -763,6 +976,16 @@
  		end_cap->release(end_cap);
  	}
  
@@ -2177,7 +2183,7 @@ Index: source/blender/modifiers/intern/MOD_array.c
  	BLI_edgehash_free(edges, NULL);
  	MEM_freeN(indexMap);
  
-@@ -785,9 +1002,18 @@
+@@ -783,9 +1006,18 @@
  
  	result = arrayModifier_doArray(amd, md->scene, ob, dm, 0);
  
@@ -2198,7 +2204,7 @@ Index: source/blender/modifiers/intern/MOD_array.c
  	return result;
  }
  
-@@ -798,6 +1024,16 @@
+@@ -796,6 +1028,16 @@
  	return applyModifier(md, ob, dm, 0, 1);
  }
  
@@ -2215,7 +2221,7 @@ Index: source/blender/modifiers/intern/MOD_array.c
  
  ModifierTypeInfo modifierType_Array = {
  	/* name */              "Array",
-@@ -819,12 +1055,11 @@
+@@ -817,12 +1059,11 @@
  	/* applyModifierEM */   applyModifierEM,
  	/* initData */          initData,
  	/* requiredDataMask */  NULL,
@@ -2231,9 +2237,9 @@ Index: source/blender/modifiers/intern/MOD_array.c
  };
 Index: source/blender/render/intern/source/convertblender.c
 ===================================================================
---- source/blender/render/intern/source/convertblender.c	(revisione 40904)
+--- source/blender/render/intern/source/convertblender.c	(revisione 41519)
 +++ source/blender/render/intern/source/convertblender.c	(copia locale)
-@@ -4714,7 +4714,8 @@
+@@ -4715,7 +4715,8 @@
  	/* override not showing object when duplis are used with particles */
  	if(ob->transflag & OB_DUPLIPARTS)
  		; /* let particle system(s) handle showing vs. not showing */
@@ -2243,7 +2249,7 @@ Index: source/blender/render/intern/source/convertblender.c
  		return 0;
  	
  	/* don't add non-basic meta objects, ends up having renderobjects with no geometry */
-@@ -4751,7 +4752,7 @@
+@@ -4752,7 +4753,7 @@
  	for(psys=obd->particlesystem.first; psys; psys=psys->next)
  		if(!ELEM5(psys->part->ren_as, PART_DRAW_BB, PART_DRAW_LINE, PART_DRAW_PATH, PART_DRAW_OB, PART_DRAW_GR))
  			return 0;
@@ -2252,7 +2258,7 @@ Index: source/blender/render/intern/source/convertblender.c
  	/* don't allow lamp, animated duplis, or radio render */
  	return (render_object_type(obd->type) &&
  			(!(dob->type == OB_DUPLIGROUP) || !dob->animated));
-@@ -4818,17 +4819,19 @@
+@@ -4819,17 +4820,19 @@
  	/* simple preventing of too deep nested groups */
  	if(level>MAX_DUPLI_RECUR) return;
  
@@ -2274,7 +2280,7 @@ Index: source/blender/render/intern/source/convertblender.c
  					if(ob->dup_group)
  						add_group_render_dupli_obs(re, ob->dup_group, nolamps, onlyselected, actob, timeoffset, vectorlay, level+1);
  				}
-@@ -4906,10 +4909,14 @@
+@@ -4907,10 +4910,14 @@
  					Object *obd= dob->ob;
  					
  					copy_m4_m4(obd->obmat, dob->mat);
@@ -2292,7 +2298,7 @@ Index: source/blender/render/intern/source/convertblender.c
  
  					if(obd->restrictflag & OB_RESTRICT_RENDER)
  						continue;
-@@ -4925,7 +4932,6 @@
+@@ -4926,7 +4933,6 @@
  						ObjectRen *obr = NULL;
  						int psysindex;
  						float mat[4][4];

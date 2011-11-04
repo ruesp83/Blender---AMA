@@ -1,7 +1,7 @@
 Advanced Modifier Array v0.5 beta2 new features and fixed bug (from v0.5.1) 3\11\2011:
 
     1. ADD: Possibilità di aggiungere un oggetto "Mid Cap" in varie seguenze e sui Control Points
-            di una curva Bezier.
+            di una curva Bezier e Nurbs.
     2. ADD: Possibilità di aggiungere più cloni di un "Mid Cap".
 
 
@@ -68,7 +68,6 @@ TODO:
     - Mid Cap:
     - - Permettere di legarlo ai cloni.
     - - Dare anche a lui il noise.
-    - - Aggiungerli sui Control Points di una curva Nurbs.
     - Associare una curva all'array.
     - Creare i cloni con una forma ad aspirale.
     - MultiScatter

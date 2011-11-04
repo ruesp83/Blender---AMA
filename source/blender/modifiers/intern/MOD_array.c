@@ -200,7 +200,7 @@ static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 	float alpha, d_alp, circle;
 	float f_o;
 	int i, j, flag;
-	int dim, start, num_cp;
+	int dim, start;
 	int count = amd->count;
 	int numVerts, numEdges, numFaces;
 	int maxVerts, maxEdges, maxFaces;
@@ -283,22 +283,25 @@ static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 	if(count < 1)
 		count = 1;
 	
-	if (amd->cont_mid_cap >= count)
-			amd->cont_mid_cap = count - 1;
-
 	/**/
 	if (amd->distribution_mid_cap & MOD_ARR_DIST_CURVE && amd->curve_ob){
 		Curve *cu = amd->curve_ob->data;
-		EditNurb *editnurb = cu->editnurb;
 		nu = cu->nurb.first;
+		unit_m4(mid_offset);
 		if (nu->bezt) {
-			num_cp = MEM_allocN_len(nu->bezt) / sizeof(*nu->bezt);
-			unit_m4(mid_offset);
 			copy_v3_v3(mid_offset[3], nu->bezt[0].vec[1]);
+			if (amd->cont_mid_cap > nu->pntsu)
+				amd->cont_mid_cap = nu->pntsu;
 		}
-		if (amd->cont_mid_cap > num_cp)
-			amd->cont_mid_cap = num_cp;
+		else {
+			copy_v3_v3(mid_offset[3], nu->bp[0].vec);
+			if (amd->cont_mid_cap > (nu->pntsu * nu->pntsv))
+				amd->cont_mid_cap = nu->pntsu * nu->pntsv;
+		}
 	}
+	else 
+		if (amd->cont_mid_cap >= count)
+			amd->cont_mid_cap = count - 1;
 
 	/* allocate memory for count duplicates (including original) plus
 		  * start, mid and end caps
@@ -863,7 +866,10 @@ static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 			}
 			else if (amd->distribution_mid_cap & MOD_ARR_DIST_CURVE){
 				if (j+1 < amd->cont_mid_cap)
-					copy_v3_v3(mid_offset[3], nu->bezt[j+1].vec[1]);
+					if (nu->bezt)
+						copy_v3_v3(mid_offset[3], nu->bezt[j+1].vec[1]);
+					else
+						copy_v3_v3(mid_offset[3], nu->bp[j+1].vec);
 			}
 		}
 		MEM_freeN(vert_map);
