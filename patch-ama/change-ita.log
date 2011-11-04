@@ -1,39 +1,59 @@
+Advanced Modifier Array v0.5 beta2 new features and fixed bug (from v0.5.1) 3\11\2011:
+
+    1. ADD: Possibilità di aggiungere un oggetto "Mid Cap" in varie seguenze e sui Control Points
+            di una curva Bezier.
+    2. ADD: Possibilità di aggiungere più cloni di un "Mid Cap".
+
+
+Advanced Modifier Array v0.5 beta1 new features and fixed bug (from v0.4) 27\08\2011:
+
+    1. FIX: Quando si alloca un nuovo clone, il materiale assegnato non è il primo ma quello
+            successivo
+    2. ADD: Aggiunta l'opzione "Sequence" nella scheda "Advanced Material".
+    3. ADD: Possibilità di ripetere un materiale più volte, nella modalità "Sequence".
+    4. ADD: Possibilità di aggiungere un oggetto centrale "Mid Cap".
+
+
 Advanced Modifier Array v0.4 new features and fixed bug (from v0.3) 17\08\2011:
-	
-	1.  FIX: Mancata deallocazione dell'ultimo clone.
-	2.  FIX: Il Dupli Group mantiene il "Noise Offset" anche se l'Advanced Noise 
-		       è disattivato.
-	3.	FIX: Eliminazione dall'undo del tasto "Refresh Ad. Offset". Così l'undo sui cloni 
-			   funzione bene.
-	4.	FIX: Le funzioni per il "Noise Offset" ora usano le funzioni in "BLI_rand.h".
-	5.	FIX: "final_offset" era calcolato con un clone in più.
-	6.	ADD: Ogni clone ora può essere associato ad un elemento casuale del "Dupli Group".
-	7.	ADD: Il "Dupli Group" ora è soggetto anche lui al Restrict Mode dei modificatori.
-	8.	ADD: Aggiornamento del "Count" quando si cambia il "Fit Type", tranne per il "Fit Length".
-	9.	ADD: Nuova UI.
-	10. ADD: Il "Noise Offset" per Loc-Rot-Scale ora non ha limiti.
-	11. ADD: Il "Noise Offset" ora ha 5 cifre decimali.
-	12. DEL: Eliminazione del "Noise Factor".
+
+    1.  FIX: Mancata deallocazione dell'ultimo clone.
+    2.  FIX: Il Dupli Group mantiene il "Noise Offset" anche se l'Advanced Noise
+             è disattivato.
+    3.  FIX: Eliminazione dall'undo del tasto "Refresh Ad. Offset". Così l'undo sui cloni
+             funzione bene.
+    4.  FIX: Le funzioni per il "Noise Offset" ora usano le funzioni in "BLI_rand.h".
+    5.  FIX: "final_offset" era calcolato con un clone in più.
+    6.  ADD: Ogni clone ora può essere associato ad un elemento casuale del "Dupli Group".
+    7.  ADD: Il "Dupli Group" ora è soggetto anche lui al Restrict Mode dei modificatori.
+    8.  ADD: Aggiornamento del "Count" quando si cambia il "Fit Type", tranne per il "Fit Length".
+    9.  ADD: Nuova UI.
+    10. ADD: Il "Noise Offset" per Loc-Rot-Scale ora non ha limiti.
+    11. ADD: Il "Noise Offset" ora ha 5 cifre decimali.
+    12. DEL: Eliminazione del "Noise Factor".
 
 
 Advanced Modifier Array v0.3 5\03\2011:
 
-	1.  Variazione casuale della posizione
-		- Con scelta della direzione
-	2.  Noise Factor: valore moltiplicativo dell'offset
-	3.  Lock: Blocco dell'offset
-	4.  Salvataggio e lettura dell'offset bloccato (se il Lock non è attivato alla riapertura 
-		  c'è un nuovo offset)
-	5.  Offset per scalare e per la rotazione.(La rotazione avviene sul centro dell'oggetto 
-		  principale)
-	6.  Distribuisce gli elementi in cerchio su un asse a scelta.
-	7.  Materiale random ad ogni oggetto clonato.
-	8.  Possibilità di legare un gruppo all'array.
-	9.  Possibilità di avere dei cloni tra l'oggetto clonato e un altro.
-		- Feature ispirata da Modo 501 (http://www.youtube.com/watch?v=mInaC4t8Vcc)
-	10.  Nuova UI
-	11.  Il noise offset ora è aggiornato solo alla pressione del tasto "Refresh Ad. Offset", 
-		  inerente allo stile di Blender.
+    1.  Variazione casuale della posizione
+        - Con scelta della direzione
+    2.  Noise Factor: valore moltiplicativo dell'offset
+    3.  Lock: Blocco dell'offset
+    4.  Salvataggio e lettura dell'offset bloccato (se il Lock non è attivato alla riapertura
+        c'è un nuovo offset)
+    5.  Offset per scalare e per la rotazione.(La rotazione avviene sul centro dell'oggetto
+        principale)
+    6.  Distribuisce gli elementi in cerchio su un asse a scelta.
+    7.  Materiale random ad ogni oggetto clonato.
+    8.  Possibilità di legare un gruppo all'array.
+    9.  Possibilità di avere dei cloni tra l'oggetto clonato e un altro.
+        - Feature ispirata da Modo 501 (http://www.youtube.com/watch?v=mInaC4t8Vcc)
+    10. Nuova UI
+    11. Il noise offset ora è aggiornato solo alla pressione del tasto "Refresh Ad. Offset",
+        inerente allo stile di Blender.
+
+
+GIT:
+    https://github.com/ruesp83/Blender---AMA
 
 
 TODO:
@@ -41,18 +61,18 @@ TODO:
     - Aggiungere offset per la rotazione in base ai propri assi.(Non so ancora come gestirla.Ma!!)
     - Scegliere la direzione dell'offset per la X-Y-Z
     - Rendere attivo il "Dupli Group" anche quando si preme il tasto "Apply" del modificatore.
-	- Associare una ramp color al modifier array per color gradient.
-	- Associare il materiale del clone al "Dupli Group" inerente.
-	- - Materiale random anche al "Dupli Group".
-	- Inserire un oggetto al centro come per l'inizio e la fine.
-	- - Permettere di legarlo ai cloni.
-	- - Determinare il numero di cloni dell'oggetto Mid.
-	- Associare una curva all'array.
-	- Creare i cloni con una forma ad aspirale.
+    - Associare una ramp color al modifier array per color gradient.
+    - Associare il materiale del clone al "Dupli Group" inerente.
+    - - Materiale random anche al "Dupli Group".
+    - Mettere un tasto per la randomizzazione dei materiali se no cambia anche Loc-Rot-Scale
+    - Mid Cap:
+    - - Permettere di legarlo ai cloni.
+    - - Dare anche a lui il noise.
+    - - Aggiungerli sui Control Points di una curva Nurbs.
+    - Associare una curva all'array.
+    - Creare i cloni con una forma ad aspirale.
+    - MultiScatter
 
-BUGS:
-
-	- Blender crascia se inserisco una curva al FitCurve e poi un MidCap, viceversa no!!
 
 Video 5\03\2011:
 1)http://vimeo.com/15561032
