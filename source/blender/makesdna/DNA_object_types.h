@@ -280,20 +280,12 @@ typedef struct DupliObject {
 	struct DupliObject *next, *prev;
 	struct Object *ob;
 	unsigned int origlay;
-<<<<<<< .mine
-	int index, no_draw, no_render, type, animated;
-=======
 	int index;
->>>>>>> .r41649
 	float mat[4][4], omat[4][4];
 	float orco[3], uv[2];
-<<<<<<< .mine
-	int pad;
-=======
 
 	short type; /* from Object.transflag */
-	char no_draw, animated;
->>>>>>> .r41649
+	char no_draw, no_render, animated;
 } DupliObject;
 
 /* **************** OBJECT ********************* */
