@@ -121,9 +121,7 @@ except ImportError:
     EXCLUDE_MODULES = EXCLUDE_MODULES + ("aud", )
 
 
-
 # import rpdb2; rpdb2.start_embedded_debugger('test')
-
 import os
 import inspect
 import bpy
@@ -150,10 +148,6 @@ else:
 
 def is_struct_seq(value):
     return isinstance(value, tuple) and type(tuple) != tuple and hasattr(value, "n_fields")
-
-
-def module_id_as_ref(name):
-    return "mod_" + name.replace(".", "__")
 
 
 def undocumented_message(module_name, type_name, identifier):
@@ -327,7 +321,7 @@ def py_descr2sphinx(ident, fw, descr, module_name, type_name, identifier):
         fw(ident + ".. attribute:: %s\n\n" % identifier)
         write_indented_lines(ident + "   ", fw, doc, False)
         fw("\n")
-    elif type(descr) == MemberDescriptorType: # same as above but use 'data'
+    elif type(descr) == MemberDescriptorType:  # same as above but use 'data'
         fw(ident + ".. data:: %s\n\n" % identifier)
         write_indented_lines(ident + "   ", fw, doc, False)
         fw("\n")
@@ -393,10 +387,6 @@ def pymodule2sphinx(BASEPATH, module_name, module, title):
 
     write_title(fw, "%s (%s)" % (title, module_name), "=")
 
-    # write reference, annoying since we should be able to direct reference the
-    # modules but we cant always!
-    fw(".. _%s:\n\n" % module_id_as_ref(module_name))
-
     fw(".. module:: %s\n\n" % module_name)
 
     if module.__doc__:
@@ -443,7 +433,7 @@ def pymodule2sphinx(BASEPATH, module_name, module, title):
         # naughty, we also add getset's into PyStructs, this is not typical py but also not incorrect.
 
         # type_name is only used for examples and messages
-        type_name = str(type(module)).strip("<>").split(" ", 1)[-1][1:-1] # "<class 'bpy.app.handlers'>" --> bpy.app.handlers
+        type_name = str(type(module)).strip("<>").split(" ", 1)[-1][1:-1]  # "<class 'bpy.app.handlers'>" --> bpy.app.handlers
         if type(descr) == types.GetSetDescriptorType:
             py_descr2sphinx("", fw, descr, module_name, type_name, key)
             attribute_set.add(key)
@@ -455,20 +445,19 @@ def pymodule2sphinx(BASEPATH, module_name, module, title):
         if type(descr) == MemberDescriptorType:
             if descr.__doc__:
                 value = getattr(module, key, None)
+
                 value_type = type(value)
                 descr_sorted.append((key, descr, value, type(value)))
     # sort by the valye type
     descr_sorted.sort(key=lambda descr_data: str(descr_data[3]))
     for key, descr, value, value_type in descr_sorted:
+
+        # must be documented as a submodule
+        if is_struct_seq(value):
+            continue
+
         type_name = value_type.__name__
         py_descr2sphinx("", fw, descr, module_name, type_name, key)
-
-        if is_struct_seq(value):
-            # ack, cant use typical reference because we double up once here
-            # and one fort he module!
-            full_name = "%s.%s" % (module_name, type_name)
-            fw("   :ref:`%s submodule details <%s>`\n\n\n" % (full_name, module_id_as_ref(full_name))) #  % (module_name, type_name)
-            del full_name
 
         attribute_set.add(key)
 
@@ -1306,7 +1295,7 @@ def rna2sphinx(BASEPATH):
         from bpy import app as module
         pymodule2sphinx(BASEPATH, "bpy.app", module, "Application Data")
 
-    if "bpy.app.handlers" not in EXCLUDE_MODULES:    
+    if "bpy.app.handlers" not in EXCLUDE_MODULES:
         from bpy.app import handlers as module
         pymodule2sphinx(BASEPATH, "bpy.app.handlers", module, "Application Handlers")
 

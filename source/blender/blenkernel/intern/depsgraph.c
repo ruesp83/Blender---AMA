@@ -50,6 +50,7 @@
 #include "DNA_scene_types.h"
 #include "DNA_screen_types.h"
 #include "DNA_windowmanager_types.h"
+#include "DNA_movieclip_types.h"
 
 #include "BKE_animsys.h"
 #include "BKE_action.h"
@@ -591,9 +592,12 @@ static void build_dag_object(DagForest *dag, DagNode *scenenode, Scene *scene, O
 
 			if(part->ren_as == PART_DRAW_OB && part->dup_ob) {
 				node2 = dag_get_node(dag, part->dup_ob);
+				/* note that this relation actually runs in the wrong direction, the problem
+				   is that dupli system all have this (due to parenting), and the render
+				   engine instancing assumes particular ordering of objects in list */
 				dag_add_relation(dag, node, node2, DAG_RL_OB_OB, "Particle Object Visualisation");
 				if(part->dup_ob->type == OB_MBALL)
-					dag_add_relation(dag, node, node2, DAG_RL_DATA_DATA, "Particle Object Visualisation");
+					dag_add_relation(dag, node2, node, DAG_RL_DATA_DATA, "Particle Object Visualisation");
 			}
 
 			if(part->ren_as == PART_DRAW_GR && part->dup_group) {
@@ -639,7 +643,26 @@ static void build_dag_object(DagForest *dag, DagNode *scenenode, Scene *scene, O
 		ListBase targets = {NULL, NULL};
 		bConstraintTarget *ct;
 		
-		if (cti && cti->get_constraint_targets) {
+		if(!cti)
+			continue;
+
+		/* special case for camera tracking -- it doesn't use targets to define relations */
+		if(ELEM(cti->type, CONSTRAINT_TYPE_FOLLOWTRACK, CONSTRAINT_TYPE_CAMERASOLVER)) {
+			if(cti->type==CONSTRAINT_TYPE_FOLLOWTRACK) {
+				bFollowTrackConstraint *data= (bFollowTrackConstraint *)con->data;
+
+				if((data->clip || data->flag&FOLLOWTRACK_ACTIVECLIP) && data->track[0]) {
+					if(scene->camera) {
+						node2 = dag_get_node(dag, scene->camera);
+						dag_add_relation(dag, node2, node, DAG_RL_DATA_OB|DAG_RL_OB_OB, cti->name);
+					}
+				}
+			}
+
+			dag_add_relation(dag,scenenode,node,DAG_RL_SCENE, "Scene Relation");
+			addtoroot = 0;
+		}
+		else if (cti->get_constraint_targets) {
 			cti->get_constraint_targets(con, &targets);
 			
 			for (ct= targets.first; ct; ct= ct->next) {
@@ -799,6 +822,7 @@ DagNode * dag_find_node (DagForest *forest,void * fob)
 }
 
 static int ugly_hack_sorry= 1;	// prevent type check
+static int dag_print_dependencies= 0; // debugging
 
 /* no checking of existence, use dag_find_node first or dag_get_node */
 DagNode * dag_add_node (DagForest *forest, void * fob)
@@ -926,7 +950,6 @@ static const char *dag_node_name(DagNode *node)
 		return ((bPoseChannel*)(node->ob))->name;
 }
 
-#if 0
 static void dag_node_print_dependencies(DagNode *node)
 {
 	DagAdjList *itA;
@@ -937,7 +960,6 @@ static void dag_node_print_dependencies(DagNode *node)
 		printf("  %s through %s\n", dag_node_name(itA->node), itA->name);
 	printf("\n");
 }
-#endif
 
 static int dag_node_print_dependency_recurs(DagNode *node, DagNode *endnode)
 {
@@ -997,6 +1019,11 @@ static void dag_check_cycle(DagForest *dag)
 {
 	DagNode *node;
 	DagAdjList *itA;
+
+	/* debugging print */
+	if(dag_print_dependencies)
+		for(node = dag->DagNode.first; node; node= node->next)
+			dag_node_print_dependencies(node);
 
 	/* tag nodes unchecked */
 	for(node = dag->DagNode.first; node; node= node->next)
@@ -2123,18 +2150,25 @@ static void dag_object_time_update_flags(Object *ob)
 			ListBase targets = {NULL, NULL};
 			bConstraintTarget *ct;
 			
-			if (cti && cti->get_constraint_targets) {
-				cti->get_constraint_targets(con, &targets);
-				
-				for (ct= targets.first; ct; ct= ct->next) {
-					if (ct->tar) {
-						ob->recalc |= OB_RECALC_OB;
-						break;
+			if (cti) {
+				/* special case for camera tracking -- it doesn't use targets to define relations */
+				if(ELEM(cti->type, CONSTRAINT_TYPE_FOLLOWTRACK, CONSTRAINT_TYPE_CAMERASOLVER)) {
+					ob->recalc |= OB_RECALC_OB;
+				}
+				else if (cti->get_constraint_targets) {
+					cti->get_constraint_targets(con, &targets);
+					
+					for (ct= targets.first; ct; ct= ct->next) {
+						if (ct->tar) {
+							ob->recalc |= OB_RECALC_OB;
+							break;
+						}
 					}
+					
+					if (cti->flush_constraint_targets)
+						cti->flush_constraint_targets(con, &targets, 1);
 				}
 				
-				if (cti->flush_constraint_targets)
-					cti->flush_constraint_targets(con, &targets, 1);
 			}
 		}
 	}
@@ -2507,6 +2541,36 @@ static void dag_id_flush_update(Scene *sce, ID *id)
 						BKE_ptcache_object_reset(sce, obt, PTCACHE_RESET_DEPSGRAPH);
 		}
 
+		if(idtype == ID_MC) {
+			for(obt=bmain->object.first; obt; obt= obt->id.next){
+				bConstraint *con;
+				for (con = obt->constraints.first; con; con=con->next) {
+					bConstraintTypeInfo *cti= constraint_get_typeinfo(con);
+					if(ELEM(cti->type, CONSTRAINT_TYPE_FOLLOWTRACK, CONSTRAINT_TYPE_CAMERASOLVER)) {
+						obt->recalc |= OB_RECALC_OB;
+						break;
+					}
+				}
+			}
+
+			if(sce->nodetree) {
+				bNode *node;
+
+				for(node= sce->nodetree->nodes.first; node; node= node->next) {
+					if(node->id==id) {
+						nodeUpdate(sce->nodetree, node);
+					}
+				}
+			}
+		}
+
+		/* camera's matrix is used to orient reconstructed stuff,
+		   so it should happen tracking-related constraints recalculation
+		   when camera is changing (sergey) */
+		if(sce->camera && &sce->camera->id == id && object_get_movieclip(sce, sce->camera, 1)) {
+			dag_id_flush_update(sce, &sce->clip->id);
+		}
+
 		/* update editors */
 		dag_editors_update(bmain, id);
 	}
@@ -2834,5 +2898,22 @@ void DAG_pose_sort(Object *ob)
 	ugly_hack_sorry= 1;
 }
 
+/* ************************ DAG DEBUGGING ********************* */
 
+void DAG_print_dependencies(Main *bmain, Scene *scene, Object *ob)
+{
+	/* utility for debugging dependencies */
+	dag_print_dependencies= 1;
+
+	if(ob && (ob->mode & OB_MODE_POSE)) {
+		printf("\nDEPENDENCY RELATIONS for %s\n\n", ob->id.name+2);
+		DAG_pose_sort(ob);
+	}
+	else {
+		printf("\nDEPENDENCY RELATIONS for %s\n\n", scene->id.name+2);
+		DAG_scene_sort(bmain, scene);
+	}
+	
+	dag_print_dependencies= 0;
+}
 
