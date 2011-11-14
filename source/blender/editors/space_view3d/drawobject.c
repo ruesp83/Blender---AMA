@@ -1479,7 +1479,7 @@ static void draw_viewport_reconstruction(Scene *scene, Base *base, View3D *v3d, 
 
 		glPushMatrix();
 			glTranslatef(track->bundle_pos[0], track->bundle_pos[1], track->bundle_pos[2]);
-			glScalef(v3d->bundle_size/0.05, v3d->bundle_size/0.05, v3d->bundle_size/0.05);
+			glScalef(v3d->bundle_size/0.05f, v3d->bundle_size/0.05f, v3d->bundle_size/0.05f);
 
 			if(v3d->drawtype==OB_WIRE) {
 				glDisable(GL_LIGHTING);
@@ -1720,8 +1720,8 @@ static void drawspeaker(Scene *UNUSED(scene), View3D *UNUSED(v3d), RegionView3D 
 
 		glBegin(GL_LINE_LOOP);
 		for(i = 0; i < 16; i++) {
-			vec[0] = cosf(M_PI * i / 8.0f) * (j == 0 ? 0.5f : 0.25f);
-			vec[1] = sinf(M_PI * i / 8.0f) * (j == 0 ? 0.5f : 0.25f);
+			vec[0] = cosf((float)M_PI * i / 8.0f) * (j == 0 ? 0.5f : 0.25f);
+			vec[1] = sinf((float)M_PI * i / 8.0f) * (j == 0 ? 0.5f : 0.25f);
 			glVertex3fv(vec);
 		}
 		glEnd();
@@ -2696,7 +2696,8 @@ static int draw_em_fancy__setFaceOpts(void *UNUSED(userData), int index, int *UN
 {
 	EditFace *efa = EM_get_face_for_index(index);
 
-	if (efa->h==0) {
+	/* efa=0 for constructive modifier on empty mesh */
+	if (efa && efa->h==0) {
 		GPU_enable_material(efa->mat_nr+1, NULL);
 		return 1;
 	}

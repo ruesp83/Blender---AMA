@@ -159,7 +159,7 @@ static void updateDepgraph(ModifierData *md, DagForest *forest,
 		DagNode *curNode = dag_get_node(forest, amd->start_cap);
 
 		dag_add_relation(forest, curNode, obNode,
-				 DAG_RL_DATA_DATA | DAG_RL_OB_DATA, "Array Modifier");
+		                 DAG_RL_DATA_DATA | DAG_RL_OB_DATA, "Array Modifier");
 	}
 	if (amd->mid_cap) {
 		DagNode *curNode = dag_get_node(forest, amd->mid_cap);
@@ -171,19 +171,19 @@ static void updateDepgraph(ModifierData *md, DagForest *forest,
 		DagNode *curNode = dag_get_node(forest, amd->end_cap);
 
 		dag_add_relation(forest, curNode, obNode,
-				 DAG_RL_DATA_DATA | DAG_RL_OB_DATA, "Array Modifier");
+		                 DAG_RL_DATA_DATA | DAG_RL_OB_DATA, "Array Modifier");
 	}
 	if (amd->curve_ob) {
 		DagNode *curNode = dag_get_node(forest, amd->curve_ob);
 
 		dag_add_relation(forest, curNode, obNode,
-				 DAG_RL_DATA_DATA | DAG_RL_OB_DATA, "Array Modifier");
+		                 DAG_RL_DATA_DATA | DAG_RL_OB_DATA, "Array Modifier");
 	}
 	if (amd->offset_ob) {
 		DagNode *curNode = dag_get_node(forest, amd->offset_ob);
 
 		dag_add_relation(forest, curNode, obNode,
-				 DAG_RL_DATA_DATA | DAG_RL_OB_DATA, "Array Modifier");
+		                 DAG_RL_DATA_DATA | DAG_RL_OB_DATA, "Array Modifier");
 	}
 }
 
@@ -195,9 +195,9 @@ static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 	float offset[4][4];
 	float final_offset[4][4];
 	float mid_offset[4][4], half_offset[4][4];
-	float tmp_mat[4][4];
+	float tmp_mat[4][4], local[4][4];
 	float length = amd->length;
-	float alpha, d_alp, circle;
+	float alpha = 0, d_alp = 0, circle;
 	float f_o;
 	int i, j, flag;
 	int dim, start;
@@ -209,7 +209,7 @@ static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 	MVert *mvert, *src_mvert;
 	MEdge *medge;
 	MFace *mface;
-	Nurb *nu;
+	Nurb *nu = NULL;
 
 	IndexMapEntry *indexMap;
 
@@ -253,8 +253,8 @@ static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 			unit_m4(obinv);
 
 		mul_serie_m4(result_mat, offset,
-					obinv, amd->offset_ob->obmat,
-					NULL, NULL, NULL, NULL, NULL);
+		             obinv, amd->offset_ob->obmat,
+		             NULL, NULL, NULL, NULL, NULL);
 		copy_m4_m4(offset, result_mat);
 	}
 
@@ -496,10 +496,19 @@ static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 					if (amd->Mem_Ob[j].transform)
 					{
 						float fo[3];
+						//float cent[3];
+						
+						//copy_v3_v3(cent, mv2->co);
 						
 						copy_v3_v3(fo, mv2->co);
 						mul_m4_v3(amd->Mem_Ob[j].location, fo);
 						copy_v3_v3(mv2->co, fo);
+						
+						//unit_m4(local);
+						//copy_v3_v3(local[3], cent);
+						//copy_v3_v3(fo, mv2->co);
+						//mul_m4_v3(local, fo);
+						//copy_v3_v3(mv2->co, fo);
 						
 					}
 				}
@@ -865,11 +874,12 @@ static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 				copy_m4_m4(mid_offset, tmp_mat);
 			}
 			else if (amd->distribution_mid_cap & MOD_ARR_DIST_CURVE){
-				if (j+1 < amd->cont_mid_cap)
+				if (j+1 < amd->cont_mid_cap){
 					if (nu->bezt)
 						copy_v3_v3(mid_offset[3], nu->bezt[j+1].vec[1]);
 					else
 						copy_v3_v3(mid_offset[3], nu->bp[j+1].vec);
+				}
 			}
 		}
 		MEM_freeN(vert_map);

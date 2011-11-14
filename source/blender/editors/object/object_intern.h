@@ -159,6 +159,7 @@ void OBJECT_OT_multires_external_save(struct wmOperatorType *ot);
 void OBJECT_OT_multires_external_pack(struct wmOperatorType *ot);
 void OBJECT_OT_meshdeform_bind(struct wmOperatorType *ot);
 void OBJECT_OT_explode_refresh(struct wmOperatorType *ot);
+void OBJECT_OT_ocean_bake(struct wmOperatorType *ot);
 void OBJECT_OT_array_rand(struct wmOperatorType *ot);
 
 /* object_constraint.c */
