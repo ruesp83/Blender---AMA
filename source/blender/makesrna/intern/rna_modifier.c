@@ -1416,6 +1416,11 @@ static void rna_def_modifier_array(BlenderRNA *brna)
 	StructRNA *srna;
 	PropertyRNA *prop;
 
+	static EnumPropertyItem prop_mode_items[] = {
+		{MOD_ARR_MOD_NRM, "REGULAR", 0, "Regular", "Standart Array"},
+		{MOD_ARR_MOD_CURVE, "PATH", 0, "Path", "Array along a path"},
+		{0, NULL, 0, NULL, NULL}};
+
 	static EnumPropertyItem prop_material_items[] = {
 		{MOD_ARR_MAT, "RANDOM", 0, "Random", "Use a random material"},
 		{MOD_ARR_SEQ, "SEQUENCE", 0, "Sequence", "Use the materials in sequence"},
@@ -1445,6 +1450,12 @@ static void rna_def_modifier_array(BlenderRNA *brna)
 	RNA_def_struct_ui_icon(srna, ICON_MOD_ARRAY);
 
 	/* Length parameters */
+	prop= RNA_def_property(srna, "mode_array", PROP_ENUM, PROP_NONE);
+	RNA_def_property_enum_sdna(prop, NULL, "mode");
+	RNA_def_property_enum_items(prop, prop_mode_items);
+	RNA_def_property_ui_text(prop, "Mode Array", "Select if you want to do blender’s standart array or a array along a path");
+	RNA_def_property_update(prop, 0, "rna_Modifier_update");
+
 	prop= RNA_def_property(srna, "fit_type", PROP_ENUM, PROP_NONE);
 	RNA_def_property_enum_items(prop, prop_fit_type_items);
 	RNA_def_property_ui_text(prop, "Fit Type", "Array length calculation method");
@@ -1521,10 +1532,10 @@ static void rna_def_modifier_array(BlenderRNA *brna)
 	RNA_def_property_flag(prop, PROP_EDITABLE|PROP_ID_SELF_CHECK);
 	RNA_def_property_update(prop, 0, "rna_Modifier_dependency_update");
 	
-	prop= RNA_def_property(srna, "use_between_offset", PROP_BOOLEAN, PROP_NONE);
+	/*prop= RNA_def_property(srna, "use_between_offset", PROP_BOOLEAN, PROP_NONE);
 	RNA_def_property_boolean_sdna(prop, NULL, "offset_type", MOD_ARR_OFF_BETW);
 	RNA_def_property_ui_text(prop, "Between Offset", "Number of duplicates between two objects");
-	RNA_def_property_update(prop, 0, "rna_Modifier_update");
+	RNA_def_property_update(prop, 0, "rna_Modifier_update");*/
 
 	/* Caps */
 	prop= RNA_def_property(srna, "start_cap", PROP_POINTER, PROP_NONE);
@@ -1609,12 +1620,6 @@ static void rna_def_modifier_array(BlenderRNA *brna)
 	RNA_def_property_ui_text(prop, "Constrain Proportions", "Constrain Proportions");
 	RNA_def_property_update(prop, 0, "rna_Modifier_update");
 
-	prop= RNA_def_property(srna, "rays", PROP_INT, PROP_NONE);
-	RNA_def_property_range(prop, 1, 365);
-	RNA_def_property_ui_range(prop, 1, 365, 1,0);
-	RNA_def_property_ui_text(prop, "Rays", "Rays");
-	RNA_def_property_update(prop, 0, "rna_Modifier_update");
-
 	prop= RNA_def_property(srna, "material", PROP_ENUM, PROP_NONE);
 	RNA_def_property_enum_sdna(prop, NULL, "rand_mat");
 	RNA_def_property_enum_items(prop, prop_material_items);
@@ -1625,6 +1630,17 @@ static void rna_def_modifier_array(BlenderRNA *brna)
 	RNA_def_property_range(prop, 1, INT_MAX);
 	RNA_def_property_ui_range(prop, 1, 1000, 1, 0);
 	RNA_def_property_ui_text(prop, "Count Material",  "Repetition of material");
+	RNA_def_property_update(prop, 0, "rna_Modifier_update");
+
+	prop= RNA_def_property(srna, "use_advanced_clone", PROP_BOOLEAN, PROP_NONE);
+	RNA_def_property_boolean_sdna(prop, NULL, "mode", MOD_ARR_MOD_ADV_CLONE);
+	RNA_def_property_ui_text(prop, "Advanced Clone", "Set other types of Cloning");
+	RNA_def_property_update(prop, 0, "rna_Modifier_update");
+
+	prop= RNA_def_property(srna, "rays", PROP_INT, PROP_NONE);
+	RNA_def_property_range(prop, 1, 365);
+	RNA_def_property_ui_range(prop, 1, 365, 1,0);
+	RNA_def_property_ui_text(prop, "Rays", "Rays");
 	RNA_def_property_update(prop, 0, "rna_Modifier_update");
 
 	prop= RNA_def_property(srna, "rays_dir", PROP_ENUM, PROP_NONE);

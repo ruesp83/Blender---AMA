@@ -80,7 +80,7 @@ static void initData(ModifierData *md)
 	amd->offset_type = MOD_ARR_OFF_RELATIVE;
 	amd->flags = 0;
 
-	amd->mode = !MOD_ARR_MOD_ADV;
+	amd->mode = MOD_ARR_MOD_NRM;
 	amd->loc_offset[0] = amd->loc_offset[1] = amd->loc_offset[2] = 0;
 	amd->rot_offset[0] = amd->rot_offset[1] = amd->rot_offset[2] = 0;
 	amd->scale_offset[0] = amd->scale_offset[1] = amd->scale_offset[2] = 0;
@@ -195,7 +195,7 @@ static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 	float offset[4][4];
 	float final_offset[4][4];
 	float mid_offset[4][4], half_offset[4][4];
-	float tmp_mat[4][4], local[4][4];
+	float tmp_mat[4][4]; //, local[4][4];
 	float length = amd->length;
 	float alpha = 0, d_alp = 0, circle;
 	float f_o;
@@ -258,7 +258,7 @@ static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 		copy_m4_m4(offset, result_mat);
 	}
 
-	if ((amd->offset_type & MOD_ARR_OFF_BETW) && (amd->offset_ob)) {
+	if ((amd->offset_type & MOD_ARR_FITBETWEEN) && (amd->offset_ob)) {
 			//float dist = sqrt(dot_v3v3(amd->offset_ob->obmat[3], amd->offset_ob->obmat[3]));
 			offset[3][0] = amd->offset_ob->obmat[3][0] / (count - 1);
 			offset[3][1] = amd->offset_ob->obmat[3][1] / (count - 1);

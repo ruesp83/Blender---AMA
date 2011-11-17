@@ -71,6 +71,8 @@ class DATA_PT_modifiers(ModifierButtonsPanel, Panel):
         layout.prop(md, "use_multi_modifier")
 
     def ARRAY(self, layout, ob, md):
+        row = layout.row()
+        row.prop(md, "mode_array", expand=True)
         layout.prop(md, "fit_type")
 
         if md.fit_type == 'FIXED_COUNT':
@@ -84,7 +86,6 @@ class DATA_PT_modifiers(ModifierButtonsPanel, Panel):
         split = layout.split()
 
         col = split.column()
-        col.prop(md,"rays")
         col.prop(md, "use_constant_offset")
         sub = col.column()
         sub.active = md.use_constant_offset
@@ -99,7 +100,6 @@ class DATA_PT_modifiers(ModifierButtonsPanel, Panel):
         sub.prop(md, "merge_threshold", text="Distance")
 
         col = split.column()
-        col.prop(md,"rays_dir")
         col.prop(md, "use_relative_offset")
         sub = col.column()
         sub.active = md.use_relative_offset
@@ -111,7 +111,7 @@ class DATA_PT_modifiers(ModifierButtonsPanel, Panel):
         sub = col.column()
         sub.active = md.use_object_offset
         sub.prop(md, "offset_object", text="")
-        sub.prop(md, "use_between_offset")
+        #sub.prop(md, "use_between_offset")
         layout.separator()
 
         layout.prop(md, "start_cap")
@@ -120,33 +120,30 @@ class DATA_PT_modifiers(ModifierButtonsPanel, Panel):
         layout.separator()
         if not md.mid_cap is None :
             col = layout.column()
-            row = col.box().row()
+            box = col.box()
+            row = box.row()
             if md.use_advanced_mid_cap:
-                row.prop(md, "use_advanced_mid_cap",
-                    icon="DOWNARROW_HLT", text="", emboss=False)
+                row.prop(md, "use_advanced_mid_cap", text="")
             else:
-                row.prop(md, "use_advanced_mid_cap",
-                    icon="RIGHTARROW", text="", emboss=False)
+                row.prop(md, "use_advanced_mid_cap", text="")
             row.label("Advanced Mid Cap")
             if (md.use_advanced_mid_cap):
-                col = col.box().column()
+                col = box.column()
                 row = col.row()
                 row.prop(md, "dist_mid_cap", expand=True)
-                row = col.row()
-                row.prop(md, "cont_mid_cap")
+                col.prop(md, "cont_mid_cap")
 
         if md.fit_type == 'FIT_CURVE':
             col = layout.column()
-            row = col.box().row()
+            box = col.box()
+            row = box.row()
             if md.use_advanced_curve:
-                row.prop(md, "use_advanced_curve",
-                    icon="DOWNARROW_HLT", text="", emboss=False)
+                row.prop(md, "use_advanced_curve", text="")
             else:
-                row.prop(md, "use_advanced_curve",
-                    icon="RIGHTARROW", text="", emboss=False)
+                row.prop(md, "use_advanced_curve", text="")
             row.label("Advanced Curve")
             if (md.use_advanced_curve):
-                col = col.box().column()
+                col = box.column()
                 sub_split = col.split()
                 col = sub_split.column()
                 col.prop(md, "all_curve")
@@ -154,31 +151,12 @@ class DATA_PT_modifiers(ModifierButtonsPanel, Panel):
                 col.prop(md, "for_segment")
 
         col = layout.column()
-        row = col.box().row()
-        if md.use_advanced_material:
-            row.prop(md, "use_advanced_material",
-                icon="DOWNARROW_HLT", text="", emboss=False)
-        else:
-            row.prop(md, "use_advanced_material",
-                icon="RIGHTARROW", text="", emboss=False)
-        row.label("Advanced Material", icon="MATERIAL")
-        if (md.use_advanced_material):
-            col = col.box().column()
-            row = col.row()
-            row.prop(md, "material", expand=True)
-            act = col.row()
-            if md.material == 'SEQUENCE' :
-                act.active = True
-            else:
-                act.active = False
-            act.prop(md, "cont_mat")
-
-        col = layout.column()
-        row = col.box().row()
+        box = col.box()
+        row = box.row()
         row.prop(md, "use_advanced", text="")
-        row.label("Advanced Noise")
+        row.label("Randomize Transform")
         if (md.use_advanced):
-            col = col.box().column()
+            col = box.column()
             row = col.row()
             row.label(text="Sign Offset:")
             row.prop(md, "sign_p")
@@ -201,8 +179,40 @@ class DATA_PT_modifiers(ModifierButtonsPanel, Panel):
             else:
                 act.active = True
             act.prop(md, "rand_group")
-            col = col.column()
-            col.separator()
+
+        col = layout.column()
+        box = col.box()
+        row = box.row()
+        if md.use_advanced_material:
+            row.prop(md, "use_advanced_material", text="")
+        else:
+            row.prop(md, "use_advanced_material", text="")
+        row.label("Randomize Material")
+        if (md.use_advanced_material):
+            col = box.column()
+            row = col.row()
+            row.prop(md, "material", expand=True)
+            act = col.row()
+            if md.material == 'SEQUENCE' :
+                act.active = True
+            else:
+                act.active = False
+            act.prop(md, "cont_mat")
+
+        col = layout.column()
+        box = col.box()
+        row = box.row()
+        if md.use_advanced_clone:
+            row.prop(md, "use_advanced_clone", text="")
+        else:
+            row.prop(md, "use_advanced_clone", text="")
+        row.label("Advanced Cloning")
+        if (md.use_advanced_clone):
+            col = box.column()
+            col.prop(md,"rays_dir")
+            col.prop(md,"rays")
+
+        layout.separator()
         layout.operator("object.array_rand", text="Refresh Ad. Offset")
 
     def BEVEL(self, layout, ob, md):

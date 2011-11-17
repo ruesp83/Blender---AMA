@@ -237,13 +237,13 @@ typedef struct ArrayModifierData {
 	int mode;
 	/*Direction Offset*/
 	int sign;
-	/* min and max limit */	
-	//float limit[2];			
+	/*Randomize Offset*/		
 	float loc_offset[3];
 	float rot_offset[3];
 	float scale_offset[3];
-	//Lock the noise offset
+	/*Lock the noise offset*/
 	int lock;
+
 	struct ArrayChangeObject *Mem_Ob;
 	
 	int proportion;
@@ -264,22 +264,25 @@ typedef struct ArrayModifierData {
 #define MOD_ARR_FIXEDCOUNT 0
 #define MOD_ARR_FITLENGTH  1
 #define MOD_ARR_FITCURVE   2
+#define MOD_ARR_FITBETWEEN 3
 
 /* ArrayModifierData->offset_type */
 #define MOD_ARR_OFF_CONST    (1<<0)
 #define MOD_ARR_OFF_RELATIVE (1<<1)
 #define MOD_ARR_OFF_OBJ      (1<<2)
-#define MOD_ARR_OFF_BETW     (1<<3)
 
 /* ArrayModifierData->flags */
 #define MOD_ARR_MERGE      	(1<<0)
 #define MOD_ARR_MERGEFINAL 	(1<<1)
 
 /* ArrayModifierData->mode */
-#define MOD_ARR_MOD_ADV			(1<<0)
-#define MOD_ARR_MOD_ADV_MAT		(1<<1)
-#define MOD_ARR_MOD_ADV_CURVE	(1<<2)
-#define MOD_ARR_MOD_ADV_MID		(1<<3)
+#define MOD_ARR_MOD_NRM			(1<<0)
+#define MOD_ARR_MOD_CURVE		(1<<1)
+#define MOD_ARR_MOD_ADV			(1<<2)
+#define MOD_ARR_MOD_ADV_MAT		(1<<3)
+#define MOD_ARR_MOD_ADV_CURVE	(1<<4)
+#define MOD_ARR_MOD_ADV_MID		(1<<5)
+#define MOD_ARR_MOD_ADV_CLONE	(1<<6)
 
 /* ArrayModifierData->sign */
 #define MOD_ARR_SIGN_P		(1<<0)
