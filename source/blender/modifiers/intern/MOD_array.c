@@ -90,12 +90,12 @@ static void initData(ModifierData *md)
 	amd->rays = 1;
 	amd->rand_mat = MOD_ARR_MAT;
 	amd->cont_mat = 1;
-	amd->cont_mid_cap = 1;
+	amd->count_mc = 1;
+	amd->dist_mc = MOD_ARR_DIST_SEQ;
 	amd->rays_dir = MOD_ARR_RAYS_X;
 	amd->arr_group = NULL;
 	amd->rand_group = !MOD_ARR_RAND_GROUP;
 	amd->distribution = MOD_ARR_DIST_EVENLY;
-	amd->distribution_mid_cap = MOD_ARR_DIST_SEQ;
 }
 
 static void copyData(ModifierData *md, ModifierData *target)
@@ -128,12 +128,12 @@ static void copyData(ModifierData *md, ModifierData *target)
 	tamd->Mem_Ob = MEM_dupallocN(amd->Mem_Ob);
 	tamd->rand_mat = amd->rand_mat;
 	tamd->cont_mat = amd->cont_mat;
-	tamd->cont_mid_cap = amd->cont_mid_cap;
+	tamd->count_mc = amd->count_mc;
+	tamd->dist_mc = amd->dist_mc;
 	tamd->rays_dir = amd->rays_dir;
 	tamd->arr_group = amd->arr_group;
 	tamd->rand_group = amd->rand_group;
 	tamd->distribution = amd->distribution;
-	tamd->distribution_mid_cap = amd->distribution_mid_cap;
 }
 
 static void foreachObjectLink(
@@ -147,6 +147,7 @@ static void foreachObjectLink(
 	walk(userData, ob, &amd->mid_cap);
 	walk(userData, ob, &amd->end_cap);
 	walk(userData, ob, &amd->curve_ob);
+	walk(userData, ob, &amd->curve_cap);
 	walk(userData, ob, &amd->offset_ob);
 }
 
@@ -175,6 +176,12 @@ static void updateDepgraph(ModifierData *md, DagForest *forest,
 	}
 	if (amd->curve_ob) {
 		DagNode *curNode = dag_get_node(forest, amd->curve_ob);
+
+		dag_add_relation(forest, curNode, obNode,
+		                 DAG_RL_DATA_DATA | DAG_RL_OB_DATA, "Array Modifier");
+	}
+	if (amd->curve_cap) {
+		DagNode *curNode = dag_get_node(forest, amd->curve_cap);
 
 		dag_add_relation(forest, curNode, obNode,
 		                 DAG_RL_DATA_DATA | DAG_RL_OB_DATA, "Array Modifier");
@@ -223,8 +230,8 @@ static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 	if(amd->end_cap && amd->end_cap != ob)
 		end_cap = amd->end_cap->derivedFinal;
 	
-	if (amd->cont_mid_cap < 1)
-			amd->cont_mid_cap = 1;
+	if (amd->count_mc < 1)
+		amd->count_mc = 1;
 
 	unit_m4(offset);
 
@@ -284,24 +291,24 @@ static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 		count = 1;
 	
 	/**/
-	if (amd->distribution_mid_cap & MOD_ARR_DIST_CURVE && amd->curve_ob){
+	if (amd->dist_mc & MOD_ARR_DIST_CURVE && amd->curve_ob){
 		Curve *cu = amd->curve_ob->data;
 		nu = cu->nurb.first;
 		unit_m4(mid_offset);
 		if (nu->bezt) {
 			copy_v3_v3(mid_offset[3], nu->bezt[0].vec[1]);
-			if (amd->cont_mid_cap > nu->pntsu)
-				amd->cont_mid_cap = nu->pntsu;
+			if (amd->count_mc > nu->pntsu)
+				amd->count_mc = nu->pntsu;
 		}
 		else {
 			copy_v3_v3(mid_offset[3], nu->bp[0].vec);
-			if (amd->cont_mid_cap > (nu->pntsu * nu->pntsv))
-				amd->cont_mid_cap = nu->pntsu * nu->pntsv;
+			if (amd->count_mc > (nu->pntsu * nu->pntsv))
+				amd->count_mc = nu->pntsu * nu->pntsv;
 		}
 	}
 	else 
-		if (amd->cont_mid_cap >= count)
-			amd->cont_mid_cap = count - 1;
+		if (amd->count_mc >= count)
+			amd->count_mc = count - 1;
 
 	/* allocate memory for count duplicates (including original) plus
 		  * start, mid and end caps
@@ -316,9 +323,9 @@ static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 		finalFaces += start_cap->getNumFaces(start_cap);
 	}
 	if(mid_cap) {
-		finalVerts += mid_cap->getNumVerts(mid_cap) * amd->cont_mid_cap;
-		finalEdges += mid_cap->getNumEdges(mid_cap) * amd->cont_mid_cap;
-		finalFaces += mid_cap->getNumFaces(mid_cap) * amd->cont_mid_cap;
+		finalVerts += mid_cap->getNumVerts(mid_cap) * amd->count_mc;
+		finalEdges += mid_cap->getNumEdges(mid_cap) * amd->count_mc;
+		finalFaces += mid_cap->getNumFaces(mid_cap) * amd->count_mc;
 	}
 	if(end_cap) {
 		finalVerts += end_cap->getNumVerts(end_cap);
@@ -368,17 +375,17 @@ static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 		copy_m4_m4(final_offset, tmp_mat);
 	}
 	
-	if (amd->distribution_mid_cap & MOD_ARR_DIST_SEQ){
+	if (amd->dist_mc & MOD_ARR_DIST_SEQ){
 		copy_m4_m4(mid_offset, offset);
 		mid_offset[3][0] = mid_offset[3][0] / 2;
 		mid_offset[3][1] = mid_offset[3][1] / 2;
 		mid_offset[3][2] = mid_offset[3][2] / 2;
 	}
-	else if (amd->distribution_mid_cap & MOD_ARR_DIST_HALF){
+	else if (amd->dist_mc & MOD_ARR_DIST_HALF){
 		copy_m4_m4(half_offset, final_offset);
-		half_offset[3][0] = half_offset[3][0] / (amd->cont_mid_cap + 1);
-		half_offset[3][1] = half_offset[3][1] / (amd->cont_mid_cap + 1);
-		half_offset[3][2] = half_offset[3][2] / (amd->cont_mid_cap + 1);
+		half_offset[3][0] = half_offset[3][0] / (amd->count_mc + 1);
+		half_offset[3][1] = half_offset[3][1] / (amd->count_mc + 1);
+		half_offset[3][2] = half_offset[3][2] / (amd->count_mc + 1);
 		copy_m4_m4(mid_offset, half_offset);
 	}
 	
@@ -792,7 +799,7 @@ static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 		"arrayModifier_doArray vert_map");
 
 		origindex = result->getVertDataArray(result, CD_ORIGINDEX);
-		for(j=0; j < amd->cont_mid_cap; j++) {
+		for(j=0; j < amd->count_mc; j++) {
 			for(i = 0; i < capVerts; i++) {
 				MVert *mv = &cap_mvert[i];
 				short merged = 0;
@@ -865,16 +872,16 @@ static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 
 				numFaces++;
 			}
-			if (amd->distribution_mid_cap & MOD_ARR_DIST_SEQ){
+			if (amd->dist_mc & MOD_ARR_DIST_SEQ){
 				mul_m4_m4m4(tmp_mat, mid_offset, offset);
 				copy_m4_m4(mid_offset, tmp_mat);
 			}
-			else if (amd->distribution_mid_cap & MOD_ARR_DIST_HALF){
+			else if (amd->dist_mc & MOD_ARR_DIST_HALF){
 				mul_m4_m4m4(tmp_mat, mid_offset, half_offset);
 				copy_m4_m4(mid_offset, tmp_mat);
 			}
-			else if (amd->distribution_mid_cap & MOD_ARR_DIST_CURVE){
-				if (j+1 < amd->cont_mid_cap){
+			else if (amd->dist_mc & MOD_ARR_DIST_CURVE){
+				if (j+1 < amd->count_mc){
 					if (nu->bezt)
 						copy_v3_v3(mid_offset[3], nu->bezt[j+1].vec[1]);
 					else

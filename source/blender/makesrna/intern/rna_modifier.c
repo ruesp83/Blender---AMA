@@ -596,6 +596,11 @@ static void rna_ArrayModifier_mid_cap_set(PointerRNA *ptr, PointerRNA value)
 	modifier_object_set(ptr->id.data, &((ArrayModifierData*)ptr->data)->mid_cap, OB_MESH, value);
 }
 
+static void rna_ArrayModifier_curve_cap_set(PointerRNA *ptr, PointerRNA value)
+{
+	modifier_object_set(ptr->id.data, &((ArrayModifierData*)ptr->data)->curve_cap, OB_CURVE, value);
+}
+
 static void rna_ArrayModifier_start_cap_set(PointerRNA *ptr, PointerRNA value)
 {
 	modifier_object_set(ptr->id.data, &((ArrayModifierData*)ptr->data)->start_cap, OB_MESH, value);
@@ -1411,6 +1416,40 @@ static void rna_def_modifier_boolean(BlenderRNA *brna)
 	RNA_def_property_update(prop, 0, "rna_Modifier_update");
 }
 
+/*static void rna_def_object_cap(BlenderRNA *brna)
+{
+	StructRNA *srna;
+	PropertyRNA *prop;
+	FunctionRNA *func;
+
+	static EnumPropertyItem prop_mid_cap_items[] = {
+		{MOD_ARR_DIST_SEQ, "SEQUENCE", 0, "Sequence", "Use the mid cap in sequence"},
+		{MOD_ARR_DIST_HALF, "HALF", 0, "Half", "Use the mid cap from the center"},
+		{MOD_ARR_DIST_CURVE, "CURVE", 0, "Curve", "Use the mid cap on points of the curve"},
+		{0, NULL, 0, NULL, NULL}};
+
+	srna= RNA_def_struct(brna, "ObjectCap", NULL);
+	RNA_def_struct_ui_text(srna, "Object Cap", "Object Cap");
+	
+	prop= RNA_def_property(srna, "ob_cap", PROP_POINTER, PROP_NONE);
+	RNA_def_property_ui_text(prop, "Mid Cap", "Mesh object to use as a mid cap");
+	RNA_def_property_pointer_funcs(prop, NULL, "rna_ArrayModifier_mid_cap_set", NULL, "rna_Mesh_object_poll");
+	RNA_def_property_flag(prop, PROP_EDITABLE|PROP_ID_SELF_CHECK);
+	RNA_def_property_update(prop, 0, "rna_Modifier_update");
+
+	prop= RNA_def_property(srna, "count", PROP_INT, PROP_NONE);
+	RNA_def_property_range(prop, 1, INT_MAX);
+	RNA_def_property_ui_range(prop, 1, 1000, 1, 0);
+	RNA_def_property_ui_text(prop, "Count Mid Cap",  "Number of duplicates of Mid Cap");
+	RNA_def_property_update(prop, 0, "rna_Modifier_update");
+
+	prop= RNA_def_property(srna, "dist_cap", PROP_ENUM, PROP_NONE);
+	RNA_def_property_enum_sdna(prop, NULL, "distribution");
+	RNA_def_property_enum_items(prop, prop_mid_cap_items);
+	RNA_def_property_ui_text(prop, "Offset Mid Cap", "");
+	RNA_def_property_update(prop, 0, "rna_Modifier_update");
+}*/
+
 static void rna_def_modifier_array(BlenderRNA *brna)
 {
 	StructRNA *srna;
@@ -1544,27 +1583,39 @@ static void rna_def_modifier_array(BlenderRNA *brna)
 	RNA_def_property_flag(prop, PROP_EDITABLE|PROP_ID_SELF_CHECK);
 	RNA_def_property_update(prop, 0, "rna_Modifier_update");
 
+	/*prop= RNA_def_property(srna, "mid_cap", PROP_POINTER, PROP_NONE);
+	RNA_def_property_pointer_sdna(prop, NULL, "mid_cap");
+	RNA_def_property_struct_type(prop, "ObjectCap");
+	RNA_def_property_ui_text(prop, "Mid Cap", "Mesh object to use as a mid cap");*/
+		
 	prop= RNA_def_property(srna, "mid_cap", PROP_POINTER, PROP_NONE);
 	RNA_def_property_ui_text(prop, "Mid Cap", "Mesh object to use as a mid cap");
 	RNA_def_property_pointer_funcs(prop, NULL, "rna_ArrayModifier_mid_cap_set", NULL, "rna_Mesh_object_poll");
 	RNA_def_property_flag(prop, PROP_EDITABLE|PROP_ID_SELF_CHECK);
 	RNA_def_property_update(prop, 0, "rna_Modifier_update");
 
-	prop= RNA_def_property(srna, "cont_mid_cap", PROP_INT, PROP_NONE);
+	prop= RNA_def_property(srna, "count_mc", PROP_INT, PROP_NONE);
 	RNA_def_property_range(prop, 1, INT_MAX);
 	RNA_def_property_ui_range(prop, 1, 1000, 1, 0);
 	RNA_def_property_ui_text(prop, "Count Mid Cap",  "Number of duplicates of Mid Cap");
 	RNA_def_property_update(prop, 0, "rna_Modifier_update");
 
+	prop= RNA_def_property(srna, "dist_mid_cap", PROP_ENUM, PROP_NONE);
+	RNA_def_property_enum_sdna(prop, NULL, "dist_mc");
+	RNA_def_property_enum_items(prop, prop_mid_cap_items);
+	RNA_def_property_ui_text(prop, "Offset Mid Cap", "");
+	RNA_def_property_update(prop, 0, "rna_Modifier_update");
+	
+	prop= RNA_def_property(srna, "curve_cap", PROP_POINTER, PROP_NONE);
+	RNA_def_property_pointer_sdna(prop, NULL, "curve_cap");
+	RNA_def_property_ui_text(prop, "Curve Cap", "Curve to distribute Mid Cap");
+	RNA_def_property_pointer_funcs(prop, NULL, "rna_ArrayModifier_curve_cap_set", NULL, "rna_Curve_object_poll");
+	RNA_def_property_flag(prop, PROP_EDITABLE|PROP_ID_SELF_CHECK);
+	RNA_def_property_update(prop, 0, "rna_Modifier_dependency_update");
+
 	prop= RNA_def_property(srna, "use_advanced_mid_cap", PROP_BOOLEAN, PROP_NONE);
 	RNA_def_property_boolean_sdna(prop, NULL, "mode", MOD_ARR_MOD_ADV_MID);
 	RNA_def_property_ui_text(prop, "Advanced MidCap", "Settings of the mid cap in an array");
-	RNA_def_property_update(prop, 0, "rna_Modifier_update");
-
-	prop= RNA_def_property(srna, "dist_mid_cap", PROP_ENUM, PROP_NONE);
-	RNA_def_property_enum_sdna(prop, NULL, "distribution_mid_cap");
-	RNA_def_property_enum_items(prop, prop_mid_cap_items);
-	RNA_def_property_ui_text(prop, "Offset Mid Cap", "");
 	RNA_def_property_update(prop, 0, "rna_Modifier_update");
 
 	prop= RNA_def_property(srna, "end_cap", PROP_POINTER, PROP_NONE);
@@ -3279,6 +3330,7 @@ void RNA_def_modifier(BlenderRNA *brna)
 	rna_def_modifier_hook(brna);
 	rna_def_modifier_softbody(brna);
 	rna_def_modifier_boolean(brna);
+	//rna_def_object_cap(brna);
 	rna_def_modifier_array(brna);
 	rna_def_modifier_edgesplit(brna);
 	rna_def_modifier_displace(brna);

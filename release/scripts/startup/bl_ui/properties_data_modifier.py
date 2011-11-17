@@ -131,7 +131,9 @@ class DATA_PT_modifiers(ModifierButtonsPanel, Panel):
                 col = box.column()
                 row = col.row()
                 row.prop(md, "dist_mid_cap", expand=True)
-                col.prop(md, "cont_mid_cap")
+                if md.dist_mid_cap == 'CURVE':
+                    col.prop(md, "curve_cap")
+                col.prop(md, "count_mc")
 
         if md.fit_type == 'FIT_CURVE':
             col = layout.column()

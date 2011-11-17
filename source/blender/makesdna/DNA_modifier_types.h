@@ -188,6 +188,13 @@ typedef struct ArrayChangeObject {
 	int rand_group_obj;
 } ArrayChangeObject;
 
+/*typedef struct ObjectCap {
+	struct Object *ob_cap;
+	struct Object *curve;
+	int count;
+	int distribution;
+} ObjectCap;*/
+
 typedef struct ArrayModifierData {
 	ModifierData modifier;
 
@@ -199,6 +206,8 @@ typedef struct ArrayModifierData {
 	struct Object *end_cap;
 	/* the curve object to use for MOD_ARR_FITCURVE */
 	struct Object *curve_ob;
+	/* the curve object to use for Object Cap */
+	struct Object *curve_cap;
 	/* the object to use for object offset */
 	struct Object *offset_ob;
 	/* a constant duplicate offset;
@@ -233,6 +242,9 @@ typedef struct ArrayModifierData {
 	int flags;
 	/* the number of duplicates to generate for MOD_ARR_FIXEDCOUNT */
 	int count;
+	/* the number of duplicates of Mid Cap and type of distribution */
+	int count_mc;
+	int dist_mc;
 	/*Normal Mode-Advanced Mode*/
 	int mode;
 	/*Direction Offset*/
@@ -246,13 +258,12 @@ typedef struct ArrayModifierData {
 
 	struct ArrayChangeObject *Mem_Ob;
 	
+	
 	int proportion;
 	int rays;
 	int rays_dir;
 	int rand_mat;
 	int cont_mat;
-	int cont_mid_cap;
-	int distribution_mid_cap;
 	int pad1;
 	struct Group *arr_group;
 	int rand_group;
