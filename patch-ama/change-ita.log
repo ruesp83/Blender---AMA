@@ -68,20 +68,25 @@ GIT:
 
 
 TODO:
+    - ALTA  :
+        - Associare il materiale del clone al "Dupli Group" inerente.
+        - Materiale random anche al "Dupli Group".
+        - Mettere un tasto per la randomizzazione dei materiali se no cambia anche Loc-Rot-Scale
+        - Mid Cap:
+        - - Dare anche a lui il noise.
+        - - Possibilità di aggiungere alla curva del Mid Cap anche lo Start Cap e l'End Cap, 
+            rispettivamente al primo e all'ultimo Control Points.
 
-    - Aggiungere offset per la rotazione in base ai propri assi.(Non so ancora come gestirla.Ma!!)
-    - Scegliere la direzione dell'offset per la X-Y-Z
-    - Rendere attivo il "Dupli Group" anche quando si preme il tasto "Apply" del modificatore.
-    - Associare una ramp color al modifier array per color gradient.
-    - Associare il materiale del clone al "Dupli Group" inerente.
-    - - Materiale random anche al "Dupli Group".
-    - Mettere un tasto per la randomizzazione dei materiali se no cambia anche Loc-Rot-Scale
-    - Mid Cap:
-    - - Permettere di legarlo ai cloni.
-    - - Dare anche a lui il noise.
-    - Associare una curva all'array.
-    - Creare i cloni con una forma ad aspirale.
-    - MultiScatter
+    - MEDIA :
+        - Aggiungere offset per la rotazione in base ai propri assi.
+        - Scegliere la direzione dell'offset per la X-Y-Z
+        - Rendere attivo il "Dupli Group" anche quando si preme il tasto "Apply" del modificatore.
+        - Associare una ramp color al modifier array per color gradient.
+        - Mid Cap:
+        - - Permettere di legarlo ai cloni (Merge Verts).
+        - Associare una curva all'array.
+        - Creare i cloni con una forma ad aspirale.
+        - MultiScatter
 
 
 Video 5\03\2011:
