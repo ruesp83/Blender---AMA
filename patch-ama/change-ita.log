@@ -1,6 +1,7 @@
 Advanced Modifier Array v0.5 beta3 new features and fixed bug (from v0.5.2) 19\11\2011:
 
     1. UPD: Nuova UI basata sul PDF di Leandro Cavalheiro
+            (https://github.com/ruesp83/Blender---AMA/blob/master/patch-ama/pdf/array_ui.pdf)
     2. UPD: Due modalità per usare il modificatore:
             - REGULAR : Metodo Standard di clonazione.
             - PATH    : Clonazione lungo una curva.
