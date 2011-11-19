@@ -69,7 +69,7 @@ static void initData(ModifierData *md)
 	/* default to 2 duplicates distributed along the x-axis by an
 	offset of 1 object-width
 	*/
-	amd->start_cap = amd->mid_cap = amd->end_cap = amd->curve_ob = amd->offset_ob = NULL;
+	amd->start_cap = amd->mid_cap = amd->end_cap = amd->curve_cap = amd->curve_ob = amd->offset_ob = NULL;
 	amd->count = 2;
 	amd->offset[0] = amd->offset[1] = amd->offset[2] = 0;
 	amd->scale[0] = 1;
@@ -80,7 +80,8 @@ static void initData(ModifierData *md)
 	amd->offset_type = MOD_ARR_OFF_RELATIVE;
 	amd->flags = 0;
 
-	amd->mode = MOD_ARR_MOD_NRM;
+	amd->type = MOD_ARR_MOD_NRM;
+	amd->mode = !MOD_ARR_MOD_ADV;
 	amd->loc_offset[0] = amd->loc_offset[1] = amd->loc_offset[2] = 0;
 	amd->rot_offset[0] = amd->rot_offset[1] = amd->rot_offset[2] = 0;
 	amd->scale_offset[0] = amd->scale_offset[1] = amd->scale_offset[2] = 0;
@@ -95,7 +96,7 @@ static void initData(ModifierData *md)
 	amd->rays_dir = MOD_ARR_RAYS_X;
 	amd->arr_group = NULL;
 	amd->rand_group = !MOD_ARR_RAND_GROUP;
-	amd->distribution = MOD_ARR_DIST_EVENLY;
+	amd->dist_cu = MOD_ARR_DIST_EVENLY;
 }
 
 static void copyData(ModifierData *md, ModifierData *target)
@@ -106,6 +107,7 @@ static void copyData(ModifierData *md, ModifierData *target)
 	tamd->start_cap = amd->start_cap;
 	tamd->mid_cap = amd->mid_cap;
 	tamd->end_cap = amd->end_cap;
+	tamd->curve_cap = amd->curve_cap;
 	tamd->curve_ob = amd->curve_ob;
 	tamd->offset_ob = amd->offset_ob;
 	tamd->count = amd->count;
@@ -117,6 +119,7 @@ static void copyData(ModifierData *md, ModifierData *target)
 	tamd->offset_type = amd->offset_type;
 	tamd->flags = amd->flags;
 
+	tamd->type = amd->type;
 	tamd->mode = amd->mode;
 	copy_v3_v3(tamd->loc_offset, amd->loc_offset);
 	copy_v3_v3(tamd->rot_offset, amd->rot_offset);
@@ -133,7 +136,7 @@ static void copyData(ModifierData *md, ModifierData *target)
 	tamd->rays_dir = amd->rays_dir;
 	tamd->arr_group = amd->arr_group;
 	tamd->rand_group = amd->rand_group;
-	tamd->distribution = amd->distribution;
+	tamd->dist_cu = amd->dist_cu;
 }
 
 static void foreachObjectLink(
@@ -265,20 +268,29 @@ static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 		copy_m4_m4(offset, result_mat);
 	}
 
-	if ((amd->offset_type & MOD_ARR_FITBETWEEN) && (amd->offset_ob)) {
+	if (amd->fit_type & MOD_ARR_FITBETWEEN) {
+		count = count + 2;
+		if ((amd->offset_type & MOD_ARR_OFF_OBJ) && (amd->offset_ob)) {
 			//float dist = sqrt(dot_v3v3(amd->offset_ob->obmat[3], amd->offset_ob->obmat[3]));
 			offset[3][0] = amd->offset_ob->obmat[3][0] / (count - 1);
 			offset[3][1] = amd->offset_ob->obmat[3][1] / (count - 1);
 			offset[3][2] = amd->offset_ob->obmat[3][2] / (count - 1);
+		}
+		else {
+			offset[3][0] = offset[3][0] / (count - 1);
+			offset[3][1] = offset[3][1] / (count - 1);
+			offset[3][2] = offset[3][2] / (count - 1);
+		}
 	}
-	if(amd->fit_type == MOD_ARR_FITCURVE && amd->curve_ob) {
+
+	if(amd->type == MOD_ARR_MOD_CURVE && amd->curve_ob) {
 		length = length_fitcurve(amd, scene);
 	}
 
 	/* calculate the maximum number of copies which will fit within the
 	prescribed length */
 	if(amd->fit_type == MOD_ARR_FITLENGTH
-		  || amd->fit_type == MOD_ARR_FITCURVE) {
+		  || amd->type == MOD_ARR_MOD_CURVE) {
 		/*if ((amd->fit_type == MOD_ARR_FITLENGTH) && (count>2)){
 			amd->length = count_to_length(count, offset[3]);
 			length = amd->length;
@@ -291,8 +303,8 @@ static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 		count = 1;
 	
 	/**/
-	if (amd->dist_mc & MOD_ARR_DIST_CURVE && amd->curve_ob){
-		Curve *cu = amd->curve_ob->data;
+	if (amd->dist_mc & MOD_ARR_DIST_CURVE && amd->curve_cap){
+		Curve *cu = amd->curve_cap->data;
 		nu = cu->nurb.first;
 		unit_m4(mid_offset);
 		if (nu->bezt) {
@@ -993,8 +1005,8 @@ static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 		end_cap->release(end_cap);
 	}
 
-	if(amd->fit_type == MOD_ARR_FITCURVE && amd->curve_ob) {
-		if (amd->distribution == MOD_ARR_DIST_EVENLY){
+	if(amd->type == MOD_ARR_MOD_CURVE && amd->curve_ob) {
+		if (amd->dist_cu == MOD_ARR_DIST_EVENLY){
 			float (*cos)[3] = MEM_mallocN(sizeof(*cos)*numVerts, "vertex_array_to_curve");
 	
 			for (i=0; i<numVerts; i++)

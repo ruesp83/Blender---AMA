@@ -204,12 +204,16 @@ typedef struct ArrayModifierData {
 	struct Object *mid_cap;
 	/* the object with which to cap the end of the array  */
 	struct Object *end_cap;
-	/* the curve object to use for MOD_ARR_FITCURVE */
+	/* the curve object to use for MOD_ARR_MOD_CURVE */
 	struct Object *curve_ob;
 	/* the curve object to use for Object Cap */
 	struct Object *curve_cap;
 	/* the object to use for object offset */
 	struct Object *offset_ob;
+	/* stores information about objects subject to random */
+	struct ArrayChangeObject *Mem_Ob;
+	/* group linked to the modifier */
+	struct Group *arr_group;
 	/* a constant duplicate offset;
 	   1 means the duplicates are 1 unit apart
 	*/
@@ -218,15 +222,20 @@ typedef struct ArrayModifierData {
 	   1 means the duplicates are 1 object-width apart
 	*/
 	float scale[3];
+	/* Offset for clone group */
 	float delta[4][4];
 	/* the length over which to distribute the duplicates */
 	float length;
 	/* the limit below which to merge vertices in adjacent duplicates */
 	float merge_dist;
+	/* randomize Offset */
+	float loc_offset[3];
+	float rot_offset[3];
+	float scale_offset[3];
 	/* determines how duplicate count is calculated; one of:
 		  MOD_ARR_FIXEDCOUNT -> fixed
 		  MOD_ARR_FITLENGTH  -> calculated to fit a set length
-		  MOD_ARR_FITCURVE   -> calculated to fit the length of a Curve object
+		  MOD_ARR_FITBETWEEN   -> Number of duplicates between two objects
 	*/
 	int fit_type;
 	/* flags specifying how total offset is calculated; binary OR of:
@@ -245,37 +254,33 @@ typedef struct ArrayModifierData {
 	/* the number of duplicates of Mid Cap and type of distribution */
 	int count_mc;
 	int dist_mc;
-	/*Normal Mode-Advanced Mode*/
-	int mode;
-	/*Direction Offset*/
-	int sign;
-	/*Randomize Offset*/		
-	float loc_offset[3];
-	float rot_offset[3];
-	float scale_offset[3];
-	/*Lock the noise offset*/
-	int lock;
-
-	struct ArrayChangeObject *Mem_Ob;
-	
-	
-	int proportion;
+	/* number of rays and the direction of the Clones */
 	int rays;
 	int rays_dir;
-	int rand_mat;
+	/* Number of copies of the same material */
 	int cont_mat;
-	int pad1;
-	struct Group *arr_group;
+	/* randomizes the materials */
+	int rand_mat;
+	/* lock the noise offset */
+	int lock;
+	/* normal Mode-Advanced Mode */
+	int mode;
+	/* indicates how the modifier should be used */
+	int type;
+	/* direction Offset */
+	int sign;
+	/* keeps the ratio on the scale */
+	int proportion;
+	/* how to distribute the clones on a curve */
+	int dist_cu;
+	/* ability to randomization of objects belonging to the group linked */
 	int rand_group;
-	int distribution;
-	
 } ArrayModifierData;
 
 /* ArrayModifierData->fit_type */
 #define MOD_ARR_FIXEDCOUNT 0
 #define MOD_ARR_FITLENGTH  1
-#define MOD_ARR_FITCURVE   2
-#define MOD_ARR_FITBETWEEN 3
+#define MOD_ARR_FITBETWEEN 2
 
 /* ArrayModifierData->offset_type */
 #define MOD_ARR_OFF_CONST    (1<<0)
@@ -286,14 +291,15 @@ typedef struct ArrayModifierData {
 #define MOD_ARR_MERGE      	(1<<0)
 #define MOD_ARR_MERGEFINAL 	(1<<1)
 
-/* ArrayModifierData->mode */
+/* ArrayModifierData->type */
 #define MOD_ARR_MOD_NRM			(1<<0)
 #define MOD_ARR_MOD_CURVE		(1<<1)
-#define MOD_ARR_MOD_ADV			(1<<2)
-#define MOD_ARR_MOD_ADV_MAT		(1<<3)
-#define MOD_ARR_MOD_ADV_CURVE	(1<<4)
-#define MOD_ARR_MOD_ADV_MID		(1<<5)
-#define MOD_ARR_MOD_ADV_CLONE	(1<<6)
+
+/* ArrayModifierData->mode */
+#define MOD_ARR_MOD_ADV			(1<<0)
+#define MOD_ARR_MOD_ADV_MAT		(1<<1)
+#define MOD_ARR_MOD_ADV_MID		(1<<3)
+#define MOD_ARR_MOD_ADV_CLONE	(1<<4)
 
 /* ArrayModifierData->sign */
 #define MOD_ARR_SIGN_P		(1<<0)
@@ -305,7 +311,7 @@ typedef struct ArrayModifierData {
 /* ArrayModifierData->proportion */
 #define MOD_ARR_PROP		(1<<0)
 
-/* ArrayModifierData->rnd_mat */
+/* ArrayModifierData->rand_mat */
 #define MOD_ARR_MAT			(1<<0)
 #define MOD_ARR_SEQ			(1<<1)
 
@@ -317,11 +323,11 @@ typedef struct ArrayModifierData {
 /* ArrayModifierData->rand_group */
 #define MOD_ARR_RAND_GROUP    (1<<0)
 
-/* ArrayModifierData->distribution */
+/* ArrayModifierData->dist_cu */
 #define MOD_ARR_DIST_EVENLY    (1<<0)
 #define MOD_ARR_DIST_SEGMENT   (1<<1)
 
-/* ArrayModifierData->distribution_mid_cap */
+/* ArrayModifierData->dist_mc */
 #define MOD_ARR_DIST_SEQ     (1<<0)
 #define MOD_ARR_DIST_HALF    (1<<1)
 #define MOD_ARR_DIST_CURVE   (1<<2)

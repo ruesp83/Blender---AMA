@@ -1455,7 +1455,7 @@ static void rna_def_modifier_array(BlenderRNA *brna)
 	StructRNA *srna;
 	PropertyRNA *prop;
 
-	static EnumPropertyItem prop_mode_items[] = {
+	static EnumPropertyItem prop_type_items[] = {
 		{MOD_ARR_MOD_NRM, "REGULAR", 0, "Regular", "Standart Array"},
 		{MOD_ARR_MOD_CURVE, "PATH", 0, "Path", "Array along a path"},
 		{0, NULL, 0, NULL, NULL}};
@@ -1474,7 +1474,7 @@ static void rna_def_modifier_array(BlenderRNA *brna)
 	static EnumPropertyItem prop_fit_type_items[] = {
 		{MOD_ARR_FIXEDCOUNT, "FIXED_COUNT", 0, "Fixed Count", "Duplicate the object a certain number of times"},
 		{MOD_ARR_FITLENGTH, "FIT_LENGTH", 0, "Fit Length", "Duplicate the object as many times as fits in a certain length"},
-		{MOD_ARR_FITCURVE, "FIT_CURVE", 0, "Fit Curve", "Fit the duplicated objects to a curve"},
+		{MOD_ARR_FITBETWEEN, "FIT_BETWEEN", 0, "Fit Between", "Number of duplicates between two objects"},
 		{0, NULL, 0, NULL, NULL}};
 
 	static EnumPropertyItem prop_rays_dir_items[] = {
@@ -1489,10 +1489,10 @@ static void rna_def_modifier_array(BlenderRNA *brna)
 	RNA_def_struct_ui_icon(srna, ICON_MOD_ARRAY);
 
 	/* Length parameters */
-	prop= RNA_def_property(srna, "mode_array", PROP_ENUM, PROP_NONE);
-	RNA_def_property_enum_sdna(prop, NULL, "mode");
-	RNA_def_property_enum_items(prop, prop_mode_items);
-	RNA_def_property_ui_text(prop, "Mode Array", "Select if you want to do blender’s standart array or a array along a path");
+	prop= RNA_def_property(srna, "type_array", PROP_ENUM, PROP_NONE);
+	RNA_def_property_enum_sdna(prop, NULL, "type");
+	RNA_def_property_enum_items(prop, prop_type_items);
+	RNA_def_property_ui_text(prop, "Type Array", "Select if you want to do blender’s standart array or a array along a path");
 	RNA_def_property_update(prop, 0, "rna_Modifier_update");
 
 	prop= RNA_def_property(srna, "fit_type", PROP_ENUM, PROP_NONE);
@@ -1711,18 +1711,13 @@ static void rna_def_modifier_array(BlenderRNA *brna)
 	RNA_def_property_ui_text(prop, "Rand Object", "Object random group");
 	RNA_def_property_update(prop, 0, "rna_Modifier_update");
 
-	prop= RNA_def_property(srna, "use_advanced_curve", PROP_BOOLEAN, PROP_NONE);
-	RNA_def_property_boolean_sdna(prop, NULL, "mode", MOD_ARR_MOD_ADV_CURVE);
-	RNA_def_property_ui_text(prop, "Advanced Curve", "Using a curve in an array");
-	RNA_def_property_update(prop, 0, "rna_Modifier_update");
-
 	prop= RNA_def_property(srna, "all_curve", PROP_BOOLEAN, PROP_TRANSLATION);
-	RNA_def_property_boolean_sdna(prop, NULL, "distribution", MOD_ARR_DIST_EVENLY);
+	RNA_def_property_boolean_sdna(prop, NULL, "dist_cu", MOD_ARR_DIST_EVENLY);
 	RNA_def_property_ui_text(prop, "Spread Evenly", "Spread evenly on a curve");
 	RNA_def_property_update(prop, 0, "rna_Modifier_update");
 
 	prop= RNA_def_property(srna, "for_segment", PROP_BOOLEAN, PROP_TRANSLATION);
-	RNA_def_property_boolean_sdna(prop, NULL, "distribution", MOD_ARR_DIST_SEGMENT);
+	RNA_def_property_boolean_sdna(prop, NULL, "dist_cu", MOD_ARR_DIST_SEGMENT);
 	RNA_def_property_ui_text(prop, "For Segment", "Spread evenly for all segments");
 	RNA_def_property_update(prop, 0, "rna_Modifier_update");
 

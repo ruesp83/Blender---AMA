@@ -72,32 +72,37 @@ class DATA_PT_modifiers(ModifierButtonsPanel, Panel):
 
     def ARRAY(self, layout, ob, md):
         row = layout.row()
-        row.prop(md, "mode_array", expand=True)
-        layout.prop(md, "fit_type")
+        row.prop(md, "type_array", expand=True)
 
+        if (md.type_array == "PATH"):
+            layout.prop(md, "curve")
+
+        layout.prop(md, "fit_type")
         if md.fit_type == 'FIXED_COUNT':
             layout.prop(md, "count")
         elif md.fit_type == 'FIT_LENGTH':
             layout.prop(md, "fit_length")
-        elif md.fit_type == 'FIT_CURVE':
-            layout.prop(md, "curve")
+        elif md.fit_type == 'FIT_BETWEEN':
+            layout.prop(md, "count", text = "Divider")
 
         layout.separator()
         split = layout.split()
-
         col = split.column()
         col.prop(md, "use_constant_offset")
         sub = col.column()
         sub.active = md.use_constant_offset
         sub.prop(md, "constant_offset_displace", text="")
 
-        col.separator()
-
-        col.prop(md, "use_merge_vertices", text="Merge")
-        sub = col.column()
-        sub.active = md.use_merge_vertices
-        sub.prop(md, "use_merge_vertices_cap", text="First Last")
-        sub.prop(md, "merge_threshold", text="Distance")
+        if (md.type_array == "REGULAR"):
+            col.separator()
+            col.prop(md, "use_merge_vertices", text="Merge")
+            sub = col.column()
+            sub.active = md.use_merge_vertices
+            sub.prop(md, "use_merge_vertices_cap", text="First Last")
+            sub.prop(md, "merge_threshold", text="Distance")
+        else:
+            col.separator()
+            col.prop(md, "all_curve")
 
         col = split.column()
         col.prop(md, "use_relative_offset")
@@ -105,20 +110,24 @@ class DATA_PT_modifiers(ModifierButtonsPanel, Panel):
         sub.active = md.use_relative_offset
         sub.prop(md, "relative_offset_displace", text="")
 
-        col.separator()
+        if (md.type_array == "REGULAR"):
+            col.separator()
+            col.prop(md, "use_object_offset")
+            sub = col.column()
+            sub.active = md.use_object_offset
+            sub.prop(md, "offset_object", text="")
+            layout.separator()
 
-        col.prop(md, "use_object_offset")
-        sub = col.column()
-        sub.active = md.use_object_offset
-        sub.prop(md, "offset_object", text="")
-        #sub.prop(md, "use_between_offset")
+            layout.prop(md, "start_cap")
+            layout.prop(md, "mid_cap")
+            layout.prop(md, "end_cap")
+        else:
+            col.separator()
+            col.prop(md, "for_segment")
+
         layout.separator()
 
-        layout.prop(md, "start_cap")
-        layout.prop(md, "mid_cap")
-        layout.prop(md, "end_cap")
-        layout.separator()
-        if not md.mid_cap is None :
+        if (not md.mid_cap is None):
             col = layout.column()
             box = col.box()
             row = box.row()
@@ -134,23 +143,6 @@ class DATA_PT_modifiers(ModifierButtonsPanel, Panel):
                 if md.dist_mid_cap == 'CURVE':
                     col.prop(md, "curve_cap")
                 col.prop(md, "count_mc")
-
-        if md.fit_type == 'FIT_CURVE':
-            col = layout.column()
-            box = col.box()
-            row = box.row()
-            if md.use_advanced_curve:
-                row.prop(md, "use_advanced_curve", text="")
-            else:
-                row.prop(md, "use_advanced_curve", text="")
-            row.label("Advanced Curve")
-            if (md.use_advanced_curve):
-                col = box.column()
-                sub_split = col.split()
-                col = sub_split.column()
-                col.prop(md, "all_curve")
-                col = sub_split.column()
-                col.prop(md, "for_segment")
 
         col = layout.column()
         box = col.box()
@@ -185,7 +177,7 @@ class DATA_PT_modifiers(ModifierButtonsPanel, Panel):
         col = layout.column()
         box = col.box()
         row = box.row()
-        if md.use_advanced_material:
+        if (md.use_advanced_material):
             row.prop(md, "use_advanced_material", text="")
         else:
             row.prop(md, "use_advanced_material", text="")
@@ -204,7 +196,7 @@ class DATA_PT_modifiers(ModifierButtonsPanel, Panel):
         col = layout.column()
         box = col.box()
         row = box.row()
-        if md.use_advanced_clone:
+        if (md.use_advanced_clone):
             row.prop(md, "use_advanced_clone", text="")
         else:
             row.prop(md, "use_advanced_clone", text="")

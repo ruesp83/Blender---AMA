@@ -1,3 +1,13 @@
+Advanced Modifier Array v0.5 beta3 new features and fixed bug (from v0.5.2) 19\11\2011:
+
+    1. UPD: Nuova UI basata sul PDF di Leandro Cavalheiro
+	2. UPD: Due modalità per usare il modificatore:
+			- REGULAR : Metodo Standard di clonazione.
+			- PATH    : Clonazione lungo una curva.
+	3. UPD: L'opzione "Between Offset" ora si trova nell'elenco "Fit Type"
+    4. ADD: Possibilità di legare l'oggetto "Mid Cap" a una curva diversa da quella delle copie.
+
+
 Advanced Modifier Array v0.5 beta2 new features and fixed bug (from v0.5.1) 3\11\2011:
 
     1. ADD: Possibilità di aggiungere un oggetto "Mid Cap" in varie seguenze e sui Control Points

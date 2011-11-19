@@ -209,7 +209,7 @@ void array_scale_offset(const float max_off[3], float rit[3],int prop)
 }
 
 
-void array_offset(const float max_off[3], float rit[4],int sign)
+void array_offset(const float max_off[3], float rit[3],int sign)
 {	
 	int j;
 	
@@ -271,7 +271,7 @@ void init_offset(const int start, const int end, ArrayModifierData *ar)
 void create_offset(const int n, const int totmat, ArrayModifierData *ar, Object *ob)
 {
 	float loc[3];
-	float rot[4];
+	float rot[3];
 	//float rotAxis[3];
 	float scale[3];
 	int i, act_mat = 0;
@@ -304,7 +304,7 @@ void create_offset(const int n, const int totmat, ArrayModifierData *ar, Object 
 			}
 			if (ar->Mem_Ob[i].transform)
 			{
-				loc_quat_size_to_mat4(ar->Mem_Ob[i].location, loc, rot, scale);
+				loc_eul_size_to_mat4(ar->Mem_Ob[i].location, loc, rot, scale);
 			}
 			if (ar->rand_group & MOD_ARR_RAND_GROUP)
 			{
