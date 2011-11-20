@@ -869,7 +869,7 @@ static int border_select_exec(bContext *C, wmOperator *op)
 	MovieTrackingTrack *track;
 	rcti rect;
 	rctf rectf;
-	int change= 0, mode;
+	int change= 0, mode, extend;
 
 	/* get rectangle from operator */
 	rect.xmin= RNA_int_get(op->ptr, "xmin");
@@ -881,6 +881,7 @@ static int border_select_exec(bContext *C, wmOperator *op)
 	ED_clip_point_stable_pos(C, rect.xmax, rect.ymax, &rectf.xmax, &rectf.ymax);
 
 	mode= RNA_int_get(op->ptr, "gesture_mode");
+	extend= RNA_boolean_get(op->ptr, "extend");
 
 	/* do actual selection */
 	track= clip->tracking.tracks.first;
@@ -888,8 +889,13 @@ static int border_select_exec(bContext *C, wmOperator *op)
 		if((track->flag&TRACK_HIDDEN)==0) {
 			MovieTrackingMarker *marker= BKE_tracking_get_marker(track, sc->user.framenr);
 
-			if(MARKER_VISIBLE(sc, marker) && BLI_in_rctf(&rectf, marker->pos[0], marker->pos[1])) {
-				BKE_tracking_track_flag(track, TRACK_AREA_ALL, SELECT, mode!=GESTURE_MODAL_SELECT);
+			if(MARKER_VISIBLE(sc, marker)) {
+				if(BLI_in_rctf(&rectf, marker->pos[0], marker->pos[1])) {
+					BKE_tracking_track_flag(track, TRACK_AREA_ALL, SELECT, mode!=GESTURE_MODAL_SELECT);
+				}
+				else if(!extend) {
+					BKE_tracking_track_flag(track, TRACK_AREA_ALL, SELECT, 1);
+				}
 
 				change= 1;
 			}
@@ -921,10 +927,10 @@ void CLIP_OT_select_border(wmOperatorType *ot)
 	ot->poll= ED_space_clip_poll;
 
 	/* flags */
-	ot->flag= OPTYPE_REGISTER|OPTYPE_UNDO;
+	ot->flag= OPTYPE_UNDO;
 
 	/* properties */
-	WM_operator_properties_gesture_border(ot, FALSE);
+	WM_operator_properties_gesture_border(ot, TRUE);
 }
 
 /********************** circle select operator *********************/
@@ -1913,11 +1919,10 @@ static int set_floor_exec(bContext *C, wmOperator *op)
 	object_apply_mat4(parent, newmat, 0, 0);
 
 	/* make camera have positive z-coordinate */
-	mul_v3_m4v3(vec[0], mat, camera->loc);
-	if(camera->loc[2]<0) {
+	if(parent->loc[2]<0) {
 		invert_m4(rot);
 		mul_m4_m4m4(newmat, mat, rot);
-		object_apply_mat4(camera, newmat, 0, 0);
+		object_apply_mat4(parent, newmat, 0, 0);
 	}
 
 	where_is_object(scene, parent);

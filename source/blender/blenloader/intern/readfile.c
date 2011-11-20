@@ -1979,7 +1979,7 @@ static void direct_link_nladata_strips(FileData *fd, ListBase *list)
 		
 		/* strip's F-Modifiers */
 		link_list(fd, &strip->modifiers);
-		direct_link_modifiers(fd, &strip->modifiers);
+		direct_link_fmodifiers(fd, &strip->modifiers);
 	}
 }
 
@@ -8961,7 +8961,7 @@ static void do_versions(FileData *fd, Library *lib, Main *main)
 			if(sce->r.yparts<2) sce->r.yparts= 4;
 			/* adds default layer */
 			if(sce->r.layers.first==NULL)
-				scene_add_render_layer(sce);
+				scene_add_render_layer(sce, NULL);
 			else {
 				SceneRenderLayer *srl;
 				/* new layer flag for sky, was default for solid */

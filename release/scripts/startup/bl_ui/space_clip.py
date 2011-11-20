@@ -54,7 +54,8 @@ class CLIP_HT_header(Header):
                 row = layout.row(align=True)
 
                 if sc.show_filters:
-                    row.prop(sc, "show_filters", icon='DISCLOSURE_TRI_DOWN', text="Filters")
+                    row.prop(sc, "show_filters", icon='DISCLOSURE_TRI_DOWN',
+                        text="Filters")
 
                     sub = row.column()
                     sub.active = clip.tracking.reconstruction.is_valid
@@ -62,7 +63,8 @@ class CLIP_HT_header(Header):
 
                     row.prop(sc, "show_graph_tracks", icon='ANIM', text="")
                 else:
-                    row.prop(sc, "show_filters", icon='DISCLOSURE_TRI_RIGHT', text="Filters")
+                    row.prop(sc, "show_filters", icon='DISCLOSURE_TRI_RIGHT',
+                        text="Filters")
 
         row = layout.row()
         row.template_ID(sc, "clip", open='clip.open')
@@ -113,7 +115,6 @@ class CLIP_PT_tools_tracking(Panel):
     def draw(self, context):
         layout = self.layout
         clip = context.space_data.clip
-        settings = clip.tracking.settings
 
         row = layout.row(align=True)
 
@@ -473,16 +474,14 @@ class CLIP_PT_stabilization(Panel):
         return sc.mode == 'RECONSTRUCTION' and sc.clip
 
     def draw_header(self, context):
-        sc = context.space_data
-        tracking = sc.clip.tracking
-        stab = tracking.stabilization
-
+        stab = context.space_data.clip.tracking.stabilization
+        
         self.layout.prop(stab, "use_2d_stabilization", text="")
 
     def draw(self, context):
         layout = self.layout
-        sc = context.space_data
-        tracking = sc.clip.tracking
+
+        tracking = context.space_data.clip.tracking
         stab = tracking.stabilization
 
         layout.active = stab.use_2d_stabilization
@@ -639,7 +638,6 @@ class CLIP_PT_tools_clip(Panel):
 
     def draw(self, context):
         layout = self.layout
-        clip = context.space_data.clip
 
         layout.operator("clip.set_viewport_background")
 
@@ -696,9 +694,6 @@ class CLIP_MT_proxy(Menu):
     def draw(self, context):
         layout = self.layout
 
-        sc = context.space_data
-        clip = sc.clip
-
         layout.operator("clip.rebuild_proxy")
         layout.operator("clip.delete_proxy")
 
@@ -719,7 +714,8 @@ class CLIP_MT_track(Menu):
         props = layout.operator("clip.clear_track_path", text="Clear Before")
         props.action = 'UPTO'
 
-        props = layout.operator("clip.clear_track_path", text="Clear Track Path")
+        props = layout.operator("clip.clear_track_path",
+            text="Clear Track Path")
         props.action = 'ALL'
 
         layout.separator()
@@ -801,8 +797,6 @@ class CLIP_MT_select(Menu):
 
     def draw(self, context):
         layout = self.layout
-
-        sc = context.space_data
 
         layout.operator("clip.select_border")
         layout.operator("clip.select_circle")
