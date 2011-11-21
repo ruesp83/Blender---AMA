@@ -97,6 +97,7 @@ static void initData(ModifierData *md)
 	amd->arr_group = NULL;
 	amd->rand_group = !MOD_ARR_RAND_GROUP;
 	amd->dist_cu = MOD_ARR_DIST_EVENLY;
+	amd->outer_cp = !MOD_ARR_CP_FIRST;
 }
 
 static void copyData(ModifierData *md, ModifierData *target)
@@ -137,6 +138,7 @@ static void copyData(ModifierData *md, ModifierData *target)
 	tamd->arr_group = amd->arr_group;
 	tamd->rand_group = amd->rand_group;
 	tamd->dist_cu = amd->dist_cu;
+	tamd->outer_cp = amd->outer_cp;
 }
 
 static void foreachObjectLink(
@@ -304,18 +306,29 @@ static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 	
 	/**/
 	if (amd->dist_mc & MOD_ARR_DIST_CURVE && amd->curve_cap){
+		int dec = 0;
 		Curve *cu = amd->curve_cap->data;
 		nu = cu->nurb.first;
 		unit_m4(mid_offset);
+		if (amd->outer_cp & MOD_ARR_CP_FIRST && amd->start_cap)
+			dec = dec + 1;
+		if (amd->outer_cp & MOD_ARR_CP_LAST && amd->end_cap)
+			dec = dec + 1;
 		if (nu->bezt) {
-			copy_v3_v3(mid_offset[3], nu->bezt[0].vec[1]);
-			if (amd->count_mc > nu->pntsu)
-				amd->count_mc = nu->pntsu;
+			if (amd->outer_cp & MOD_ARR_CP_FIRST && amd->start_cap)
+				copy_v3_v3(mid_offset[3], nu->bezt[1].vec[1]);
+			else
+				copy_v3_v3(mid_offset[3], nu->bezt[0].vec[1]);
+			if (amd->count_mc > (nu->pntsu - dec))
+				amd->count_mc = nu->pntsu - dec;
 		}
 		else {
-			copy_v3_v3(mid_offset[3], nu->bp[0].vec);
-			if (amd->count_mc > (nu->pntsu * nu->pntsv))
-				amd->count_mc = nu->pntsu * nu->pntsv;
+			if (amd->outer_cp & MOD_ARR_CP_FIRST && amd->start_cap)
+				copy_v3_v3(mid_offset[3], nu->bp[1].vec);
+			else
+				copy_v3_v3(mid_offset[3], nu->bp[0].vec);
+			if (amd->count_mc > (nu->pntsu * nu->pntsv - dec))
+				amd->count_mc = nu->pntsu * nu->pntsv - dec;
 		}
 	}
 	else 
@@ -698,7 +711,7 @@ static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 		int *origindex;
 		int *vert_map;
 		int capVerts, capEdges, capFaces;
-
+		
 		capVerts = start_cap->getNumVerts(start_cap);
 		capEdges = start_cap->getNumEdges(start_cap);
 		capFaces = start_cap->getNumFaces(start_cap);
@@ -707,6 +720,13 @@ static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 		cap_mface = start_cap->getFaceArray(start_cap);
 
 		invert_m4_m4(startoffset, offset);
+
+		
+		if (amd->outer_cp & MOD_ARR_CP_FIRST && amd->start_cap && amd->curve_cap)
+			if (nu->bezt)
+				copy_v3_v3(startoffset[3], nu->bezt[0].vec[1]);
+			else
+				copy_v3_v3(startoffset[3], nu->bp[0].vec);
 
 		vert_map = MEM_callocN(sizeof(*vert_map) * capVerts,
 		"arrayModifier_doArray vert_map");
@@ -799,6 +819,7 @@ static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 		int *origindex;
 		int *vert_map;
 		int capVerts, capEdges, capFaces;
+		int inc;
 
 		capVerts = mid_cap->getNumVerts(mid_cap);
 		capEdges = mid_cap->getNumEdges(mid_cap);
@@ -893,11 +914,17 @@ static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 				copy_m4_m4(mid_offset, tmp_mat);
 			}
 			else if (amd->dist_mc & MOD_ARR_DIST_CURVE){
-				if (j+1 < amd->count_mc){
-					if (nu->bezt)
-						copy_v3_v3(mid_offset[3], nu->bezt[j+1].vec[1]);
-					else
-						copy_v3_v3(mid_offset[3], nu->bp[j+1].vec);
+				if  (amd->curve_cap) {
+					if (amd->outer_cp & MOD_ARR_CP_FIRST && amd->start_cap)
+						inc = 1;
+					else 
+						inc = 0;
+					if (j+1 < amd->count_mc){
+						if (nu->bezt)
+							copy_v3_v3(mid_offset[3], nu->bezt[j+1+inc].vec[1]);
+						else
+							copy_v3_v3(mid_offset[3], nu->bp[j+1+inc].vec);
+					}
 				}
 			}
 		}
@@ -922,6 +949,12 @@ static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 		cap_mface = end_cap->getFaceArray(end_cap);
 
 		mul_m4_m4m4(endoffset, final_offset, offset);
+
+		if (amd->outer_cp & MOD_ARR_CP_LAST && amd->end_cap && amd->curve_cap)
+			if (nu->bezt)
+				copy_v3_v3(endoffset[3], nu->bezt[nu->pntsu - 1].vec[1]);
+			else
+				copy_v3_v3(endoffset[3], nu->bp[nu->pntsu * nu->pntsv - 1].vec);
 
 		vert_map = MEM_callocN(sizeof(*vert_map) * capVerts,
 		"arrayModifier_doArray vert_map");

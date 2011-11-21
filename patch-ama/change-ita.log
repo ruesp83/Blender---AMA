@@ -1,4 +1,4 @@
-Advanced Modifier Array v0.5 beta3 new features and fixed bug (from v0.5.2) 19\11\2011:
+Advanced Modifier Array v0.5 beta3 new features and fixed bug (from v0.5.2) 21\11\2011:
 
     1. UPD: Nuova UI basata sul PDF di Leandro Cavalheiro
             (https://github.com/ruesp83/Blender---AMA/blob/master/patch-ama/pdf/array_ui.pdf)
@@ -7,7 +7,9 @@ Advanced Modifier Array v0.5 beta3 new features and fixed bug (from v0.5.2) 19\1
             - PATH    : Clonazione lungo una curva.
     3. UPD: L'opzione "Between Offset" ora si trova nell'elenco "Fit Type"
     4. ADD: Possibilità di legare l'oggetto "Mid Cap" a una curva diversa da quella delle copie.
-
+    5. ADD: Possibilità di aggiungere alla curva del Mid Cap anche lo Start Cap e l'End Cap, 
+            rispettivamente al primo e all'ultimo Control Points.
+    
 
 Advanced Modifier Array v0.5 beta2 new features and fixed bug (from v0.5.1) 3\11\2011:
 
@@ -74,8 +76,6 @@ TODO:
         - Mettere un tasto per la randomizzazione dei materiali se no cambia anche Loc-Rot-Scale
         - Mid Cap:
         - - Dare anche a lui il noise.
-        - - Possibilità di aggiungere alla curva del Mid Cap anche lo Start Cap e l'End Cap, 
-            rispettivamente al primo e all'ultimo Control Points.
 
     - MEDIA :
         - Aggiungere offset per la rotazione in base ai propri assi.

@@ -143,6 +143,20 @@ class DATA_PT_modifiers(ModifierButtonsPanel, Panel):
                 if md.dist_mid_cap == 'CURVE':
                     col.prop(md, "curve_cap")
                 col.prop(md, "count_mc")
+                if md.dist_mid_cap == 'CURVE':
+                    split = col.split()
+                    col = split.column()
+                    if (not md.start_cap is None):
+                        col.active = True
+                    else:
+                        col.active = False
+                    col.prop(md, "first_start_cap")
+                    col = split.column()
+                    if (not md.end_cap is None):
+                        col.active = True
+                    else:
+                        col.active = False
+                    col.prop(md, "last_end_cap")
 
         col = layout.column()
         box = col.box()

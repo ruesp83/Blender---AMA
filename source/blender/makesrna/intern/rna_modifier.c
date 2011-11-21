@@ -1613,6 +1613,16 @@ static void rna_def_modifier_array(BlenderRNA *brna)
 	RNA_def_property_flag(prop, PROP_EDITABLE|PROP_ID_SELF_CHECK);
 	RNA_def_property_update(prop, 0, "rna_Modifier_dependency_update");
 
+	prop= RNA_def_property(srna, "first_start_cap", PROP_BOOLEAN, PROP_NONE);
+	RNA_def_property_boolean_sdna(prop, NULL, "outer_cp", MOD_ARR_CP_FIRST);
+	RNA_def_property_ui_text(prop, "First Start Cap", "Use Start Cap on the first control point");
+	RNA_def_property_update(prop, 0, "rna_Modifier_update");
+
+	prop= RNA_def_property(srna, "last_end_cap", PROP_BOOLEAN, PROP_NONE);
+	RNA_def_property_boolean_sdna(prop, NULL, "outer_cp", MOD_ARR_CP_LAST);
+	RNA_def_property_ui_text(prop, "Last End Cap", "Use End Cap on the last control point");
+	RNA_def_property_update(prop, 0, "rna_Modifier_update");
+
 	prop= RNA_def_property(srna, "use_advanced_mid_cap", PROP_BOOLEAN, PROP_NONE);
 	RNA_def_property_boolean_sdna(prop, NULL, "mode", MOD_ARR_MOD_ADV_MID);
 	RNA_def_property_ui_text(prop, "Advanced MidCap", "Settings of the mid cap in an array");

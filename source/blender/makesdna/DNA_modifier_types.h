@@ -254,6 +254,8 @@ typedef struct ArrayModifierData {
 	/* the number of duplicates of Mid Cap and type of distribution */
 	int count_mc;
 	int dist_mc;
+	/*  */
+	int outer_cp;
 	/* number of rays and the direction of the Clones */
 	int rays;
 	int rays_dir;
@@ -275,6 +277,7 @@ typedef struct ArrayModifierData {
 	int dist_cu;
 	/* ability to randomization of objects belonging to the group linked */
 	int rand_group;
+	int pad1;
 } ArrayModifierData;
 
 /* ArrayModifierData->fit_type */
@@ -295,6 +298,10 @@ typedef struct ArrayModifierData {
 #define MOD_ARR_MOD_NRM			(1<<0)
 #define MOD_ARR_MOD_CURVE		(1<<1)
 
+/* ArrayModifierData->outer_cp */
+#define MOD_ARR_CP_FIRST		(1<<0)
+#define MOD_ARR_CP_LAST			(1<<1)
+
 /* ArrayModifierData->mode */
 #define MOD_ARR_MOD_ADV			(1<<0)
 #define MOD_ARR_MOD_ADV_MAT		(1<<1)
@@ -305,7 +312,7 @@ typedef struct ArrayModifierData {
 #define MOD_ARR_SIGN_P		(1<<0)
 #define MOD_ARR_SIGN_L		(1<<1)
 
-/* ArrayModifierData->mode */
+/* ArrayModifierData->lock */
 #define MOD_ARR_LOCK		(1<<0)
 
 /* ArrayModifierData->proportion */
