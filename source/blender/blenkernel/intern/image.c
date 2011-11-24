@@ -971,6 +971,47 @@ char BKE_imtype_valid_depths(const char imtype)
 	}
 }
 
+
+/* string is from command line --render-format arg, keep in sync with
+ * creator.c help info */
+char BKE_imtype_from_arg(const char *imtype_arg)
+{
+	if      (!strcmp(imtype_arg,"TGA")) return R_IMF_IMTYPE_TARGA;
+	else if (!strcmp(imtype_arg,"IRIS")) return R_IMF_IMTYPE_IRIS;
+#ifdef WITH_DDS
+	else if (!strcmp(imtype_arg,"DDS")) return R_IMF_IMTYPE_DDS;
+#endif
+	else if (!strcmp(imtype_arg,"JPEG")) return R_IMF_IMTYPE_JPEG90;
+	else if (!strcmp(imtype_arg,"IRIZ")) return R_IMF_IMTYPE_IRIZ;
+	else if (!strcmp(imtype_arg,"RAWTGA")) return R_IMF_IMTYPE_RAWTGA;
+	else if (!strcmp(imtype_arg,"AVIRAW")) return R_IMF_IMTYPE_AVIRAW;
+	else if (!strcmp(imtype_arg,"AVIJPEG")) return R_IMF_IMTYPE_AVIJPEG;
+	else if (!strcmp(imtype_arg,"PNG")) return R_IMF_IMTYPE_PNG;
+	else if (!strcmp(imtype_arg,"AVICODEC")) return R_IMF_IMTYPE_AVICODEC;
+	else if (!strcmp(imtype_arg,"QUICKTIME")) return R_IMF_IMTYPE_QUICKTIME;
+	else if (!strcmp(imtype_arg,"BMP")) return R_IMF_IMTYPE_BMP;
+#ifdef WITH_HDR
+	else if (!strcmp(imtype_arg,"HDR")) return R_IMF_IMTYPE_RADHDR;
+#endif
+#ifdef WITH_TIFF
+	else if (!strcmp(imtype_arg,"TIFF")) return R_IMF_IMTYPE_TIFF;
+#endif
+#ifdef WITH_OPENEXR
+	else if (!strcmp(imtype_arg,"EXR")) return R_IMF_IMTYPE_OPENEXR;
+	else if (!strcmp(imtype_arg,"MULTILAYER")) return R_IMF_IMTYPE_MULTILAYER;
+#endif
+	else if (!strcmp(imtype_arg,"MPEG")) return R_IMF_IMTYPE_FFMPEG;
+	else if (!strcmp(imtype_arg,"FRAMESERVER")) return R_IMF_IMTYPE_FRAMESERVER;
+#ifdef WITH_CINEON
+	else if (!strcmp(imtype_arg,"CINEON")) return R_IMF_IMTYPE_CINEON;
+	else if (!strcmp(imtype_arg,"DPX")) return R_IMF_IMTYPE_DPX;
+#endif
+#ifdef WITH_OPENJPEG
+	else if (!strcmp(imtype_arg,"JP2")) return R_IMF_IMTYPE_JP2;
+#endif
+	else return R_IMF_IMTYPE_INVALID;
+}
+
 int BKE_add_image_extension(char *string, const char imtype)
 {
 	const char *extension= NULL;
@@ -1442,6 +1483,8 @@ int BKE_alphatest_ibuf(ImBuf *ibuf)
 	return FALSE;
 }
 
+/* note: imf->planes is ignored here, its assumed the image channels
+ * are already set */
 int BKE_write_ibuf(ImBuf *ibuf, const char *name, ImageFormatData *imf)
 {
 	char imtype= imf->imtype;
@@ -1536,7 +1579,6 @@ int BKE_write_ibuf(ImBuf *ibuf, const char *name, ImageFormatData *imf)
 		/* R_IMF_IMTYPE_JPEG90, etc. default we save jpegs */
 		if(quality < 10) quality= 90;
 		ibuf->ftype= JPG|quality;
-		if(ibuf->planes==32) ibuf->planes= 24;	/* unsupported feature only confuses other s/w */
 	}
 	
 	BLI_make_existing_file(name);
@@ -1547,6 +1589,29 @@ int BKE_write_ibuf(ImBuf *ibuf, const char *name, ImageFormatData *imf)
 	}
 	
 	return(ok);
+}
+
+/* same as BKE_write_ibuf_as but crappy workaround not to perminantly modify
+ * _some_, values in the imbuf */
+int BKE_write_ibuf_as(ImBuf *ibuf, const char *name, ImageFormatData *imf,
+                      const short save_copy)
+{
+	ImBuf ibuf_back= *ibuf;
+	int ok;
+
+	/* all data is rgba anyway,
+	 * this just controls how to save for some formats */
+	ibuf->planes= imf->planes;
+
+	ok= BKE_write_ibuf(ibuf, name, imf);
+
+	if (save_copy) {
+		/* note that we are not restoring _all_ settings */
+		ibuf->planes= ibuf_back.planes;
+		ibuf->ftype=  ibuf_back.ftype;
+	}
+
+	return ok;
 }
 
 int BKE_write_ibuf_stamp(Scene *scene, struct Object *camera, ImBuf *ibuf, const char *name, struct ImageFormatData *imf)

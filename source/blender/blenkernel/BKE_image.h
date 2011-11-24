@@ -53,6 +53,7 @@ void	BKE_stamp_buf(struct Scene *scene, struct Object *camera, unsigned char *re
 int		BKE_alphatest_ibuf(struct ImBuf *ibuf);
 int		BKE_write_ibuf_stamp(struct Scene *scene, struct Object *camera, struct ImBuf *ibuf, const char *name, struct ImageFormatData *imf);
 int		BKE_write_ibuf(struct ImBuf *ibuf, const char *name, struct ImageFormatData *imf);
+int     BKE_write_ibuf_as(struct ImBuf *ibuf, const char *name, struct ImageFormatData *imf, const short is_copy);
 void	BKE_makepicstring(char *string, const char *base, const char *relbase, int frame, char imtype, const short use_ext, const short use_frames);
 int		BKE_add_image_extension(char *string, const char imtype);
 char	BKE_ftype_to_imtype(const int ftype);
@@ -64,6 +65,8 @@ int		BKE_imtype_supports_zbuf(const char imtype);
 int		BKE_imtype_supports_compress(const char imtype);
 int		BKE_imtype_supports_quality(const char imtype);
 char	BKE_imtype_valid_depths(const char imtype);
+
+char    BKE_imtype_from_arg(const char *arg);
 
 struct anim *openanim(const char *name, int flags, int streamindex);
 
