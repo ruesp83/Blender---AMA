@@ -276,7 +276,7 @@ void create_offset(const int n, const int totmat, ArrayModifierData *ar, Object 
 	float scale[3];
 	int i, act_mat = 0;
 	int cont_mat = ar->cont_mat-1;
-	Group *group;
+	Group *group = NULL;
 
 	if(ob->dup_group!=NULL)
 		group= ob->dup_group;

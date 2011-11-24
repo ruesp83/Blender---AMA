@@ -722,11 +722,12 @@ static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 		invert_m4_m4(startoffset, offset);
 
 		
-		if (amd->outer_cp & MOD_ARR_CP_FIRST && amd->start_cap && amd->curve_cap)
+		if (amd->outer_cp & MOD_ARR_CP_FIRST && amd->start_cap && amd->curve_cap) {
 			if (nu->bezt)
 				copy_v3_v3(startoffset[3], nu->bezt[0].vec[1]);
 			else
 				copy_v3_v3(startoffset[3], nu->bp[0].vec);
+		}
 
 		vert_map = MEM_callocN(sizeof(*vert_map) * capVerts,
 		"arrayModifier_doArray vert_map");
@@ -766,6 +767,7 @@ static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 				numVerts++;
 			}
 		}
+
 		origindex = result->getEdgeDataArray(result, CD_ORIGINDEX);
 		for(i = 0; i < capEdges; i++) {
 			int v1, v2;
@@ -783,6 +785,7 @@ static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 				numEdges++;
 			}
 		}
+		
 		origindex = result->getFaceDataArray(result, CD_ORIGINDEX);
 		for(i = 0; i < capFaces; i++) {
 			DM_copy_face_data(start_cap, result, i, numFaces, 1);
@@ -811,7 +814,6 @@ static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 		start_cap->release(start_cap);
 	}
 	
-	/*insert_start_cap(amd, dm, result, start_cap, indexMap, edges, numVerts, numEdges, numFaces, offset);*/
 	if(mid_cap) {
 		MVert *cap_mvert;
 		MEdge *cap_medge;
@@ -829,10 +831,10 @@ static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 		cap_mface = mid_cap->getFaceArray(mid_cap);
 
 		vert_map = MEM_callocN(sizeof(*vert_map) * capVerts,
-		"arrayModifier_doArray vert_map");
-
-		origindex = result->getVertDataArray(result, CD_ORIGINDEX);
+				"arrayModifier_doArray vert_map");
 		for(j=0; j < amd->count_mc; j++) {
+			
+			origindex = result->getVertDataArray(result, CD_ORIGINDEX);
 			for(i = 0; i < capVerts; i++) {
 				MVert *mv = &cap_mvert[i];
 				short merged = 0;
@@ -840,15 +842,15 @@ static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 				if(amd->flags & MOD_ARR_MERGE) {
 					float tmp_co[3];
 					MVert *in_mv;
-					int j;
+					int k;
 
 					copy_v3_v3(tmp_co, mv->co);
 					mul_m4_v3(mid_offset, tmp_co);
-					for(j = 0; j < maxVerts; j++) {
-						in_mv = &src_mvert[j];
+					for(k = 0; k < maxVerts; k++) {
+						in_mv = &src_mvert[k];
 						/* if this vert is within merge limit, merge */
 						if(compare_len_v3v3(tmp_co, in_mv->co, amd->merge_dist)) {
-							vert_map[i] = calc_mapping(indexMap, j, 0);
+							vert_map[i] = calc_mapping(indexMap, k, 0);
 							merged = 1;
 							break;
 						}
@@ -882,6 +884,7 @@ static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 					numEdges++;
 				}
 			}
+			
 			origindex = result->getFaceDataArray(result, CD_ORIGINDEX);
 			for(i = 0; i < capFaces; i++) {
 				DM_copy_face_data(mid_cap, result, i, numFaces, 1);
@@ -905,6 +908,7 @@ static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 
 				numFaces++;
 			}
+
 			if (amd->dist_mc & MOD_ARR_DIST_SEQ){
 				mul_m4_m4m4(tmp_mat, mid_offset, offset);
 				copy_m4_m4(mid_offset, tmp_mat);
@@ -950,11 +954,12 @@ static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 
 		mul_m4_m4m4(endoffset, final_offset, offset);
 
-		if (amd->outer_cp & MOD_ARR_CP_LAST && amd->end_cap && amd->curve_cap)
+		if (amd->outer_cp & MOD_ARR_CP_LAST && amd->end_cap && amd->curve_cap) {
 			if (nu->bezt)
 				copy_v3_v3(endoffset[3], nu->bezt[nu->pntsu - 1].vec[1]);
 			else
 				copy_v3_v3(endoffset[3], nu->bp[nu->pntsu * nu->pntsv - 1].vec);
+		}
 
 		vert_map = MEM_callocN(sizeof(*vert_map) * capVerts,
 		"arrayModifier_doArray vert_map");
@@ -994,6 +999,7 @@ static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 				numVerts++;
 			}
 		}
+
 		origindex = result->getEdgeDataArray(result, CD_ORIGINDEX);
 		for(i = 0; i < capEdges; i++) {
 			int v1, v2;
@@ -1011,6 +1017,7 @@ static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 				numEdges++;
 			}
 		}
+
 		origindex = result->getFaceDataArray(result, CD_ORIGINDEX);
 		for(i = 0; i < capFaces; i++) {
 			DM_copy_face_data(end_cap, result, i, numFaces, 1);

@@ -36,9 +36,7 @@ struct Object;
 struct Scene;
 struct MVert;
 struct MFace;
-struct DerivedMesh;
 struct CustomData;
-struct EdgeHash;
 
 typedef struct IndexMapEntry {
 	/* the new vert index that this old vert index maps to */
@@ -72,13 +70,12 @@ float length_fitcurve(struct ArrayModifierData *amd, struct Scene *scene);
 int length_to_count(float length, const float offset[3]);
 float count_to_length(int count, const float offset[3]);
 float f_rand_max(float max);
+
 void array_scale_offset(const float max_off[3], float rit[3],int prop);
 void array_offset(const float max_off[3], float rit[3],int sign);
 void init_offset(const int start, const int end, struct ArrayModifierData *ar);
 void create_offset(const int n, const int totmat, struct ArrayModifierData *ar, struct Object *ob);
 void array_to_curve(struct Scene *scene, struct Object *cuOb, struct Object *target, float (*vertexCos)[3], int numVerts);
-/*struct DerivedMesh *insert_start_cap(struct ArrayModifierData *amd, struct DerivedMesh *dm, struct DerivedMesh *result, struct DerivedMesh *start_cap, IndexMapEntry *indexMap, 
-	struct EdgeHash *edges, int numVerts, int numEdges, int numFaces, float offset[4][4]);*/
 
 #endif
 

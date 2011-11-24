@@ -66,10 +66,12 @@ Advanced Modifier Array v0.3 5\03\2011:
 
 
 GIT:
+
     https://github.com/ruesp83/Blender---AMA
 
 
 TODO:
+
     - ALTA  :
         - Associare il materiale del clone al "Dupli Group" inerente.
         - Materiale random anche al "Dupli Group".
@@ -87,6 +89,11 @@ TODO:
         - Associare una curva all'array.
         - Creare i cloni con una forma ad aspirale.
         - MultiScatter
+
+
+BUG:
+
+	1.  Quando si da un offset rand per la rotazione e per la scala i cloni scompaiono.
 
 
 Video 5\03\2011:
