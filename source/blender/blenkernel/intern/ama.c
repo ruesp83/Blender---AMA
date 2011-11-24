@@ -193,16 +193,14 @@ void array_scale_offset(const float max_off[3], float rit[3],int prop)
 	rit[0] = f_rand_max(max_off[0]);
 	rit[0] = 1+rit[0];
 	
-	if (!prop)
-	{
+	if (!prop) {
 		rit[1] = f_rand_max(max_off[1]);
 		rit[1] = 1+rit[1];
 		
 		rit[2] = f_rand_max(max_off[2]);
 		rit[2] = 1+rit[2];
 	}
-	else
-	{
+	else {
 		rit[1] = rit[0];
 		rit[2] = rit[0];
 	}
@@ -214,10 +212,8 @@ void array_offset(const float max_off[3], float rit[3],int sign)
 	int j;
 	
 	rit[0] = f_rand_max(max_off[0]);
-	if (sign & MOD_ARR_SIGN_L)
-	{
-		if (sign & MOD_ARR_SIGN_P)
-		{
+	if (sign & MOD_ARR_SIGN_L) {
+		if (sign & MOD_ARR_SIGN_P) {
 			j = BLI_rand() % 2;
 			if (j == 0)
 				rit[0] = rit[0]*(-1);
@@ -227,10 +223,8 @@ void array_offset(const float max_off[3], float rit[3],int sign)
 	}
 		
 	rit[1] = f_rand_max(max_off[1]); 
-	if (sign & MOD_ARR_SIGN_L)
-	{
-		if (sign & MOD_ARR_SIGN_P)
-		{
+	if (sign & MOD_ARR_SIGN_L) {
+		if (sign & MOD_ARR_SIGN_P) {
 			j = BLI_rand() % 2;
 			if (j == 0)
 				rit[1] = rit[1]*(-1);
@@ -240,10 +234,8 @@ void array_offset(const float max_off[3], float rit[3],int sign)
 	}
 
 	rit[2] = f_rand_max(max_off[2]);
-	if (sign & MOD_ARR_SIGN_L)
-	{
-		if (sign & MOD_ARR_SIGN_P)
-		{
+	if (sign & MOD_ARR_SIGN_L) {
+		if (sign & MOD_ARR_SIGN_P) {
 			j = BLI_rand() % 2;
 			if (j == 0)
 				rit[2] = rit[2]*(-1);
@@ -258,9 +250,7 @@ void init_offset(const int start, const int end, ArrayModifierData *ar)
 {
 	int i;
 
-	for (i=start; i< end; i++)
-	{
-		unit_m4(ar->Mem_Ob[i].location);
+	for (i=start; i<end; i++) {
 		ar->Mem_Ob[i].id_mat = 0;
 		ar->Mem_Ob[i].transform = 0;
 		ar->Mem_Ob[i].rand_group_obj = 0;
@@ -272,7 +262,6 @@ void create_offset(const int n, const int totmat, ArrayModifierData *ar, Object 
 {
 	float loc[3];
 	float rot[3];
-	//float rotAxis[3];
 	float scale[3];
 	int i, act_mat = 0;
 	int cont_mat = ar->cont_mat-1;
@@ -280,42 +269,38 @@ void create_offset(const int n, const int totmat, ArrayModifierData *ar, Object 
 
 	if(ob->dup_group!=NULL)
 		group= ob->dup_group;
+	
+	for (i=0; i < n-1; i++) {
 
-	scale[0]=scale[1]=scale[2]=1;
+		loc[0]=loc[1]=loc[2]=0;
+		rot[0]=rot[1]=rot[2]=0;
+		scale[0]=scale[1]=scale[2]=1;
 
-	for (i=0; i < n-1; i++)
-	{
-		if (ar->mode & MOD_ARR_MOD_ADV)
-		{
-			if ((ar->rot_offset[0]!=0) || (ar->rot_offset[1]!=0) || (ar->rot_offset[2]!=0))
-			{
+		if (ar->mode & MOD_ARR_MOD_ADV) {
+			if ((ar->rot_offset[0]!=0) || (ar->rot_offset[1]!=0) || (ar->rot_offset[2]!=0)) {
 				array_offset(ar->rot_offset, rot, ar->sign);
-				ar->Mem_Ob[i].transform=1;
+				ar->Mem_Ob[i].transform = 1;
 			}
-			if ((ar->scale_offset[0]!=0) || (ar->scale_offset[1]!=0) || (ar->scale_offset[2]!=0))
-			{
+			if ((ar->scale_offset[0]!=0) || (ar->scale_offset[1]!=0) || (ar->scale_offset[2]!=0)) {
 				array_scale_offset(ar->scale_offset, scale, ar->proportion);
-				ar->Mem_Ob[i].transform=1;
+				ar->Mem_Ob[i].transform = 1;
 			}
-			if ((ar->loc_offset[0]!=0) || (ar->loc_offset[1]!=0) || (ar->loc_offset[2]!=0))
-			{
+			if ((ar->loc_offset[0]!=0) || (ar->loc_offset[1]!=0) || (ar->loc_offset[2]!=0)) {
 				array_offset(ar->loc_offset, loc, ar->sign);
-				ar->Mem_Ob[i].transform=1;
+				ar->Mem_Ob[i].transform = 1;
 			}
-			if (ar->Mem_Ob[i].transform)
-			{
+			if (ar->Mem_Ob[i].transform) {
+				unit_m4(ar->Mem_Ob[i].location);
 				loc_eul_size_to_mat4(ar->Mem_Ob[i].location, loc, rot, scale);
 			}
-			if (ar->rand_group & MOD_ARR_RAND_GROUP)
-			{
+			if (ar->rand_group & MOD_ARR_RAND_GROUP) {
 				ar->Mem_Ob[i].rand_group_obj = BLI_rand() % BLI_countlist(&group->gobject);
 				ar->Mem_Ob[i].rand_group_obj++;
 			}
 		}
-		if (ar->mode & MOD_ARR_MOD_ADV_MAT)
-		{
-			if (totmat>1)
-			{
+
+		if (ar->mode & MOD_ARR_MOD_ADV_MAT) {
+			if (totmat>1) {
 				if (ar->rand_mat & MOD_ARR_MAT) {
 					ar->Mem_Ob[i].id_mat = BLI_rand() % totmat;
 				}
@@ -332,7 +317,7 @@ void create_offset(const int n, const int totmat, ArrayModifierData *ar, Object 
 				}
 			}
 		}
-		
+
 	}
 }
 
