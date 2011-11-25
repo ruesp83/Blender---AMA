@@ -1,7 +1,7 @@
 Advanced Modifier Array v0.5 beta3 new features and fixed bug (from v0.5.2) 24\11\2011:
 
     1. FIX: Visualizzazione errata in "Edit Mode" del "Mid-Cap".
-	2. FIX: Mancata inizializzazione delle variabili che indicano l'offset random.
+    2. FIX: Mancata inizializzazione delle variabili che indicano l'offset random.
     3. UPD: Nuova UI basata sul PDF di Leandro Cavalheiro.
             (https://github.com/ruesp83/Blender---AMA/blob/master/patch-ama/pdf/array_ui.pdf)
     4. UPD: Due modalità per usare il modificatore:
@@ -11,6 +11,7 @@ Advanced Modifier Array v0.5 beta3 new features and fixed bug (from v0.5.2) 24\1
     6. ADD: Possibilità di legare l'oggetto "Mid Cap" a una curva diversa da quella delle copie.
     7. ADD: Possibilità di aggiungere alla curva del Mid Cap anche lo Start Cap e l'End Cap, 
             rispettivamente al primo e all'ultimo Control Points.
+    8. ADD: Scale può avere valori negativi, per creare cloni più piccoli dell'originale.
     
 
 Advanced Modifier Array v0.5 beta2 new features and fixed bug (from v0.5.1) 3\11\2011:
