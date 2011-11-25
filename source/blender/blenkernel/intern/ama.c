@@ -234,6 +234,7 @@ void init_offset(const int start, const int end, ArrayModifierData *ar)
 	int i;
 
 	for (i=start; i<end; i++) {
+		unit_m4(ar->Mem_Ob[i].location);
 		ar->Mem_Ob[i].id_mat = 0;
 		ar->Mem_Ob[i].transform = 0;
 		ar->Mem_Ob[i].rand_group_obj = 0;
@@ -264,7 +265,7 @@ void create_offset(const int n, const int totmat, ArrayModifierData *ar, Object 
 				array_offset(ar->rot_offset, rot, !MOD_ARR_PROP, ar->sign);
 				ar->Mem_Ob[i].transform = 1;
 			}
-			if ((ar->scale_offset[0]!=0) || (ar->scale_offset[1]!=0) || (ar->scale_offset[2]!=0)) {
+			if ((ar->scale_offset[0]!=1) || (ar->scale_offset[1]!=1) || (ar->scale_offset[2]!=1)) {
 				array_offset(ar->scale_offset, scale, ar->proportion, ar->sign);
 				ar->Mem_Ob[i].transform = 1;
 			}
@@ -273,7 +274,7 @@ void create_offset(const int n, const int totmat, ArrayModifierData *ar, Object 
 				ar->Mem_Ob[i].transform = 1;
 			}
 			if (ar->Mem_Ob[i].transform) {
-				unit_m4(ar->Mem_Ob[i].location);
+				//unit_m4(ar->Mem_Ob[i].location);
 				loc_eul_size_to_mat4(ar->Mem_Ob[i].location, loc, rot, scale);
 			}
 			if (ar->rand_group & MOD_ARR_RAND_GROUP) {

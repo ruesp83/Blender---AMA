@@ -84,7 +84,7 @@ static void initData(ModifierData *md)
 	amd->mode = !MOD_ARR_MOD_ADV;
 	amd->loc_offset[0] = amd->loc_offset[1] = amd->loc_offset[2] = 0;
 	amd->rot_offset[0] = amd->rot_offset[1] = amd->rot_offset[2] = 0;
-	amd->scale_offset[0] = amd->scale_offset[1] = amd->scale_offset[2] = 0;
+	amd->scale_offset[0] = amd->scale_offset[1] = amd->scale_offset[2] = 1;
 	amd->sign = MOD_ARR_SIGN_P;
 	amd->lock = !MOD_ARR_LOCK;
 	amd->proportion = MOD_ARR_PROP;
@@ -207,7 +207,7 @@ static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 	float offset[4][4];
 	float final_offset[4][4];
 	float mid_offset[4][4], half_offset[4][4];
-	float tmp_mat[4][4]; //, local[4][4];
+	float tmp_mat[4][4], prec_mid[4][4]; //, local[4][4];
 	float length = amd->length;
 	float alpha = 0, d_alp = 0, circle;
 	float f_o;
@@ -405,6 +405,13 @@ static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 		mid_offset[3][0] = mid_offset[3][0] / 2;
 		mid_offset[3][1] = mid_offset[3][1] / 2;
 		mid_offset[3][2] = mid_offset[3][2] / 2;
+		if (amd->mode & MOD_ARR_MOD_ADV) {
+			if (amd->Mem_Ob[0].transform == 1) {
+				copy_m4_m4(prec_mid, mid_offset);
+				copy_m4_m4(tmp_mat, mid_offset);
+				mul_m4_m4m4(mid_offset, amd->Mem_Ob[0].location, tmp_mat);
+			}
+		}
 	}
 	else if (amd->dist_mc & MOD_ARR_DIST_HALF){
 		copy_m4_m4(half_offset, final_offset);
@@ -903,15 +910,24 @@ static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 					test_index_face(&mface[numFaces], &result->faceData,
 					numFaces, 3);
 				}
-
 				origindex[numFaces] = ORIGINDEX_NONE;
-
 				numFaces++;
 			}
 
 			if (amd->dist_mc & MOD_ARR_DIST_SEQ){
+				if (amd->mode & MOD_ARR_MOD_ADV) {
+					if (amd->Mem_Ob[j+1].transform == 1)
+						copy_m4_m4(mid_offset, prec_mid);
+				}
 				mul_m4_m4m4(tmp_mat, mid_offset, offset);
 				copy_m4_m4(mid_offset, tmp_mat);
+				if (amd->mode & MOD_ARR_MOD_ADV) {
+					if (amd->Mem_Ob[j+1].transform == 1) {
+						copy_m4_m4(prec_mid, mid_offset);
+						copy_m4_m4(tmp_mat, mid_offset);
+						mul_m4_m4m4(mid_offset, amd->Mem_Ob[j+1].location, tmp_mat);
+					}
+				}
 			}
 			else if (amd->dist_mc & MOD_ARR_DIST_HALF){
 				mul_m4_m4m4(tmp_mat, mid_offset, half_offset);

@@ -1483,8 +1483,6 @@ static void rna_def_modifier_array(BlenderRNA *brna)
 		{MOD_ARR_RAYS_Z, "Z", 0, "Z", "Rays Direction Z"},
 		{0, NULL, 0, NULL, NULL}};
 
-	static float default_scale[3] = {1,1,1};
-
 	srna= RNA_def_struct(brna, "ArrayModifier", "Modifier");
 	RNA_def_struct_ui_text(srna, "Array Modifier", "Array duplication modifier");
 	RNA_def_struct_sdna(srna, "ArrayModifierData");
@@ -1666,17 +1664,15 @@ static void rna_def_modifier_array(BlenderRNA *brna)
 	
 	prop= RNA_def_property(srna, "scale_offset", PROP_FLOAT, PROP_XYZ);
 	RNA_def_property_float_sdna(prop, NULL, "scale_offset");
-	//RNA_def_property_range(prop, 0, 10);
-	RNA_def_property_ui_range(prop, 0, 10, 1,5);
-	RNA_def_property_float_array_default(prop, default_scale);
+	RNA_def_property_range(prop, 0, 10);
+	RNA_def_property_ui_range(prop, 0, 10, 1, 3);
 	RNA_def_property_ui_text(prop, "Scale Offset Displacement", "Add a scale offset to vertices or object");
 	RNA_def_property_update(prop, NC_OBJECT|ND_TRANSFORM, "rna_Modifier_update");
 
 	prop= RNA_def_property(srna, "scale", PROP_FLOAT, PROP_XYZ);
 	RNA_def_property_float_sdna(prop, NULL, "scale_offset[0]");
-	//RNA_def_property_range(prop, 0, 10);
-	RNA_def_property_ui_range(prop, 0, 10, 1, 5);
-	RNA_def_property_float_default(prop, 1);
+	RNA_def_property_range(prop, 0, 10);
+	RNA_def_property_ui_range(prop, 0, 10, 1, 3);
 	RNA_def_property_ui_text(prop, "Scale Offset Displacement", "Add a scale offset to vertices or object");
 	RNA_def_property_update(prop, NC_OBJECT|ND_TRANSFORM, "rna_Modifier_update");
 
