@@ -1,14 +1,15 @@
-Advanced Modifier Array v0.5 beta3 new features and fixed bug (from v0.5.2) 21\11\2011:
+Advanced Modifier Array v0.5 beta3 new features and fixed bug (from v0.5.2) 24\11\2011:
 
     1. FIX: Visualizzazione errata in "Edit Mode" del "Mid-Cap".
-    2. UPD: Nuova UI basata sul PDF di Leandro Cavalheiro.
+	2. FIX: Mancata inizializzazione delle variabili che indicano l'offset random.
+    3. UPD: Nuova UI basata sul PDF di Leandro Cavalheiro.
             (https://github.com/ruesp83/Blender---AMA/blob/master/patch-ama/pdf/array_ui.pdf)
-    3. UPD: Due modalità per usare il modificatore:
+    4. UPD: Due modalità per usare il modificatore:
             - REGULAR : Metodo Standard di clonazione.
             - PATH    : Clonazione lungo una curva.
-    4. UPD: L'opzione "Between Offset" ora si trova nell'elenco "Fit Type".
-    5. ADD: Possibilità di legare l'oggetto "Mid Cap" a una curva diversa da quella delle copie.
-    6. ADD: Possibilità di aggiungere alla curva del Mid Cap anche lo Start Cap e l'End Cap, 
+    5. UPD: L'opzione "Between Offset" ora si trova nell'elenco "Fit Type".
+    6. ADD: Possibilità di legare l'oggetto "Mid Cap" a una curva diversa da quella delle copie.
+    7. ADD: Possibilità di aggiungere alla curva del Mid Cap anche lo Start Cap e l'End Cap, 
             rispettivamente al primo e all'ultimo Control Points.
     
 
@@ -90,11 +91,6 @@ TODO:
         - Associare una curva all'array.
         - Creare i cloni con una forma ad aspirale.
         - MultiScatter
-
-
-BUG:
-
-    1.  Quando si da un offset rand per la rotazione e per la scala i cloni scompaiono.
 
 
 Video 5\03\2011:

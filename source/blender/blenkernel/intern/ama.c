@@ -185,29 +185,7 @@ float f_rand_max(float max)
 }
 
 
-void array_scale_offset(const float max_off[3], float rit[3],int prop)
-{
-	//TODO:far valere anche valori meno di uno,
-	//così si possono ottenere oggetti anche più piccoli dell'originale
-		
-	rit[0] = f_rand_max(max_off[0]);
-	rit[0] = 1+rit[0];
-	
-	if (!prop) {
-		rit[1] = f_rand_max(max_off[1]);
-		rit[1] = 1+rit[1];
-		
-		rit[2] = f_rand_max(max_off[2]);
-		rit[2] = 1+rit[2];
-	}
-	else {
-		rit[1] = rit[0];
-		rit[2] = rit[0];
-	}
-}
-
-
-void array_offset(const float max_off[3], float rit[3],int sign)
+void array_offset(const float max_off[3], float rit[3], int prop, int sign)
 {	
 	int j;
 	
@@ -221,30 +199,35 @@ void array_offset(const float max_off[3], float rit[3],int sign)
 		else
 			rit[0] = rit[0]*(-1);
 	}
-		
-	rit[1] = f_rand_max(max_off[1]); 
-	if (sign & MOD_ARR_SIGN_L) {
-		if (sign & MOD_ARR_SIGN_P) {
-			j = BLI_rand() % 2;
-			if (j == 0)
+	
+	if (!prop) {
+		rit[1] = f_rand_max(max_off[1]); 
+		if (sign & MOD_ARR_SIGN_L) {
+			if (sign & MOD_ARR_SIGN_P) {
+				j = BLI_rand() % 2;
+				if (j == 0)
+					rit[1] = rit[1]*(-1);
+			}
+			else
 				rit[1] = rit[1]*(-1);
 		}
-		else
-			rit[1] = rit[1]*(-1);
-	}
 
-	rit[2] = f_rand_max(max_off[2]);
-	if (sign & MOD_ARR_SIGN_L) {
-		if (sign & MOD_ARR_SIGN_P) {
-			j = BLI_rand() % 2;
-			if (j == 0)
+		rit[2] = f_rand_max(max_off[2]);
+		if (sign & MOD_ARR_SIGN_L) {
+			if (sign & MOD_ARR_SIGN_P) {
+				j = BLI_rand() % 2;
+				if (j == 0)
+					rit[2] = rit[2]*(-1);
+			}
+			else
 				rit[2] = rit[2]*(-1);
 		}
-		else
-			rit[2] = rit[2]*(-1);
+	}
+	else {
+		rit[1] = rit[0];
+		rit[2] = rit[0];
 	}
 }
-
 
 void init_offset(const int start, const int end, ArrayModifierData *ar)
 {
@@ -278,15 +261,15 @@ void create_offset(const int n, const int totmat, ArrayModifierData *ar, Object 
 
 		if (ar->mode & MOD_ARR_MOD_ADV) {
 			if ((ar->rot_offset[0]!=0) || (ar->rot_offset[1]!=0) || (ar->rot_offset[2]!=0)) {
-				array_offset(ar->rot_offset, rot, ar->sign);
+				array_offset(ar->rot_offset, rot, !MOD_ARR_PROP, ar->sign);
 				ar->Mem_Ob[i].transform = 1;
 			}
 			if ((ar->scale_offset[0]!=0) || (ar->scale_offset[1]!=0) || (ar->scale_offset[2]!=0)) {
-				array_scale_offset(ar->scale_offset, scale, ar->proportion);
+				array_offset(ar->scale_offset, scale, ar->proportion, ar->sign);
 				ar->Mem_Ob[i].transform = 1;
 			}
 			if ((ar->loc_offset[0]!=0) || (ar->loc_offset[1]!=0) || (ar->loc_offset[2]!=0)) {
-				array_offset(ar->loc_offset, loc, ar->sign);
+				array_offset(ar->loc_offset, loc, !MOD_ARR_PROP, ar->sign);
 				ar->Mem_Ob[i].transform = 1;
 			}
 			if (ar->Mem_Ob[i].transform) {
