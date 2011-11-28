@@ -1,4 +1,4 @@
-Advanced Modifier Array v0.5 beta3 new features and fixed bug (from v0.5.2) 24\11\2011:
+Advanced Modifier Array v0.5 beta3 new features and fixed bug (from v0.5.2) 28\11\2011:
 
     1.  FIX: Visualizzazione errata in "Edit Mode" del "Mid-Cap".
     2.  FIX: Mancata inizializzazione delle variabili che indicano l'offset random.
@@ -83,6 +83,7 @@ TODO:
         - - Associare il materiale del clone al "Dupli Group" inerente.
         - - Materiale random anche al "Dupli Group".
         - Mettere un tasto per la randomizzazione dei materiali se no cambia anche Loc-Rot-Scale
+		- Associare una curva all'array.
 
     - MEDIA :
         - Aggiungere offset per la rotazione in base ai propri assi.
@@ -91,7 +92,6 @@ TODO:
         - Associare una ramp color al modifier array per color gradient.
         - Mid Cap:
         - - Permettere di legarlo ai cloni (Merge Verts).
-        - Associare una curva all'array.
         - Creare i cloni con una forma ad aspirale.
         - MultiScatter
         - OB-CAP: Mantenere materiale originale per ogni Cap.
