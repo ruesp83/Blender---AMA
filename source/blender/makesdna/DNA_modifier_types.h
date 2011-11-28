@@ -195,6 +195,12 @@ typedef struct ArrayChangeObject {
 	int distribution;
 } ObjectCap;*/
 
+typedef struct Mat_ObCap {
+	int *mid_cap;
+	int start_cap;
+	int end_cap;
+} Mat_ObCap;
+
 typedef struct ArrayModifierData {
 	ModifierData modifier;
 
@@ -212,6 +218,8 @@ typedef struct ArrayModifierData {
 	struct Object *offset_ob;
 	/* stores information about objects subject to random */
 	struct ArrayChangeObject *Mem_Ob;
+	/* stores the material of the "Object Cap" */
+	struct Mat_ObCap Mem_Mat_Ob;
 	/* group linked to the modifier */
 	struct Group *arr_group;
 	/* a constant duplicate offset;
@@ -254,7 +262,9 @@ typedef struct ArrayModifierData {
 	/* the number of duplicates of Mid Cap and type of distribution */
 	int count_mc;
 	int dist_mc;
-	/*  */
+	/* Indicates whether you use a random material or the original*/
+	int mat_ob;
+	/* Indicates whether to use the Start Cap and End Cap on the curve of the Mid Cap */
 	int outer_cp;
 	/* number of rays and the direction of the Clones */
 	int rays;
@@ -277,22 +287,35 @@ typedef struct ArrayModifierData {
 	int dist_cu;
 	/* ability to randomization of objects belonging to the group linked */
 	int rand_group;
-	int pad1;
+	//int pad1;
 } ArrayModifierData;
 
 /* ArrayModifierData->fit_type */
-#define MOD_ARR_FIXEDCOUNT 0
-#define MOD_ARR_FITLENGTH  1
-#define MOD_ARR_FITBETWEEN 2
+#define MOD_ARR_FIXEDCOUNT		0
+#define MOD_ARR_FITLENGTH		1
+#define MOD_ARR_FITBETWEEN		2
 
 /* ArrayModifierData->offset_type */
-#define MOD_ARR_OFF_CONST    (1<<0)
-#define MOD_ARR_OFF_RELATIVE (1<<1)
-#define MOD_ARR_OFF_OBJ      (1<<2)
+#define MOD_ARR_OFF_CONST		(1<<0)
+#define MOD_ARR_OFF_RELATIVE	(1<<1)
+#define MOD_ARR_OFF_OBJ			(1<<2)
 
 /* ArrayModifierData->flags */
-#define MOD_ARR_MERGE      	(1<<0)
-#define MOD_ARR_MERGEFINAL 	(1<<1)
+#define MOD_ARR_MERGE      		(1<<0)
+#define MOD_ARR_MERGEFINAL 		(1<<1)
+
+/* ArrayModifierData->mat_ob */
+/* Array */
+#define MOD_ARR_AR_MAT_RND     	(1<<0)
+/* Start Cap */
+#define MOD_ARR_SC_MAT_RND     	(1<<1)
+#define MOD_ARR_SC_MAT_OR 		(1<<2)
+/* Mid Cap */
+#define MOD_ARR_MC_MAT_RND     	(1<<3)
+#define MOD_ARR_MC_MAT_OR 		(1<<4)
+/* End Cap */
+#define MOD_ARR_EC_MAT_RND     	(1<<5)
+#define MOD_ARR_EC_MAT_OR 		(1<<6)
 
 /* ArrayModifierData->type */
 #define MOD_ARR_MOD_NRM			(1<<0)
@@ -309,35 +332,36 @@ typedef struct ArrayModifierData {
 #define MOD_ARR_MOD_ADV_CLONE	(1<<4)
 
 /* ArrayModifierData->sign */
-#define MOD_ARR_SIGN_P		(1<<0)
-#define MOD_ARR_SIGN_L		(1<<1)
+#define MOD_ARR_SIGN_P			(1<<0)
+#define MOD_ARR_SIGN_L			(1<<1)
 
 /* ArrayModifierData->lock */
-#define MOD_ARR_LOCK		(1<<0)
+#define MOD_ARR_LOCK			(1<<0)
 
 /* ArrayModifierData->proportion */
-#define MOD_ARR_PROP		(1<<0)
+#define MOD_ARR_PROP			(1<<0)
 
 /* ArrayModifierData->rand_mat */
-#define MOD_ARR_MAT			(1<<0)
-#define MOD_ARR_SEQ			(1<<1)
+#define MOD_ARR_MAT				(1<<0)
+#define MOD_ARR_SEQ				(1<<1)
 
 /* ArrayModifierData->rays_dir */
-#define MOD_ARR_RAYS_X 0
-#define MOD_ARR_RAYS_Y 1
-#define MOD_ARR_RAYS_Z 2
+#define MOD_ARR_RAYS_X			0
+#define MOD_ARR_RAYS_Y			1
+#define MOD_ARR_RAYS_Z			2
 
 /* ArrayModifierData->rand_group */
-#define MOD_ARR_RAND_GROUP    (1<<0)
+#define MOD_ARR_RAND_GROUP		(1<<0)
+#define MOD_ARR_RAND_MAT_GROUP  (1<<1)
 
 /* ArrayModifierData->dist_cu */
-#define MOD_ARR_DIST_EVENLY    (1<<0)
-#define MOD_ARR_DIST_SEGMENT   (1<<1)
+#define MOD_ARR_DIST_EVENLY		(1<<0)
+#define MOD_ARR_DIST_SEGMENT	(1<<1)
 
 /* ArrayModifierData->dist_mc */
-#define MOD_ARR_DIST_SEQ     (1<<0)
-#define MOD_ARR_DIST_HALF    (1<<1)
-#define MOD_ARR_DIST_CURVE   (1<<2)
+#define MOD_ARR_DIST_SEQ		(1<<0)
+#define MOD_ARR_DIST_HALF		(1<<1)
+#define MOD_ARR_DIST_CURVE		(1<<2)
 
 typedef struct MirrorModifierData {
 	ModifierData modifier;

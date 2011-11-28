@@ -4406,6 +4406,7 @@ static void direct_link_modifiers(FileData *fd, ListBase *lb)
 			ArrayModifierData *amd = (ArrayModifierData*) md;
 
 			amd->Mem_Ob = newdataadr(fd, amd->Mem_Ob);
+			amd->Mem_Mat_Ob.mid_cap = newdataadr(fd, amd->Mem_Mat_Ob.mid_cap);
 		}
 	}
 }

@@ -1634,6 +1634,26 @@ static void rna_def_modifier_array(BlenderRNA *brna)
 	RNA_def_property_flag(prop, PROP_EDITABLE|PROP_ID_SELF_CHECK);
 	RNA_def_property_update(prop, 0, "rna_Modifier_dependency_update");
 
+	prop= RNA_def_property(srna, "rand_mat_array", PROP_BOOLEAN, PROP_TRANSLATION);
+	RNA_def_property_boolean_sdna(prop, NULL, "mat_ob", MOD_ARR_AR_MAT_RND);
+	RNA_def_property_ui_text(prop, "Array", "Material random to Array");
+	RNA_def_property_update(prop, 0, "rna_Modifier_update");
+
+	prop= RNA_def_property(srna, "rand_mat_sc", PROP_BOOLEAN, PROP_TRANSLATION);
+	RNA_def_property_boolean_sdna(prop, NULL, "mat_ob", MOD_ARR_SC_MAT_RND);
+	RNA_def_property_ui_text(prop, "Start Cap", "Material random to Start Cap");
+	RNA_def_property_update(prop, 0, "rna_Modifier_update");
+
+	prop= RNA_def_property(srna, "rand_mat_mc", PROP_BOOLEAN, PROP_TRANSLATION);
+	RNA_def_property_boolean_sdna(prop, NULL, "mat_ob", MOD_ARR_MC_MAT_RND);
+	RNA_def_property_ui_text(prop, "Mid Cap", "Material random to Mid Cap");
+	RNA_def_property_update(prop, 0, "rna_Modifier_update");
+
+	prop= RNA_def_property(srna, "rand_mat_ec", PROP_BOOLEAN, PROP_TRANSLATION);
+	RNA_def_property_boolean_sdna(prop, NULL, "mat_ob", MOD_ARR_EC_MAT_RND);
+	RNA_def_property_ui_text(prop, "End Cap", "Material random to End Cap");
+	RNA_def_property_update(prop, 0, "rna_Modifier_update");
+
 	/* Advanced parameters */
 	prop= RNA_def_property(srna, "use_advanced", PROP_BOOLEAN, PROP_NONE);
 	RNA_def_property_boolean_sdna(prop, NULL, "mode", MOD_ARR_MOD_ADV);
@@ -1719,6 +1739,11 @@ static void rna_def_modifier_array(BlenderRNA *brna)
 	prop= RNA_def_property(srna, "rand_group", PROP_BOOLEAN, PROP_TRANSLATION);
 	RNA_def_property_boolean_sdna(prop, NULL, "rand_group", MOD_ARR_RAND_GROUP);
 	RNA_def_property_ui_text(prop, "Rand Object", "Object random group");
+	RNA_def_property_update(prop, 0, "rna_Modifier_update");
+
+	prop= RNA_def_property(srna, "rand_mat_group", PROP_BOOLEAN, PROP_TRANSLATION);
+	RNA_def_property_boolean_sdna(prop, NULL, "rand_group", MOD_ARR_RAND_MAT_GROUP);
+	RNA_def_property_ui_text(prop, "Dupli Group", "Material random to Dupli Group");
 	RNA_def_property_update(prop, 0, "rna_Modifier_update");
 
 	prop= RNA_def_property(srna, "all_curve", PROP_BOOLEAN, PROP_TRANSLATION);

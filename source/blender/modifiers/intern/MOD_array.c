@@ -90,6 +90,7 @@ static void initData(ModifierData *md)
 	amd->proportion = MOD_ARR_PROP;
 	amd->rays = 1;
 	amd->rand_mat = MOD_ARR_MAT;
+	amd->mat_ob = MOD_ARR_AR_MAT_RND;
 	amd->cont_mat = 1;
 	amd->count_mc = 1;
 	amd->dist_mc = MOD_ARR_DIST_SEQ;
@@ -98,6 +99,8 @@ static void initData(ModifierData *md)
 	amd->rand_group = !MOD_ARR_RAND_GROUP;
 	amd->dist_cu = MOD_ARR_DIST_EVENLY;
 	amd->outer_cp = !MOD_ARR_CP_FIRST;
+	amd->Mem_Mat_Ob.start_cap = 0;
+	amd->Mem_Mat_Ob.end_cap = 0;
 }
 
 static void copyData(ModifierData *md, ModifierData *target)
@@ -130,7 +133,11 @@ static void copyData(ModifierData *md, ModifierData *target)
 	tamd->proportion = amd->proportion;
 	tamd->rays = amd->rays;
 	tamd->Mem_Ob = MEM_dupallocN(amd->Mem_Ob);
+	tamd->Mem_Mat_Ob.start_cap = amd->Mem_Mat_Ob.start_cap;
+	tamd->Mem_Mat_Ob.end_cap = amd->Mem_Mat_Ob.end_cap;
+	tamd->Mem_Mat_Ob.mid_cap = MEM_dupallocN(amd->Mem_Mat_Ob.mid_cap);
 	tamd->rand_mat = amd->rand_mat;
+	tamd->mat_ob = amd->mat_ob;
 	tamd->cont_mat = amd->cont_mat;
 	tamd->count_mc = amd->count_mc;
 	tamd->dist_mc = amd->dist_mc;
@@ -212,7 +219,7 @@ static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 	float alpha = 0, d_alp = 0, circle;
 	float f_o;
 	int i, j, flag;
-	int dim, start;
+	int start, start_mc;
 	int count = amd->count;
 	int numVerts, numEdges, numFaces;
 	int maxVerts, maxEdges, maxFaces;
@@ -363,26 +370,54 @@ static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 	flag = 0;
 	if ((amd->mode & MOD_ARR_MOD_ADV) || (amd->mode & MOD_ARR_MOD_ADV_MAT)){
 		start = 0;
+		start_mc = 0;
 		if (!amd->Mem_Ob)
-			amd->Mem_Ob = MEM_callocN(sizeof(*amd->Mem_Ob) * (count), "Mem_Ob");
+			amd->Mem_Ob = MEM_callocN(sizeof(*amd->Mem_Ob) * count, "Mem_Ob");
 		else {
+			int dim = 0;
 			dim = MEM_allocN_len(amd->Mem_Ob) / sizeof(*amd->Mem_Ob);
 			if (dim < count) {
-				amd->Mem_Ob = MEM_reallocN(amd->Mem_Ob, sizeof(*amd->Mem_Ob) * (count));
+				amd->Mem_Ob = MEM_reallocN(amd->Mem_Ob, sizeof(*amd->Mem_Ob) * count);
 				start = dim;
 			}
+			else if (dim > count) {
+				amd->Mem_Ob = MEM_reallocN(amd->Mem_Ob, sizeof(*amd->Mem_Ob) * count);
+				start = amd->count_mc;
+			}
 		}
-		
+
+		if (!amd->Mem_Mat_Ob.mid_cap)
+			amd->Mem_Mat_Ob.mid_cap = MEM_callocN(sizeof(int) * (amd->count_mc), "Mem_Mat_Ob");
+		else {
+			int dim = 0;
+			dim = MEM_allocN_len(amd->Mem_Mat_Ob.mid_cap) / sizeof(*amd->Mem_Mat_Ob.mid_cap);
+			if (dim < amd->count_mc) {
+				amd->Mem_Mat_Ob.mid_cap = MEM_reallocN(amd->Mem_Mat_Ob.mid_cap, sizeof(*amd->Mem_Mat_Ob.mid_cap) * amd->count_mc);
+				start_mc = dim;
+			}
+			else if (dim > amd->count_mc) {
+				amd->Mem_Mat_Ob.mid_cap = MEM_reallocN(amd->Mem_Mat_Ob.mid_cap, sizeof(*amd->Mem_Mat_Ob.mid_cap) * amd->count_mc);
+				start_mc = amd->count_mc;
+			}
+		}
 		//Inizializzare i nuovi cloni creati
 		if (!amd->lock) {
-			init_offset(start, count, amd);
+			if (amd->Mem_Mat_Ob.mid_cap) {
+				if (start_mc != amd->count_mc)
+					init_mat_oc(start_mc, amd->count_mc, amd->Mem_Mat_Ob.mid_cap);
+			}
+			if (start != count)
+				init_offset(start, count, amd);
 			create_offset(count, ob->totcol, amd, ob);
 			amd->lock = 1;
 			flag = 1;
 		}
-		else 
-			if (start!=0)// || (amd->mode & MOD_ARR_MOD_ADV_MAT))
+		else {
+			if ((start != 0) && (start != count)) // || (amd->mode & MOD_ARR_MOD_ADV_MAT))
 				init_offset(start, count, amd);
+			if ((start_mc != 0) && (start_mc != amd->count_mc))
+ 				init_mat_oc(start_mc, amd->count_mc, amd->Mem_Mat_Ob.mid_cap);
+		}
 	}
 	
 	f_o = count-1;
@@ -696,7 +731,7 @@ static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 			numFaces++;
 
 			/*Rand Material*/
-			if ((flag = 1) && (amd->mode & MOD_ARR_MOD_ADV_MAT) && (ob->totcol>1))
+			if ((flag = 1) && (amd->mode & MOD_ARR_MOD_ADV_MAT) && (amd->mat_ob & MOD_ARR_AR_MAT_RND) && (ob->totcol>1))
 			{
 					mf2->mat_nr = amd->Mem_Ob[j-1].id_mat;
 					flag = 0;
@@ -811,7 +846,8 @@ static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 				test_index_face(&mface[numFaces], &result->faceData,
 				numFaces, 3);
 			}
-
+			if ((amd->mode & MOD_ARR_MOD_ADV_MAT) && (amd->mat_ob & MOD_ARR_SC_MAT_RND) && (ob->totcol>1))
+				mface[numFaces].mat_nr = amd->Mem_Mat_Ob.start_cap;
 			origindex[numFaces] = ORIGINDEX_NONE;
 
 			numFaces++;
@@ -910,6 +946,8 @@ static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 					test_index_face(&mface[numFaces], &result->faceData,
 					numFaces, 3);
 				}
+				if ((amd->mode & MOD_ARR_MOD_ADV_MAT) && (amd->mat_ob & MOD_ARR_MC_MAT_RND) && (ob->totcol>1))
+					mface[numFaces].mat_nr = amd->Mem_Mat_Ob.mid_cap[j];
 				origindex[numFaces] = ORIGINDEX_NONE;
 				numFaces++;
 			}
@@ -1052,6 +1090,8 @@ static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 				test_index_face(&mface[numFaces], &result->faceData,
 				numFaces, 3);
 			}
+			if ((amd->mode & MOD_ARR_MOD_ADV_MAT) && (amd->mat_ob & MOD_ARR_EC_MAT_RND) && (ob->totcol>1))
+				mface[numFaces].mat_nr = amd->Mem_Mat_Ob.end_cap;
 			origindex[numFaces] = ORIGINDEX_NONE;
 
 			numFaces++;

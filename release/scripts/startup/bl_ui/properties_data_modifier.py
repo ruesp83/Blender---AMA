@@ -146,16 +146,10 @@ class DATA_PT_modifiers(ModifierButtonsPanel, Panel):
                 if md.dist_mid_cap == 'CURVE':
                     split = col.split()
                     col = split.column()
-                    if (not md.start_cap is None):
-                        col.active = True
-                    else:
-                        col.active = False
+                    col.active = False if md.start_cap is None else True
                     col.prop(md, "first_start_cap")
                     col = split.column()
-                    if (not md.end_cap is None):
-                        col.active = True
-                    else:
-                        col.active = False
+                    col.active = False if md.end_cap is None else True
                     col.prop(md, "last_end_cap")
 
         col = layout.column()
@@ -178,15 +172,28 @@ class DATA_PT_modifiers(ModifierButtonsPanel, Panel):
                 off_box2.column().prop(md, "scale", text="")
             else:
                 off_box2.column().prop(md, "scale_offset", text="")
-            col.separator()
-            row = col.row()
-            row.prop(md, "array_group")
-            act = row.row()
-            if md.array_group is None :
-                act.active = False
-            else:
-                act.active = True
-            act.prop(md, "rand_group")
+
+        col = layout.column()
+        box = col.box()
+        row = box.row()
+        if (md.use_advanced_clone):
+            row.prop(md, "use_advanced_clone", text="")
+        else:
+            row.prop(md, "use_advanced_clone", text="")
+        row.label("Advanced Cloning")
+        if (md.use_advanced_clone):
+            col = box.column()
+            split = col.split()
+            col = split.column()
+            col.label(text="Dupli Group:")
+            col.prop(md, "array_group", text="")
+            sub = col.column()
+            sub.active = False if md.array_group is None else True
+            sub.prop(md, "rand_group")
+            col = split.column()
+            col.label(text="Rays Direction:")
+            col.prop(md,"rays_dir", text="")
+            col.prop(md,"rays")
 
         col = layout.column()
         box = col.box()
@@ -200,25 +207,29 @@ class DATA_PT_modifiers(ModifierButtonsPanel, Panel):
             col = box.column()
             row = col.row()
             row.prop(md, "material", expand=True)
-            act = col.row()
+            row = col.row()
             if md.material == 'SEQUENCE' :
-                act.active = True
+                row.prop(md, "cont_mat")
             else:
-                act.active = False
-            act.prop(md, "cont_mat")
-
-        col = layout.column()
-        box = col.box()
-        row = box.row()
-        if (md.use_advanced_clone):
-            row.prop(md, "use_advanced_clone", text="")
-        else:
-            row.prop(md, "use_advanced_clone", text="")
-        row.label("Advanced Cloning")
-        if (md.use_advanced_clone):
-            col = box.column()
-            col.prop(md,"rays_dir")
-            col.prop(md,"rays")
+                col = row.column()
+                split = col.split()
+                col = split.column()
+                col.prop(md, "rand_mat_array")
+                col.separator()
+                sub = col.column()
+                sub.active = False if md.array_group is None else True
+                sub.prop(md, "rand_mat_group")
+                col = split.column()
+                sub = col.column()
+                sub.active = False if md.start_cap is None else True
+                sub.prop(md, "rand_mat_sc")
+                sub = col.column()
+                sub.active = False if md.mid_cap is None else True
+                sub.prop(md, "rand_mat_mc")
+                sub = col.column()
+                sub.active = False if md.end_cap is None else True
+                sub.prop(md, "rand_mat_ec")
+                
 
         layout.separator()
         layout.operator("object.array_rand", text="Refresh Ad. Offset")

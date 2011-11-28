@@ -72,6 +72,7 @@ float count_to_length(int count, const float offset[3]);
 float f_rand_max(float max);
 
 void array_offset(const float max_off[3], float rit[3], int prop, int sign);
+void init_mat_oc(const int start, const int end, int *vet_mc);
 void init_offset(const int start, const int end, struct ArrayModifierData *ar);
 void create_offset(const int n, const int totmat, struct ArrayModifierData *ar, struct Object *ob);
 void array_to_curve(struct Scene *scene, struct Object *cuOb, struct Object *target, float (*vertexCos)[3], int numVerts);

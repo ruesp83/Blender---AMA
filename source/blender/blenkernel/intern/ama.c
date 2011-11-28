@@ -229,6 +229,15 @@ void array_offset(const float max_off[3], float rit[3], int prop, int sign)
 	}
 }
 
+void init_mat_oc(const int start, const int end, int *vet_mc)
+{
+	int i;
+
+	for (i=start; i<end; i++)
+		vet_mc[i] = 0;
+}
+
+
 void init_offset(const int start, const int end, ArrayModifierData *ar)
 {
 	int i;
@@ -274,7 +283,6 @@ void create_offset(const int n, const int totmat, ArrayModifierData *ar, Object 
 				ar->Mem_Ob[i].transform = 1;
 			}
 			if (ar->Mem_Ob[i].transform) {
-				//unit_m4(ar->Mem_Ob[i].location);
 				loc_eul_size_to_mat4(ar->Mem_Ob[i].location, loc, rot, scale);
 			}
 			if (ar->rand_group & MOD_ARR_RAND_GROUP) {
@@ -285,10 +293,11 @@ void create_offset(const int n, const int totmat, ArrayModifierData *ar, Object 
 
 		if (ar->mode & MOD_ARR_MOD_ADV_MAT) {
 			if (totmat>1) {
-				if (ar->rand_mat & MOD_ARR_MAT) {
+				/*random*/
+				if ((ar->rand_mat & MOD_ARR_MAT) && (ar->mat_ob & MOD_ARR_AR_MAT_RND)) {
 					ar->Mem_Ob[i].id_mat = BLI_rand() % totmat;
 				}
-				else {
+				else { /*sequence*/
 					if (cont_mat == 0 ){
 						cont_mat = ar->cont_mat;
 						if (act_mat + 1 < totmat)
@@ -302,6 +311,22 @@ void create_offset(const int n, const int totmat, ArrayModifierData *ar, Object 
 			}
 		}
 
+	}
+	if (ar->mode & MOD_ARR_MOD_ADV_MAT) {
+		if (totmat>1) {
+			/*random*/
+			if ((ar->rand_mat & MOD_ARR_MAT) && (ar->mat_ob & MOD_ARR_SC_MAT_RND)) {
+				ar->Mem_Mat_Ob.start_cap = BLI_rand() % totmat;
+			}
+			if ((ar->rand_mat & MOD_ARR_MAT) && (ar->mat_ob & MOD_ARR_MC_MAT_RND)) {
+				for (i=0; i < ar->count_mc; i++) {
+					ar->Mem_Mat_Ob.mid_cap[i] = BLI_rand() % totmat;
+				}
+			}
+			if ((ar->rand_mat & MOD_ARR_MAT) && (ar->mat_ob & MOD_ARR_EC_MAT_RND)) {
+				ar->Mem_Mat_Ob.end_cap = BLI_rand() % totmat;
+			}
+		}
 	}
 }
 

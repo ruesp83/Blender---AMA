@@ -62,6 +62,7 @@
 #include "BKE_key.h"
 #include "BKE_lattice.h"
 #include "BKE_main.h"
+#include "BKE_material.h"
 #include "BKE_mesh.h"
 #include "BKE_object.h"
 #include "BKE_particle.h"
@@ -787,19 +788,21 @@ static void group_arrayduplilist(ListBase *lb, Scene *scene, Object *ob, int lev
 					alpha = (float)6.2831 / amd->rays;
 				copy_m4_m4(offset, amd->delta);
 					
-				for (i = 0; i < amd->count-1; i++)
-				{
+				for (i = 0; i < amd->count-1; i++) {
 					cont_rnd = 0;
-					for(go= group->gobject.first; go; go= go->next) 
-					{
+					for(go= group->gobject.first; go; go= go->next) {
 						cont_rnd++;
 						/* note, if you check on layer here, render goes wrong... it still deforms verts and uses parent imat */
-						if(go->ob!=ob)
-						{
-							if (amd->rand_group & MOD_ARR_RAND_GROUP)
-							{
+						if(go->ob!=ob) {
+							if (amd->rand_group & MOD_ARR_RAND_GROUP) {
 								if ((amd->Mem_Ob[i].rand_group_obj != 0) && (amd->Mem_Ob[i].rand_group_obj != cont_rnd))
 									continue;
+							} else if (amd->rand_group & MOD_ARR_RAND_MAT_GROUP) {
+								//assign_material(go->ob, *ob->mat, go->ob->totcol+1);
+								//go->ob->actcol = BLI_rand() % ob->totcol;
+
+								//printf("Totcol=%d\n", go->ob->totcol);
+								//printf("actcol=%d\n", go->ob->actcol);
 							}
 							/* Group Dupli Offset, should apply after everything else */
 							if (group->dupli_ofs[0] || group->dupli_ofs[1] || group->dupli_ofs[2]) {
@@ -811,8 +814,7 @@ static void group_arrayduplilist(ListBase *lb, Scene *scene, Object *ob, int lev
 							}
 						
 							copy_m4_m4(tmat, mat);
-							if (amd->rays>1)
-							{
+							if (amd->rays>1) {
 								unit_m4(rot);
 								if (amd->rays_dir == MOD_ARR_RAYS_X)
 									rotate_m4(rot,'X',d_alp);
@@ -833,15 +835,12 @@ static void group_arrayduplilist(ListBase *lb, Scene *scene, Object *ob, int lev
 									mul_m4_m4m4(mat, rot, tmat);
 								}
 							}
-							else
-							{
+							else {
 								mul_m4_m4m4(mat, offset, tmat);
 							}
 							//Noise
-							if (amd->mode & MOD_ARR_MOD_ADV)
-							{
-								if (amd->Mem_Ob[i].transform == 1)
-								{
+							if (amd->mode & MOD_ARR_MOD_ADV) {
+								if (amd->Mem_Ob[i].transform == 1) {
 									copy_m4_m4(tmat, mat);
 									mul_m4_m4m4(mat, amd->Mem_Ob[i].location, tmat);
 								}
@@ -857,8 +856,7 @@ static void group_arrayduplilist(ListBase *lb, Scene *scene, Object *ob, int lev
 							if(((dob->origlay & group->layer)==0 ||
 								(G.rendering==0 && dob->ob->restrictflag & OB_RESTRICT_VIEW) ||
 								(G.rendering && dob->ob->restrictflag & OB_RESTRICT_RENDER)) || 
-								!(md->mode&eModifierMode_Realtime) || (!(md->mode&eModifierMode_Editmode) && (ob->mode == OB_MODE_EDIT)))
-							{
+								!(md->mode&eModifierMode_Realtime) || (!(md->mode&eModifierMode_Editmode) && (ob->mode == OB_MODE_EDIT))) {
 								dob->no_draw= 1;
 							}
 							else {
@@ -872,8 +870,7 @@ static void group_arrayduplilist(ListBase *lb, Scene *scene, Object *ob, int lev
 						}
 					}
 					//Increment for rays
-					if (amd->rays>1)
-					{
+					if (amd->rays>1) {
 						d_alp = d_alp + alpha;
 						if (d_alp>6.2831)
 							d_alp=0;

@@ -1392,6 +1392,7 @@ static void write_modifiers(WriteData *wd, ListBase *modbase)
 			ArrayModifierData *amd = (ArrayModifierData*) md;
 			
 			writestruct(wd, DATA, "ArrayChangeObject", amd->count, amd->Mem_Ob);
+			writedata(wd, DATA, sizeof(int)*(amd->count_mc), amd->Mem_Mat_Ob.mid_cap);
 		}
 	}
 }
