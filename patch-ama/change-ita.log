@@ -13,8 +13,8 @@ Advanced Modifier Array v0.5 beta3 new features and fixed bug (from v0.5.2) 24\1
              rispettivamente al primo e all'ultimo Control Points.
     8.  ADD: "Scale" può avere valori negativi, per creare cloni più piccoli dell'originale.
     9.  ADD: Il "Mid Cap" è soggetto al noise, ma solo nella modalità "Sequence".
-	10. ADD: "Start Cap - Mid Cap - End Cap" ora hanno la possibilità di usare un materiale random, 
-			 appartenente all'oggetto clonato.
+    10. ADD: "Start Cap - Mid Cap - End Cap" ora hanno la possibilità di usare un materiale random, 
+             appartenente all'oggetto clonato.
     
 
 Advanced Modifier Array v0.5 beta2 new features and fixed bug (from v0.5.1) 3\11\2011:
