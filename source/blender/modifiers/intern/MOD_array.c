@@ -1102,7 +1102,7 @@ static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 	}
 
 	if(amd->type == MOD_ARR_MOD_CURVE && amd->curve_ob) {
-		if (amd->dist_cu == MOD_ARR_DIST_EVENLY){
+		if (amd->dist_cu & MOD_ARR_DIST_EVENLY){
 			float (*cos)[3] = MEM_mallocN(sizeof(*cos)*numVerts, "vertex_array_to_curve");
 	
 			for (i=0; i<numVerts; i++)

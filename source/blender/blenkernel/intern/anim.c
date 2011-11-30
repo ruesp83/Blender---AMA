@@ -887,7 +887,7 @@ static void group_arrayduplilist(ListBase *lb, Scene *scene, Object *ob, int lev
 static void frames_duplilist(ListBase *lb, Scene *scene, Object *ob, int level, int animated)
 {
 	extern int enable_cu_speed;	/* object.c */
-	Object copyob = {{NULL}};
+	Object copyob;
 	int cfrao = scene->r.cfra;
 	int dupend = ob->dupend;
 	
@@ -1160,26 +1160,16 @@ static void face_duplilist(ListBase *lb, ID *id, Scene *scene, Object *par, floa
 	
 	em = BKE_mesh_get_editmesh(me);
 	if(em) {
-		int totvert;
-		
 		dm= editmesh_get_derived_cage(scene, par, em, CD_MASK_BAREMESH);
-		
-		totface= dm->getNumFaces(dm);
-		mface= MEM_mallocN(sizeof(MFace)*totface, "mface temp");
-		dm->copyFaceArray(dm, mface);
-		totvert= dm->getNumVerts(dm);
-		mvert= MEM_mallocN(sizeof(MVert)*totvert, "mvert temp");
-		dm->copyVertArray(dm, mvert);
-
 		BKE_mesh_end_editmesh(me, em);
 	}
 	else {
 		dm = mesh_get_derived_deform(scene, par, CD_MASK_BAREMESH);
-		
-		totface= dm->getNumFaces(dm);
-		mface= dm->getFaceArray(dm);
-		mvert= dm->getVertArray(dm);
 	}
+
+	totface= dm->getNumFaces(dm);
+	mface= dm->getFaceArray(dm);
+	mvert= dm->getVertArray(dm);
 
 	if(G.rendering) {
 
@@ -1318,11 +1308,6 @@ static void face_duplilist(ListBase *lb, ID *id, Scene *scene, Object *par, floa
 		}
 		if (sce)	base= base->next;	/* scene loop */
 		else		go= go->next;		/* group loop */
-	}
-	
-	if(em) {
-		MEM_freeN(mface);
-		MEM_freeN(mvert);
 	}
 
 	if(orco)

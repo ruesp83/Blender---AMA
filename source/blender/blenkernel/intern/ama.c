@@ -492,8 +492,15 @@ void array_to_curve(Scene *scene, Object *cuOb, Object *target, float (*vertexCo
 
 	init_curve_deform(cuOb, target, &cd, (cu->flag & CU_STRETCH)==0);
 
+	cd.dmin[0]= cd.dmin[1]= cd.dmin[2]= -1.0f;
+	cd.dmax[0]= cd.dmax[1]= cd.dmax[2]=  0.0f;
+
+	/* set mesh min max bounds */
+	INIT_MINMAX(cd.dmin, cd.dmax);
+
 	for(a = 0; a < numVerts; a++) {
 		mul_m4_v3(cd.curvespace, vertexCos[a]);
+		DO_MINMAX(vertexCos[a], cd.dmin, cd.dmax);
 	}
 	
 	for(a = 0; a < numVerts; a++) {
