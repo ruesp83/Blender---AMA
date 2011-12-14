@@ -1014,18 +1014,6 @@ Index: source/blender/blenkernel/intern/anim.c
  	}
  }
  
-Index: source/blender/blenkernel/intern/lattice.c
-===================================================================
---- source/blender/blenkernel/intern/lattice.c	(revisione 42627)
-+++ source/blender/blenkernel/intern/lattice.c	(copia locale)
-@@ -638,7 +638,6 @@
- 		vec_apply_track(cent, axis-1);
- 		cent[axis < 4 ? axis-1 : axis-4]= 0.0f;
- 
--
- 		/* scale if enabled */
- 		if(cu->flag & CU_PATH_RADIUS)
- 			mul_v3_fl(cent, radius);
 Index: source/blender/blenloader/intern/readfile.c
 ===================================================================
 --- source/blender/blenloader/intern/readfile.c	(revisione 42627)
@@ -2432,14 +2420,14 @@ Index: source/blender/modifiers/intern/MOD_array.c
  
  		invert_m4_m4(startoffset, offset);
  
-+		
-+		if (amd->outer_cp & MOD_ARR_CP_FIRST && amd->start_cap && amd->curve_cap) {
-+			if (nu->bezt)
-+				copy_v3_v3(startoffset[3], nu->bezt[0].vec[1]);
-+			else
-+				copy_v3_v3(startoffset[3], nu->bp[0].vec);
++		if (amd->dist_mc & MOD_ARR_DIST_CURVE) {
++			if (amd->outer_cp & MOD_ARR_CP_FIRST && amd->start_cap && amd->curve_cap) {
++				if (nu->bezt)
++					copy_v3_v3(startoffset[3], nu->bezt[0].vec[1]);
++				else
++					copy_v3_v3(startoffset[3], nu->bp[0].vec);
++			}
 +		}
-+
  		vert_map = MEM_callocN(sizeof(*vert_map) * capVerts,
  		"arrayModifier_doArray vert_map");
  
@@ -2469,7 +2457,7 @@ Index: source/blender/modifiers/intern/MOD_array.c
  			origindex[numFaces] = ORIGINDEX_NONE;
  
  			numFaces++;
-@@ -662,7 +924,144 @@
+@@ -662,7 +924,142 @@
  		MEM_freeN(vert_map);
  		start_cap->release(start_cap);
  	}
@@ -2593,17 +2581,15 @@ Index: source/blender/modifiers/intern/MOD_array.c
 +				copy_m4_m4(mid_offset, tmp_mat);
 +			}
 +			else if (amd->dist_mc & MOD_ARR_DIST_CURVE){
-+				if  (amd->curve_cap) {
-+					if (amd->outer_cp & MOD_ARR_CP_FIRST && amd->start_cap)
-+						inc = 1;
-+					else 
-+						inc = 0;
-+					if (j+1 < amd->count_mc){
-+						if (nu->bezt)
-+							copy_v3_v3(mid_offset[3], nu->bezt[j+1+inc].vec[1]);
-+						else
-+							copy_v3_v3(mid_offset[3], nu->bp[j+1+inc].vec);
-+					}
++				if (amd->outer_cp & MOD_ARR_CP_FIRST && amd->start_cap)
++					inc = 1;
++				else 
++					inc = 0;
++				if (j+1 < amd->count_mc){
++					if (nu->bezt)
++						copy_v3_v3(mid_offset[3], nu->bezt[j+1+inc].vec[1]);
++					else
++						copy_v3_v3(mid_offset[3], nu->bp[j+1+inc].vec);
 +				}
 +			}
 +		}
@@ -2614,21 +2600,23 @@ Index: source/blender/modifiers/intern/MOD_array.c
  	if(end_cap) {
  		float endoffset[4][4];
  		MVert *cap_mvert;
-@@ -681,6 +1080,13 @@
+@@ -680,7 +1077,14 @@
+ 		cap_mface = end_cap->getFaceArray(end_cap);
  
  		mul_m4_m4m4(endoffset, final_offset, offset);
- 
-+		if (amd->outer_cp & MOD_ARR_CP_LAST && amd->end_cap && amd->curve_cap) {
-+			if (nu->bezt)
-+				copy_v3_v3(endoffset[3], nu->bezt[nu->pntsu - 1].vec[1]);
-+			else
-+				copy_v3_v3(endoffset[3], nu->bp[nu->pntsu * nu->pntsv - 1].vec);
+-
++		if (amd->dist_mc & MOD_ARR_DIST_CURVE) {
++			if (amd->outer_cp & MOD_ARR_CP_LAST && amd->end_cap && amd->curve_cap) {
++				if (nu->bezt)
++					copy_v3_v3(endoffset[3], nu->bezt[nu->pntsu - 1].vec[1]);
++				else
++					copy_v3_v3(endoffset[3], nu->bp[nu->pntsu * nu->pntsv - 1].vec);
++			}
 +		}
-+
  		vert_map = MEM_callocN(sizeof(*vert_map) * capVerts,
  		"arrayModifier_doArray vert_map");
  
-@@ -719,6 +1125,7 @@
+@@ -719,6 +1123,7 @@
  				numVerts++;
  			}
  		}
@@ -2636,7 +2624,7 @@ Index: source/blender/modifiers/intern/MOD_array.c
  		origindex = result->getEdgeDataArray(result, CD_ORIGINDEX);
  		for(i = 0; i < capEdges; i++) {
  			int v1, v2;
-@@ -736,6 +1143,7 @@
+@@ -736,6 +1141,7 @@
  				numEdges++;
  			}
  		}
@@ -2644,7 +2632,7 @@ Index: source/blender/modifiers/intern/MOD_array.c
  		origindex = result->getFaceDataArray(result, CD_ORIGINDEX);
  		for(i = 0; i < capFaces; i++) {
  			DM_copy_face_data(end_cap, result, i, numFaces, 1);
-@@ -754,6 +1162,8 @@
+@@ -754,6 +1160,8 @@
  				test_index_face(&mface[numFaces], &result->faceData,
  				numFaces, 3);
  			}
@@ -2653,7 +2641,7 @@ Index: source/blender/modifiers/intern/MOD_array.c
  			origindex[numFaces] = ORIGINDEX_NONE;
  
  			numFaces++;
-@@ -763,6 +1173,12 @@
+@@ -763,6 +1171,12 @@
  		end_cap->release(end_cap);
  	}
  
@@ -2666,7 +2654,7 @@ Index: source/blender/modifiers/intern/MOD_array.c
  	BLI_edgehash_free(edges, NULL);
  	MEM_freeN(indexMap);
  
-@@ -783,9 +1199,18 @@
+@@ -783,9 +1197,18 @@
  
  	result = arrayModifier_doArray(amd, md->scene, ob, dm, 0);
  
@@ -2687,7 +2675,7 @@ Index: source/blender/modifiers/intern/MOD_array.c
  	return result;
  }
  
-@@ -796,6 +1221,16 @@
+@@ -796,6 +1219,16 @@
  	return applyModifier(md, ob, dm, 0, 1);
  }
  
@@ -2704,7 +2692,7 @@ Index: source/blender/modifiers/intern/MOD_array.c
  
  ModifierTypeInfo modifierType_Array = {
  	/* name */              "Array",
-@@ -817,12 +1252,11 @@
+@@ -817,12 +1250,11 @@
  	/* applyModifierEM */   applyModifierEM,
  	/* initData */          initData,
  	/* requiredDataMask */  NULL,
