@@ -1080,6 +1080,8 @@ static int multiresbake_image_exec_locked(bContext *C, wmOperator *op)
 
 		ob= base->object;
 
+		multires_force_update(ob);
+
 		/* copy data stored in job descriptor */
 		bkr.bake_filter= scene->r.bake_filter;
 		bkr.mode= scene->r.bake_mode;
@@ -1116,6 +1118,8 @@ static void init_multiresbake_job(bContext *C, MultiresBakeJob *bkj)
 	CTX_DATA_BEGIN(C, Base*, base, selected_editable_bases) {
 		MultiresBakerJobData *data;
 		ob= base->object;
+
+		multires_force_update(ob);
 
 		data= MEM_callocN(sizeof(MultiresBakerJobData), "multiresBaker derivedMesh_data");
 		data->lores_dm = multiresbake_create_loresdm(scene, ob, &data->lvl);
@@ -1255,9 +1259,7 @@ static int test_bake_internal(bContext *C, ReportList *reports)
 {
 	Scene *scene= CTX_data_scene(C);
 
-	if(scene->r.renderer!=R_INTERN) {
-		BKE_report(reports, RPT_ERROR, "Bake only supported for Internal Renderer");
-	} else if((scene->r.bake_flag & R_BAKE_TO_ACTIVE) && CTX_data_active_object(C)==NULL) {
+	if((scene->r.bake_flag & R_BAKE_TO_ACTIVE) && CTX_data_active_object(C)==NULL) {
 		BKE_report(reports, RPT_ERROR, "No active object");
 	}
 	else if(scene->r.bake_mode==RE_BAKE_AO && scene->world==NULL) {

@@ -827,7 +827,7 @@ void armature_deform_verts(Object *armOb, Object *target, DerivedMesh *dm,
 	const short use_envelope = deformflag & ARM_DEF_ENVELOPE;
 	const short use_quaternion = deformflag & ARM_DEF_QUATERNION;
 	const short invert_vgroup= deformflag & ARM_DEF_INVERT_VGROUP;
-	int numGroups = 0;		/* safety for vertexgroup index overflow */
+	int defbase_tot = 0;		/* safety for vertexgroup index overflow */
 	int i, target_totvert = 0;	/* safety for vertexgroup overflow */
 	int use_dverts = 0;
 	int armature_def_nr;
@@ -869,7 +869,7 @@ void armature_deform_verts(Object *armOb, Object *target, DerivedMesh *dm,
 	armature_def_nr= defgroup_name_index(target, defgrp_name);
 	
 	if(ELEM(target->type, OB_MESH, OB_LATTICE)) {
-		numGroups = BLI_countlist(&target->defbase);
+		defbase_tot = BLI_countlist(&target->defbase);
 		
 		if(target->type==OB_MESH) {
 			Mesh *me= target->data;
@@ -896,8 +896,8 @@ void armature_deform_verts(Object *armOb, Object *target, DerivedMesh *dm,
 			else if(dverts) use_dverts = 1;
 
 			if(use_dverts) {
-				defnrToPC = MEM_callocN(sizeof(*defnrToPC) * numGroups, "defnrToBone");
-				defnrToPCIndex = MEM_callocN(sizeof(*defnrToPCIndex) * numGroups, "defnrToIndex");
+				defnrToPC = MEM_callocN(sizeof(*defnrToPC) * defbase_tot, "defnrToBone");
+				defnrToPCIndex = MEM_callocN(sizeof(*defnrToPCIndex) * defbase_tot, "defnrToIndex");
 				for(i = 0, dg = target->defbase.first; dg;
 					i++, dg = dg->next) {
 					defnrToPC[i] = get_pose_channel(armOb->pose, dg->name);
@@ -975,7 +975,7 @@ void armature_deform_verts(Object *armOb, Object *target, DerivedMesh *dm,
 			
 			for(j = 0; j < dvert->totweight; j++){
 				int index = dvert->dw[j].def_nr;
-				if(index < numGroups && (pchan= defnrToPC[index])) {
+				if(index < defbase_tot && (pchan= defnrToPC[index])) {
 					float weight = dvert->dw[j].weight;
 					Bone *bone= pchan->bone;
 					pdef_info= pdef_info_array + defnrToPCIndex[index];
@@ -2120,6 +2120,8 @@ void pchan_calc_mat(bPoseChannel *pchan)
 	pchan_to_mat4(pchan, pchan->chan_mat);
 }
 
+#if 0 /* XXX OLD ANIMSYS, NLASTRIPS ARE NO LONGER USED */
+
 /* NLA strip modifiers */
 static void do_strip_modifiers(Scene *scene, Object *armob, Bone *bone, bPoseChannel *pchan)
 {
@@ -2242,6 +2244,8 @@ static void do_strip_modifiers(Scene *scene, Object *armob, Bone *bone, bPoseCha
 	}
 }
 
+#endif
+
 /* calculate tail of posechannel */
 void where_is_pose_bone_tail(bPoseChannel *pchan)
 {
@@ -2351,9 +2355,12 @@ void where_is_pose_bone(Scene *scene, Object *ob, bPoseChannel *pchan, float cti
 	}
 	
 	if(do_extra) {
+
+#if 0	/* XXX OLD ANIMSYS, NLASTRIPS ARE NO LONGER USED */
 		/* do NLA strip modifiers - i.e. curve follow */
 		do_strip_modifiers(scene, ob, bone, pchan);
-		
+#endif
+
 		/* Do constraints */
 		if (pchan->constraints.first) {
 			bConstraintOb *cob;
@@ -2466,7 +2473,7 @@ void where_is_pose (Scene *scene, Object *ob)
 
 /* Returns total selected vgroups,
  * wpi.defbase_sel is assumed malloc'd, all values are set */
-int get_selected_defgroups(Object *ob, char *dg_selection, int defbase_len)
+int get_selected_defgroups(Object *ob, char *dg_selection, int defbase_tot)
 {
 	bDeformGroup *defgroup;
 	unsigned int i;
@@ -2475,7 +2482,7 @@ int get_selected_defgroups(Object *ob, char *dg_selection, int defbase_len)
 
 	if(armob) {
 		bPose *pose= armob->pose;
-		for (i= 0, defgroup= ob->defbase.first; i < defbase_len && defgroup; defgroup = defgroup->next, i++) {
+		for (i= 0, defgroup= ob->defbase.first; i < defbase_tot && defgroup; defgroup = defgroup->next, i++) {
 			bPoseChannel *pchan= get_pose_channel(pose, defgroup->name);
 			if(pchan && (pchan->bone->flag & BONE_SELECTED)) {
 				dg_selection[i]= TRUE;
@@ -2487,7 +2494,7 @@ int get_selected_defgroups(Object *ob, char *dg_selection, int defbase_len)
 		}
 	}
 	else {
-		memset(dg_selection, FALSE, sizeof(char) * defbase_len);
+		memset(dg_selection, FALSE, sizeof(char) * defbase_tot);
 	}
 
 	return dg_flags_sel_tot;

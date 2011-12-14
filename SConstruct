@@ -119,6 +119,12 @@ tempbitness = int(B.arguments.get('BF_BITNESS', bitness)) # default to bitness f
 if tempbitness in (32, 64): # only set if 32 or 64 has been given
     bitness = int(tempbitness)
 
+if bitness:
+    B.bitness = bitness
+else: 
+    B.bitness = tempbitness
+    
+
 # first check cmdline for toolset and we create env to work on
 quickie = B.arguments.get('BF_QUICK', None)
 quickdebug = B.arguments.get('BF_QUICKDEBUG', None)
@@ -266,7 +272,7 @@ if 'blenderlite' in B.targets:
         if k not in B.arguments:
             env[k] = v
 
-# Extended OSX_SDK and 3D_CONNEXION_CLIENT_LIBRARY detection for OSX
+# Extended OSX_SDK and 3D_CONNEXION_CLIENT_LIBRARY and JAckOSX detection for OSX
 if env['OURPLATFORM']=='darwin':
     print B.bc.OKGREEN + "Detected Xcode version: -- " + B.bc.ENDC + env['XCODE_CUR_VER'][:9] + " --"
     print "Available " + env['MACOSX_SDK_CHECK']
@@ -284,6 +290,16 @@ if env['OURPLATFORM']=='darwin':
             env['WITH_BF_3DMOUSE'] = 0
         else:
             env.Append(LINKFLAGS=['-Xlinker','-weak_framework','-Xlinker','3DconnexionClient'])
+
+    # for now, Mac builders must download and install the JackOSX framework 
+    # necessary header file lives here when installed:
+    # /Library/Frameworks/Jackmp.framework/Versions/A/Headers/jack.h
+    if env['WITH_BF_JACK'] == 1:
+        if not os.path.exists('/Library/Frameworks/Jackmp.framework'):
+            print "JackOSX install not found, disabling WITH_BF_JACK" # avoid build errors !
+            env['WITH_BF_JACK'] = 0
+        else:
+            env.Append(LINKFLAGS=['-Xlinker','-weak_framework','-Xlinker','Jackmp'])
 
 if env['WITH_BF_OPENMP'] == 1:
         if env['OURPLATFORM'] in ('win32-vc', 'win64-vc'):
@@ -581,6 +597,14 @@ if env['OURPLATFORM']!='darwin':
             source.remove('CMakeLists.txt')
             source=['intern/cycles/doc/license/'+s for s in source]
             scriptinstall.append(env.Install(dir=dir,source=source))
+
+            # cuda binaries
+            if env['WITH_BF_CYCLES_CUDA_BINARIES']:
+                dir=os.path.join(env['BF_INSTALLDIR'], VERSION, 'scripts', 'addons','cycles', 'lib')
+                for arch in env['BF_CYCLES_CUDA_BINARIES_ARCH']:
+                    kernel_build_dir = os.path.join(B.root_build_dir, 'intern/cycles/kernel')
+                    cubin_file = os.path.join(kernel_build_dir, "kernel_%s.cubin" % arch)
+                    scriptinstall.append(env.Install(dir=dir,source=cubin_file))
     
     if env['WITH_BF_INTERNATIONAL']:
         internationalpaths=['release' + os.sep + 'datafiles']

@@ -356,7 +356,7 @@ typedef struct UserDef {
 	struct ListBase themes;
 	struct ListBase uifonts;
 	struct ListBase uistyles;
-	struct ListBase keymaps;		/* deprecated in favor of user_keymaps */
+	struct ListBase keymaps  DNA_DEPRECATED; /* deprecated in favor of user_keymaps */
 	struct ListBase user_keymaps;
 	struct ListBase addons;
 	char keyconfigstr[64];
@@ -408,7 +408,9 @@ typedef struct UserDef {
 	struct ColorBand coba_weight;	/* from texture.h */
 
 	float sculpt_paint_overlay_col[3];
-	int pad3;
+
+	short tweak_threshold;
+	short pad3;
 
 	char author[80];	/* author name for file formats supporting it */
 } UserDef;

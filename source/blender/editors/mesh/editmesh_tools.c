@@ -2666,20 +2666,11 @@ void esubdivideflag(Object *obedit, EditMesh *em, int flag, float smooth, float 
 			if(mmd->flag & MOD_MIR_CLIPPING) {
 				for (eve= em->verts.first; eve; eve= eve->next) {
 					eve->f2= 0;
-					switch(mmd->axis){
-						case 0:
-							if (fabsf(eve->co[0]) < mmd->tolerance)
-								eve->f2 |= 1;
-							break;
-						case 1:
-							if (fabsf(eve->co[1]) < mmd->tolerance)
-								eve->f2 |= 2;
-							break;
-						case 2:
-							if (fabsf(eve->co[2]) < mmd->tolerance)
-								eve->f2 |= 4;
-							break;
-					}
+
+					if (mmd->flag & MOD_MIR_AXIS_X && fabsf(eve->co[0]) < mmd->tolerance) eve->f2 |= 1;
+					if (mmd->flag & MOD_MIR_AXIS_Y && fabsf(eve->co[1]) < mmd->tolerance) eve->f2 |= 2;
+					if (mmd->flag & MOD_MIR_AXIS_Z && fabsf(eve->co[2]) < mmd->tolerance) eve->f2 |= 4;
+
 				}
 			}
 		}
@@ -7519,10 +7510,11 @@ static int select_axis_exec(bContext *C, wmOperator *op)
 	EditSelection *ese = em->selected.last;
 
 
-	if(ese==NULL)
+	if (ese==NULL || ese->type != EDITVERT) {
+		BKE_report(op->reports, RPT_WARNING, "This operator requires an active vertex (last selected)");
 		return OPERATOR_CANCELLED;
-
-	if(ese->type==EDITVERT) {
+	}
+	else {
 		EditVert *ev;
 		EditVert *act_vert= (EditVert*)ese->data;
 		float value= act_vert->co[axis];

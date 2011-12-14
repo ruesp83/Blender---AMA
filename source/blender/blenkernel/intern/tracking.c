@@ -48,6 +48,7 @@
 #include "BLI_ghash.h"
 #include "BLI_path_util.h"
 #include "BLI_string.h"
+#include "BLI_threads.h"
 
 #include "BKE_global.h"
 #include "BKE_tracking.h"
@@ -76,8 +77,7 @@ void BKE_tracking_init_settings(MovieTracking *tracking)
 	tracking->camera.pixel_aspect= 1.0f;
 	tracking->camera.units= CAMERA_UNITS_MM;
 
-	tracking->settings.default_tracker= TRACKER_KLT;
-	tracking->settings.default_pyramid_levels= 2;
+	tracking->settings.default_tracker= TRACKER_HYBRID;
 	tracking->settings.default_minimum_correlation= 0.75;
 	tracking->settings.default_pattern_size= 11;
 	tracking->settings.default_search_size= 51;
@@ -128,17 +128,17 @@ void BKE_tracking_clamp_track(MovieTrackingTrack *track, int event)
 	}
 	else if(event==CLAMP_PAT_POS) {
 		float dim[2];
-		sub_v2_v2v2(dim, track->pat_max, pat_min);
+		sub_v2_v2v2(dim, track->pat_max, track->pat_min);
 
 		for(a= 0; a<2; a++) {
 			/* pattern shouldn't be moved outside of search */
 			if(pat_min[a] < track->search_min[a]) {
 				track->pat_min[a]= track->search_min[a] - (pat_min[a] - track->pat_min[a]);
-				track->pat_max[a]=  (pat_min[a] - track->pat_min[a])+dim[a];
+				track->pat_max[a]= track->pat_min[a] + dim[a];
 			}
 			if(track->pat_max[a] > track->search_max[a]) {
 				track->pat_max[a]= track->search_max[a] - (pat_max[a] - track->pat_max[a]);
-				track->pat_min[a]= track->pat_max[a]-dim[a] - (pat_min[a] - track->pat_min[a]);
+				track->pat_min[a]= track->pat_max[a] - dim[a];
 			}
 		}
 	}
@@ -248,7 +248,8 @@ MovieTrackingTrack *BKE_tracking_add_track(MovieTracking *tracking, float x, flo
 
 	BKE_tracking_insert_marker(track, &marker);
 
-	BKE_tracking_clamp_track(track, CLAMP_PYRAMID_LEVELS);
+	if(track->tracker == TRACKER_KLT)
+		BKE_tracking_clamp_track(track, CLAMP_PYRAMID_LEVELS);
 
 	BLI_addtail(&tracking->tracks, track);
 	BKE_track_unique_name(tracking, track);
@@ -735,11 +736,11 @@ typedef struct MovieTrackingContext {
 	MovieTrackingSettings settings;
 	TracksMap *tracks_map;
 
-	short backwards, disable_failed;
+	short backwards, disable_failed, sequence;
 	int sync_frame;
 } MovieTrackingContext;
 
-MovieTrackingContext *BKE_tracking_context_new(MovieClip *clip, MovieClipUser *user, short backwards, short disable_failed)
+MovieTrackingContext *BKE_tracking_context_new(MovieClip *clip, MovieClipUser *user, short backwards, short disable_failed, short sequence)
 {
 	MovieTrackingContext *context= MEM_callocN(sizeof(MovieTrackingContext), "trackingContext");
 	MovieTracking *tracking= &clip->tracking;
@@ -752,6 +753,7 @@ MovieTrackingContext *BKE_tracking_context_new(MovieClip *clip, MovieClipUser *u
 	context->disable_failed= disable_failed;
 	context->sync_frame= user->framenr;
 	context->first_time= 1;
+	context->sequence= sequence;
 
 	/* count */
 	track= tracking->tracks.first;
@@ -790,7 +792,7 @@ MovieTrackingContext *BKE_tracking_context_new(MovieClip *clip, MovieClipUser *u
 						patx= (int)((track->pat_max[0]-track->pat_min[0])*width);
 						paty= (int)((track->pat_max[1]-track->pat_min[1])*height);
 
-						if(track->tracker==TRACKER_KLT) {
+						if(ELEM(track->tracker, TRACKER_KLT, TRACKER_HYBRID)) {
 							float search_size_x= (track->search_max[0]-track->search_min[0])*width;
 							float search_size_y= (track->search_max[1]-track->search_min[1])*height;
 							float pattern_size_x= (track->pat_max[0]-track->pat_min[0])*width;
@@ -808,7 +810,10 @@ MovieTrackingContext *BKE_tracking_context_new(MovieClip *clip, MovieClipUser *u
 							 * than the search size */
 							int level= MIN2(track->pyramid_levels, max_pyramid_levels);
 
-							track_context.region_tracker= libmv_regionTrackerNew(100, level, MAX2(wndx, wndy));
+							if(track->tracker==TRACKER_KLT)
+								track_context.region_tracker= libmv_pyramidRegionTrackerNew(100, level, MAX2(wndx, wndy), track->minimum_correlation);
+							else
+								track_context.region_tracker= libmv_hybridRegionTrackerNew(100, MAX2(wndx, wndy), track->minimum_correlation);
 						}
 						else if(track->tracker==TRACKER_SAD) {
 							track_context.pattern_size= MAX2(patx, paty);
@@ -826,6 +831,9 @@ MovieTrackingContext *BKE_tracking_context_new(MovieClip *clip, MovieClipUser *u
 
 	context->clip= clip;
 	context->user= *user;
+
+	if(!sequence)
+		BLI_begin_threaded_malloc();
 
 	return context;
 }
@@ -853,6 +861,9 @@ static void track_context_free(void *customdata)
 
 void BKE_tracking_context_free(MovieTrackingContext *context)
 {
+	if(!context->sequence)
+		BLI_end_threaded_malloc();
+
 	tracks_map_free(context->tracks_map, track_context_free);
 
 	MEM_freeN(context);
@@ -1141,7 +1152,7 @@ int BKE_tracking_next(MovieTrackingContext *context)
 	if(!ibuf_new)
 		return 0;
 
-    #pragma omp parallel for private(a) shared(ibuf_new, ok) if(map_size>1)
+	#pragma omp parallel for private(a) shared(ibuf_new, ok) if(map_size>1)
 	for(a= 0; a<map_size; a++) {
 		TrackContext *track_context;
 		MovieTrackingTrack *track;
@@ -1154,7 +1165,7 @@ int BKE_tracking_next(MovieTrackingContext *context)
 		if(marker && (marker->flag&MARKER_DISABLED)==0) {
 #ifdef WITH_LIBMV
 			int width, height, origin[2], tracked= 0, need_readjust= 0;
-			float pos[2], margin[2];
+			float pos[2], margin[2], dim[2];
 			double x1, y1, x2, y2;
 			ImBuf *ibuf= NULL;
 			MovieTrackingMarker marker_new, *marker_keyed;
@@ -1170,7 +1181,8 @@ int BKE_tracking_next(MovieTrackingContext *context)
 			else nextfra= curfra+1;
 
 			/* margin from frame boundaries */
-			sub_v2_v2v2(margin, track->pat_max, track->pat_min);
+			sub_v2_v2v2(dim, track->pat_max, track->pat_min);
+			margin[0]= margin[1]= MAX2(dim[0], dim[1]) / 2.0f;
 
 			margin[0]= MAX2(margin[0], (float)track->margin / ibuf_new->x);
 			margin[1]= MAX2(margin[1], (float)track->margin / ibuf_new->y);
@@ -1180,7 +1192,7 @@ int BKE_tracking_next(MovieTrackingContext *context)
 			   marker->pos[1]<margin[1] || marker->pos[1]>1.0f-margin[1]) {
 				onbound= 1;
 			}
-			else if(track->tracker==TRACKER_KLT) {
+			else if(ELEM(track->tracker, TRACKER_KLT, TRACKER_HYBRID)) {
 				float *patch_new;
 
 				if(need_readjust) {
@@ -1277,13 +1289,13 @@ int BKE_tracking_next(MovieTrackingContext *context)
 			}
 
 			coords_correct= !isnan(x2) && !isnan(y2) && finite(x2) && finite(y2);
-			if(coords_correct && (tracked || !context->disable_failed)) {
+			if(coords_correct && !onbound && (tracked || !context->disable_failed)) {
 				if(context->first_time) {
 					#pragma omp critical
 					{
 						/* check if there's no keyframe/tracked markers before tracking marker.
 						   if so -- create disabled marker before currently tracking "segment" */
-						put_disabled_marker(track, marker, 1, 0);
+						put_disabled_marker(track, marker, !context->backwards, 0);
 					}
 				}
 
@@ -1307,7 +1319,7 @@ int BKE_tracking_next(MovieTrackingContext *context)
 				/* make currently tracked segment be finished with disabled marker */
 				#pragma omp critical
 				{
-					put_disabled_marker(track, &marker_new, 0, 0);
+					put_disabled_marker(track, &marker_new, context->backwards, 0);
 				}
 			} else {
 				marker_new= *marker;
@@ -1650,6 +1662,7 @@ void BKE_tracking_reconstruction_context_free(MovieReconstructContext *context)
 	MEM_freeN(context);
 }
 
+#ifdef WITH_LIBMV
 static void solve_reconstruction_update_cb(void *customdata, double progress, const char *message)
 {
 	ReconstructProgressData *progressdata= customdata;
@@ -1662,6 +1675,7 @@ static void solve_reconstruction_update_cb(void *customdata, double progress, co
 	BLI_snprintf(progressdata->stats_message, progressdata->message_size,
 			"Solving camera | %s", message);
 }
+#endif
 
 #if 0
 static int solve_reconstruction_testbreak_cb(void *customdata)

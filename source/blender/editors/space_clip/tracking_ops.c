@@ -1209,11 +1209,16 @@ static int track_count_markers(SpaceClip *sc, MovieClip *clip)
 {
 	int tot= 0;
 	MovieTrackingTrack *track;
+	int framenr= sc->user.framenr;
 
 	track= clip->tracking.tracks.first;
 	while(track) {
-		if(TRACK_VIEW_SELECTED(sc, track) && (track->flag&TRACK_LOCKED)==0)
-			tot++;
+		if(TRACK_VIEW_SELECTED(sc, track) && (track->flag&TRACK_LOCKED)==0) {
+			MovieTrackingMarker *marker= BKE_tracking_exact_marker(track, framenr);
+
+			if (!marker || (marker->flag&MARKER_DISABLED) == 0)
+				tot++;
+		}
 
 		track= track->next;
 	}
@@ -1297,7 +1302,7 @@ static int track_markers_initjob(bContext *C, TrackMarkersJob *tmj, int backward
 		else if(settings->speed==TRACKING_SPEED_DOUBLE) tmj->delay/= 2;
 	}
 
-	tmj->context= BKE_tracking_context_new(clip, &sc->user, backwards, 1);
+	tmj->context= BKE_tracking_context_new(clip, &sc->user, backwards, 1, 1);
 
 	clip->tracking_context= tmj->context;
 
@@ -1408,7 +1413,7 @@ static int track_markers_exec(bContext *C, wmOperator *op)
 		return OPERATOR_CANCELLED;
 
 	/* do not disable tracks due to threshold when tracking frame-by-frame */
-	context= BKE_tracking_context_new(clip, &sc->user, backwards, sequence);
+	context= BKE_tracking_context_new(clip, &sc->user, backwards, sequence, sequence);
 
 	while(framenr != efra) {
 		if(!BKE_tracking_next(context))

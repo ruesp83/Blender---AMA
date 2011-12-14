@@ -269,6 +269,7 @@ static MovieTrackingMarker *rna_trackingTrack_marker_find_frame(MovieTrackingTra
 static EnumPropertyItem tracker_items[] = {
 	{TRACKER_KLT, "KLT", 0, "KLT", "Kanade–Lucas–Tomasi tracker which works with most of video clips, a bit slower than SAD"},
 	{TRACKER_SAD, "SAD", 0, "SAD", "Sum of Absolute Differences tracker which can be used when KLT tracker fails"},
+	{TRACKER_HYBRID, "Hybrid", 0, "Hybrid", "A hybrid tracker that uses SAD for rough tracking, KLT for refinement."},
 	{0, NULL, 0, NULL, NULL}};
 
 static EnumPropertyItem pattern_match_items[] = {
@@ -301,17 +302,17 @@ static void rna_def_trackingSettings(BlenderRNA *brna)
 	static EnumPropertyItem refine_items[] = {
 		{0, "NONE", 0, "Nothing", "Do not refine camera intrinsics"},
 		{REFINE_FOCAL_LENGTH, "FOCAL_LENGTH", 0, "Focal Length", "Refine focal length"},
+		{REFINE_FOCAL_LENGTH|REFINE_RADIAL_DISTORTION_K1, "FOCAL_LENGTH_RADIAL_K1", 0, "Focal length, K1", "Refine focal length and radial distortion K1"},
 		{REFINE_FOCAL_LENGTH|
-		 REFINE_PRINCIPAL_POINT, "FOCAL_LENGTH_PRINCIPAL_POINT", 0, "Focal Length, Optical Center", "Refine focal length and optical center"},
+		 REFINE_RADIAL_DISTORTION_K1|
+		 REFINE_RADIAL_DISTORTION_K2, "FOCAL_LENGTH_RADIAL_K1_K2", 0, "Focal length, K1, K2", "Refine focal length and radial distortion K1 and K2"},
 		{REFINE_FOCAL_LENGTH|
 		 REFINE_PRINCIPAL_POINT|
 		 REFINE_RADIAL_DISTORTION_K1|
 		 REFINE_RADIAL_DISTORTION_K2,
 		 "FOCAL_LENGTH_PRINCIPAL_POINT_RADIAL_K1_K2", 0, "Focal Length, Optical Center, K1, K2", "Refine focal length, optical center and radial distortion K1 and K2"},
 		{REFINE_FOCAL_LENGTH|
-		 REFINE_RADIAL_DISTORTION_K1|
-		 REFINE_RADIAL_DISTORTION_K2, "FOCAL_LENGTH_RADIAL_K1_K2", 0, "Focal length, K1. K2", "Refine focal length and radial distortion K1 and K2"},
-		{REFINE_FOCAL_LENGTH|REFINE_RADIAL_DISTORTION_K1, "FOCAL_LENGTH_RADIAL_K1", 0, "Focal length, K1", "Refine focal length and radial distortion K1"},
+		 REFINE_PRINCIPAL_POINT, "FOCAL_LENGTH_PRINCIPAL_POINT", 0, "Focal Length, Optical Center", "Refine focal length and optical center"},
 		{0, NULL, 0, NULL, NULL}
 	};
 

@@ -1932,11 +1932,13 @@ static int ntap_bump_compute(NTapBump *ntap_bump, ShadeInput *shi, MTex *mtex, T
 	float *nvec = texres->nor;
 	texres->nor = NULL;
 
-	if( mtex->texflag & MTEX_BUMP_TEXTURESPACE ) {
-		if(tex->ima)
-			Hscale *= 13.0f; // appears to be a sensible default value
-	} else
-		Hscale *= 0.1f; // factor 0.1 proved to look like the previous bump code
+	if(found_deriv_map==0) {
+		if( mtex->texflag & MTEX_BUMP_TEXTURESPACE ) {
+			if(tex->ima)
+				Hscale *= 13.0f; // appears to be a sensible default value
+		} else
+			Hscale *= 0.1f; // factor 0.1 proved to look like the previous bump code
+	}
 
 	if( !ntap_bump->init_done ) {
 		copy_v3_v3(ntap_bump->vNacc, shi->vn);
@@ -1958,15 +1960,21 @@ static int ntap_bump_compute(NTapBump *ntap_bump, ShadeInput *shi, MTex *mtex, T
 	}
 	
 	if(found_deriv_map) {
-		float dBdu, dBdv;
+		float dBdu, dBdv, auto_bump = 1.0f;
 		float s = 1;		// negate this if flipped texture coordinate
 		texco_mapping(shi, tex, mtex, co, dx, dy, texvec, dxt, dyt);
 		rgbnor = multitex_mtex(shi, mtex, texvec, dxt, dyt, texres);
+
+		if(shi->obr->ob->derivedFinal)
+		{
+			auto_bump = shi->obr->ob->derivedFinal->auto_bump_scale;
+			auto_bump /= sqrtf((float) (dimx*dimy));
+		}
 		
 		// this variant using a derivative map is described here
 		// http://mmikkelsen3d.blogspot.com/2011/07/derivative-maps.html
-		dBdu = Hscale*dimx*(2*texres->tr-1);
-		dBdv = Hscale*dimy*(2*texres->tg-1);
+		dBdu = auto_bump*Hscale*dimx*(2*texres->tr-1);
+		dBdv = auto_bump*Hscale*dimy*(2*texres->tg-1);
 
 		dHdx = dBdu*dxt[0] + s * dBdv*dxt[1];
 		dHdy = dBdu*dyt[0] + s * dBdv*dyt[1];
@@ -3494,17 +3502,11 @@ void render_realtime_texture(ShadeInput *shi, Image *ima)
 static void textured_face_generate_uv(float *uv, float *normal, float *hit, float *v1, float *v2, float *v3)
 {
 
-	float detsh, t00, t10, t01, t11, xn, yn, zn;
+	float detsh, t00, t10, t01, t11;
 	int axis1, axis2;
 
 	/* find most stable axis to project */
-	xn= fabs(normal[0]);
-	yn= fabs(normal[1]);
-	zn= fabs(normal[2]);
-
-	if(zn>=xn && zn>=yn) { axis1= 0; axis2= 1; }
-	else if(yn>=xn && yn>=zn) { axis1= 0; axis2= 2; }
-	else { axis1= 1; axis2= 2; }
+	axis_dominant_v3(&axis1, &axis2, normal);
 
 	/* compute u,v and derivatives */
 	t00= v3[axis1]-v1[axis1]; t01= v3[axis2]-v1[axis2];

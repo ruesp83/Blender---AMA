@@ -483,6 +483,7 @@ void node_tree_from_ID(ID *id, bNodeTree **ntree, bNodeTree **edittree, int *tre
 	}
 	else {
 		*ntree= NULL;
+		*edittree= NULL;
 		if(treetype) *treetype= 0;
 	}
 }
@@ -3276,10 +3277,6 @@ static int node_mute_exec(bContext *C, wmOperator *UNUSED(op))
 	SpaceNode *snode= CTX_wm_space_node(C);
 	bNode *node;
 
-	/* no disabling inside of groups */
-	if(node_tree_get_editgroup(snode->nodetree))
-		return OPERATOR_CANCELLED;
-	
 	ED_preview_kill_jobs(C);
 
 	for(node= snode->edittree->nodes.first; node; node= node->next) {

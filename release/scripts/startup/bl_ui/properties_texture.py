@@ -167,6 +167,10 @@ class TEXTURE_PT_preview(TextureButtonsPanel, Panel):
         else:
             layout.template_preview(tex, slot=slot)
 
+        #Show Alpha Button for Brush Textures, see #29502
+        if context.space_data.texture_context == 'BRUSH':
+            layout.prop(tex, "use_preview_alpha")
+
 
 class TEXTURE_PT_colors(TextureButtonsPanel, Panel):
     bl_label = "Colors"
