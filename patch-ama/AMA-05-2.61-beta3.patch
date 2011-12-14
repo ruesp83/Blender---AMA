@@ -1,8 +1,8 @@
 Index: release/scripts/startup/bl_ui/properties_data_modifier.py
 ===================================================================
---- release/scripts/startup/bl_ui/properties_data_modifier.py	(revisione 42053)
+--- release/scripts/startup/bl_ui/properties_data_modifier.py	(revisione 42626)
 +++ release/scripts/startup/bl_ui/properties_data_modifier.py	(copia locale)
-@@ -71,51 +71,158 @@
+@@ -71,51 +71,170 @@
          layout.prop(md, "use_multi_modifier")
  
      def ARRAY(self, layout, ob, md):
@@ -100,16 +100,10 @@ Index: release/scripts/startup/bl_ui/properties_data_modifier.py
 +                if md.dist_mid_cap == 'CURVE':
 +                    split = col.split()
 +                    col = split.column()
-+                    if (not md.start_cap is None):
-+                        col.active = True
-+                    else:
-+                        col.active = False
++                    col.active = False if md.start_cap is None else True
 +                    col.prop(md, "first_start_cap")
 +                    col = split.column()
-+                    if (not md.end_cap is None):
-+                        col.active = True
-+                    else:
-+                        col.active = False
++                    col.active = False if md.end_cap is None else True
 +                    col.prop(md, "last_end_cap")
  
 +        col = layout.column()
@@ -126,21 +120,35 @@ Index: release/scripts/startup/bl_ui/properties_data_modifier.py
 +            off_box = col.row()
 +            off_box.column().prop(md, "location_offset", text="Location")
 +            off_box.column().prop(md, "rotation_offset", text="Rotation")
-+            off_box2 = off_box.split().column()
-+            off_box2.column().prop(md, "proportion", text="Scale")
 +            if (md.proportion):
-+                off_box2.column().prop(md, "scale", text="")
++                off_box.column().prop(md, "scale", text="Scale")
 +            else:
-+                off_box2.column().prop(md, "scale_offset", text="")
-+            col.separator()
++                off_box.column().prop(md, "scale_offset", text="Scale")
 +            row = col.row()
-+            row.prop(md, "array_group")
-+            act = row.row()
-+            if md.array_group is None :
-+                act.active = False
-+            else:
-+                act.active = True
-+            act.prop(md, "rand_group")
++            row.prop(md, "proportion", text="Scale")
++            row.prop(md, "local_rot", text="Local Rotation")
++
++        col = layout.column()
++        box = col.box()
++        row = box.row()
++        if (md.use_advanced_clone):
++            row.prop(md, "use_advanced_clone", text="")
++        else:
++            row.prop(md, "use_advanced_clone", text="")
++        row.label("Advanced Cloning")
++        if (md.use_advanced_clone):
++            col = box.column()
++            split = col.split()
++            col = split.column()
++            col.label(text="Dupli Group:")
++            col.prop(md, "array_group", text="")
++            sub = col.column()
++            sub.active = False if md.array_group is None else True
++            sub.prop(md, "rand_group")
++            col = split.column()
++            col.label(text="Rays Direction:")
++            col.prop(md,"rays_dir", text="")
++            col.prop(md,"rays")
 +
 +        col = layout.column()
 +        box = col.box()
@@ -154,25 +162,29 @@ Index: release/scripts/startup/bl_ui/properties_data_modifier.py
 +            col = box.column()
 +            row = col.row()
 +            row.prop(md, "material", expand=True)
-+            act = col.row()
++            row = col.row()
 +            if md.material == 'SEQUENCE' :
-+                act.active = True
++                row.prop(md, "cont_mat")
 +            else:
-+                act.active = False
-+            act.prop(md, "cont_mat")
-+
-+        col = layout.column()
-+        box = col.box()
-+        row = box.row()
-+        if (md.use_advanced_clone):
-+            row.prop(md, "use_advanced_clone", text="")
-+        else:
-+            row.prop(md, "use_advanced_clone", text="")
-+        row.label("Advanced Cloning")
-+        if (md.use_advanced_clone):
-+            col = box.column()
-+            col.prop(md,"rays_dir")
-+            col.prop(md,"rays")
++                col = row.column()
++                split = col.split()
++                col = split.column()
++                col.prop(md, "rand_mat_array")
++                col.separator()
++                sub = col.column()
++                sub.active = False if md.array_group is None else True
++                sub.prop(md, "rand_mat_group")
++                col = split.column()
++                sub = col.column()
++                sub.active = False if md.start_cap is None else True
++                sub.prop(md, "rand_mat_sc")
++                sub = col.column()
++                sub.active = False if md.mid_cap is None else True
++                sub.prop(md, "rand_mat_mc")
++                sub = col.column()
++                sub.active = False if md.end_cap is None else True
++                sub.prop(md, "rand_mat_ec")
++                
 +
 +        layout.separator()
 +        layout.operator("object.array_rand", text="Refresh Ad. Offset")
@@ -184,7 +196,7 @@ Index: source/blender/blenkernel/BKE_ama.h
 ===================================================================
 --- source/blender/blenkernel/BKE_ama.h	(revisione 0)
 +++ source/blender/blenkernel/BKE_ama.h	(copia locale)
-@@ -0,0 +1,81 @@
+@@ -0,0 +1,82 @@
 +/*
 + * ***** BEGIN GPL LICENSE BLOCK *****
 + *
@@ -258,17 +270,18 @@ Index: source/blender/blenkernel/BKE_ama.h
 +float count_to_length(int count, const float offset[3]);
 +float f_rand_max(float max);
 +
-+void array_scale_offset(const float max_off[3], float rit[3],int prop);
-+void array_offset(const float max_off[3], float rit[3],int sign);
++void array_offset(const float max_off[3], float rit[3], int prop, int sign);
++void init_mat_oc(const int start, const int end, int *vet_mc);
 +void init_offset(const int start, const int end, struct ArrayModifierData *ar);
 +void create_offset(const int n, const int totmat, struct ArrayModifierData *ar, struct Object *ob);
-+void array_to_curve(struct Scene *scene, struct Object *cuOb, struct Object *target, float (*vertexCos)[3], int numVerts);
++//void array_to_curve(struct Scene *scene, struct Object *cuOb, float (*vertexCos)[3], int numVerts);
++void array_to_curve(struct Scene *scene, struct Object *cuOb, struct Object *target, float *vertexCos, float *vec, float *cent);
 +
 +#endif
 +
 Index: source/blender/blenkernel/CMakeLists.txt
 ===================================================================
---- source/blender/blenkernel/CMakeLists.txt	(revisione 42053)
+--- source/blender/blenkernel/CMakeLists.txt	(revisione 42626)
 +++ source/blender/blenkernel/CMakeLists.txt	(copia locale)
 @@ -66,6 +66,7 @@
  	intern/CCGSubSurf.c
@@ -278,7 +291,7 @@ Index: source/blender/blenkernel/CMakeLists.txt
  	intern/anim.c
  	intern/anim_sys.c
  	intern/armature.c
-@@ -152,6 +153,7 @@
+@@ -153,6 +154,7 @@
  	
  	BKE_DerivedMesh.h
  	BKE_action.h
@@ -290,7 +303,7 @@ Index: source/blender/blenkernel/intern/ama.c
 ===================================================================
 --- source/blender/blenkernel/intern/ama.c	(revisione 0)
 +++ source/blender/blenkernel/intern/ama.c	(copia locale)
-@@ -0,0 +1,511 @@
+@@ -0,0 +1,519 @@
 +/*
 + * $Id: ama.c 36773 2011-08-13 13:46:00Z ruesp83 $
 + *
@@ -478,39 +491,13 @@ Index: source/blender/blenkernel/intern/ama.c
 +}
 +
 +
-+void array_scale_offset(const float max_off[3], float rit[3],int prop)
-+{
-+	//TODO:far valere anche valori meno di uno,
-+	//così si possono ottenere oggetti anche più piccoli dell'originale
-+		
-+	rit[0] = f_rand_max(max_off[0]);
-+	rit[0] = 1+rit[0];
-+	
-+	if (!prop)
-+	{
-+		rit[1] = f_rand_max(max_off[1]);
-+		rit[1] = 1+rit[1];
-+		
-+		rit[2] = f_rand_max(max_off[2]);
-+		rit[2] = 1+rit[2];
-+	}
-+	else
-+	{
-+		rit[1] = rit[0];
-+		rit[2] = rit[0];
-+	}
-+}
-+
-+
-+void array_offset(const float max_off[3], float rit[3],int sign)
++void array_offset(const float max_off[3], float rit[3], int prop, int sign)
 +{	
 +	int j;
 +	
 +	rit[0] = f_rand_max(max_off[0]);
-+	if (sign & MOD_ARR_SIGN_L)
-+	{
-+		if (sign & MOD_ARR_SIGN_P)
-+		{
++	if (sign & MOD_ARR_SIGN_L) {
++		if (sign & MOD_ARR_SIGN_P) {
 +			j = BLI_rand() % 2;
 +			if (j == 0)
 +				rit[0] = rit[0]*(-1);
@@ -518,32 +505,42 @@ Index: source/blender/blenkernel/intern/ama.c
 +		else
 +			rit[0] = rit[0]*(-1);
 +	}
-+		
-+	rit[1] = f_rand_max(max_off[1]); 
-+	if (sign & MOD_ARR_SIGN_L)
-+	{
-+		if (sign & MOD_ARR_SIGN_P)
-+		{
-+			j = BLI_rand() % 2;
-+			if (j == 0)
++	
++	if (!(prop & MOD_ARR_PROP)) {
++		rit[1] = f_rand_max(max_off[1]); 
++		if (sign & MOD_ARR_SIGN_L) {
++			if (sign & MOD_ARR_SIGN_P) {
++				j = BLI_rand() % 2;
++				if (j == 0)
++					rit[1] = rit[1]*(-1);
++			}
++			else
 +				rit[1] = rit[1]*(-1);
 +		}
-+		else
-+			rit[1] = rit[1]*(-1);
-+	}
 +
-+	rit[2] = f_rand_max(max_off[2]);
-+	if (sign & MOD_ARR_SIGN_L)
-+	{
-+		if (sign & MOD_ARR_SIGN_P)
-+		{
-+			j = BLI_rand() % 2;
-+			if (j == 0)
++		rit[2] = f_rand_max(max_off[2]);
++		if (sign & MOD_ARR_SIGN_L) {
++			if (sign & MOD_ARR_SIGN_P) {
++				j = BLI_rand() % 2;
++				if (j == 0)
++					rit[2] = rit[2]*(-1);
++			}
++			else
 +				rit[2] = rit[2]*(-1);
 +		}
-+		else
-+			rit[2] = rit[2]*(-1);
 +	}
++	else {
++		rit[1] = rit[0];
++		rit[2] = rit[0];
++	}
++}
++
++void init_mat_oc(const int start, const int end, int *vet_mc)
++{
++	int i;
++
++	for (i=start; i<end; i++)
++		vet_mc[i] = 0;
 +}
 +
 +
@@ -551,9 +548,13 @@ Index: source/blender/blenkernel/intern/ama.c
 +{
 +	int i;
 +
-+	for (i=start; i< end; i++)
-+	{
-+		unit_m4(ar->Mem_Ob[i].location);
++	for (i=start; i<end; i++) {
++		//unit_m4(ar->Mem_Ob[i].location);
++		zero_v3(ar->Mem_Ob[i].rot);
++		ar->Mem_Ob[i].scale[0] = ar->Mem_Ob[i].scale[1] = ar->Mem_Ob[i].scale[2] = 1;
++		zero_v3(ar->Mem_Ob[i].loc);
++		zero_v3(ar->Mem_Ob[i].cu_cent);
++		zero_v4(ar->Mem_Ob[i].cu_loc);
 +		ar->Mem_Ob[i].id_mat = 0;
 +		ar->Mem_Ob[i].transform = 0;
 +		ar->Mem_Ob[i].rand_group_obj = 0;
@@ -565,7 +566,6 @@ Index: source/blender/blenkernel/intern/ama.c
 +{
 +	float loc[3];
 +	float rot[3];
-+	//float rotAxis[3];
 +	float scale[3];
 +	int i, act_mat = 0;
 +	int cont_mat = ar->cont_mat-1;
@@ -573,46 +573,49 @@ Index: source/blender/blenkernel/intern/ama.c
 +
 +	if(ob->dup_group!=NULL)
 +		group= ob->dup_group;
++	
++	for (i=0; i < n-1; i++) {
 +
-+	scale[0]=scale[1]=scale[2]=1;
++		loc[0]=loc[1]=loc[2]=0;
++		rot[0]=rot[1]=rot[2]=0;
++		scale[0]=scale[1]=scale[2]=1;
 +
-+	for (i=0; i < n-1; i++)
-+	{
-+		if (ar->mode & MOD_ARR_MOD_ADV)
-+		{
-+			if ((ar->rot_offset[0]!=0) || (ar->rot_offset[1]!=0) || (ar->rot_offset[2]!=0))
-+			{
-+				array_offset(ar->rot_offset, rot, ar->sign);
-+				ar->Mem_Ob[i].transform=1;
++		if (ar->mode & MOD_ARR_MOD_ADV) {
++			if ((ar->rot_offset[0]!=0) || (ar->rot_offset[1]!=0) || (ar->rot_offset[2]!=0)) {
++				array_offset(ar->rot_offset, rot, !MOD_ARR_PROP, ar->sign);
++				ar->Mem_Ob[i].transform = 1;
 +			}
-+			if ((ar->scale_offset[0]!=0) || (ar->scale_offset[1]!=0) || (ar->scale_offset[2]!=0))
-+			{
-+				array_scale_offset(ar->scale_offset, scale, ar->proportion);
-+				ar->Mem_Ob[i].transform=1;
++			if ((ar->scale_offset[0]!=1) || (ar->scale_offset[1]!=1) || (ar->scale_offset[2]!=1)) {
++				array_offset(ar->scale_offset, scale, ar->flag_offset, ar->sign);
++				ar->Mem_Ob[i].transform = 1;
 +			}
-+			if ((ar->loc_offset[0]!=0) || (ar->loc_offset[1]!=0) || (ar->loc_offset[2]!=0))
-+			{
-+				array_offset(ar->loc_offset, loc, ar->sign);
-+				ar->Mem_Ob[i].transform=1;
++			if ((ar->loc_offset[0]!=0) || (ar->loc_offset[1]!=0) || (ar->loc_offset[2]!=0)) {
++				array_offset(ar->loc_offset, loc, !MOD_ARR_PROP, ar->sign);
++				ar->Mem_Ob[i].transform = 1;
 +			}
-+			if (ar->Mem_Ob[i].transform)
-+			{
-+				loc_eul_size_to_mat4(ar->Mem_Ob[i].location, loc, rot, scale);
++			if (ar->Mem_Ob[i].transform) {
++				//loc_eul_size_to_mat4(ar->Mem_Ob[i].location, loc, rot, scale);
++				copy_v3_v3(ar->Mem_Ob[i].rot, rot);
++				//Scaling
++				//size_to_mat4(ar->Mem_Ob[i].location,scale);
++				copy_v3_v3(ar->Mem_Ob[i].scale, scale);
++				//Location
++				//translate_m4(ar->Mem_Ob[i].location,loc[0],loc[1],loc[2]);
++				copy_v3_v3(ar->Mem_Ob[i].loc, loc);
 +			}
-+			if (ar->rand_group & MOD_ARR_RAND_GROUP)
-+			{
++			if (ar->rand_group & MOD_ARR_RAND_GROUP) {
 +				ar->Mem_Ob[i].rand_group_obj = BLI_rand() % BLI_countlist(&group->gobject);
 +				ar->Mem_Ob[i].rand_group_obj++;
 +			}
 +		}
-+		if (ar->mode & MOD_ARR_MOD_ADV_MAT)
-+		{
-+			if (totmat>1)
-+			{
-+				if (ar->rand_mat & MOD_ARR_MAT) {
++
++		if (ar->mode & MOD_ARR_MOD_ADV_MAT) {
++			if (totmat>1) {
++				/*random*/
++				if ((ar->rand_mat & MOD_ARR_MAT) && (ar->mat_ob & MOD_ARR_AR_MAT_RND)) {
 +					ar->Mem_Ob[i].id_mat = BLI_rand() % totmat;
 +				}
-+				else {
++				else { /*sequence*/
 +					if (cont_mat == 0 ){
 +						cont_mat = ar->cont_mat;
 +						if (act_mat + 1 < totmat)
@@ -625,7 +628,23 @@ Index: source/blender/blenkernel/intern/ama.c
 +				}
 +			}
 +		}
-+		
++
++	}
++	if (ar->mode & MOD_ARR_MOD_ADV_MAT) {
++		if (totmat>1) {
++			/*random*/
++			if ((ar->rand_mat & MOD_ARR_MAT) && (ar->mat_ob & MOD_ARR_SC_MAT_RND)) {
++				ar->Mem_Mat_Ob.start_cap = BLI_rand() % totmat;
++			}
++			if ((ar->rand_mat & MOD_ARR_MAT) && (ar->mat_ob & MOD_ARR_MC_MAT_RND)) {
++				for (i=0; i < ar->count_mc; i++) {
++					ar->Mem_Mat_Ob.mid_cap[i] = BLI_rand() % totmat;
++				}
++			}
++			if ((ar->rand_mat & MOD_ARR_MAT) && (ar->mat_ob & MOD_ARR_EC_MAT_RND)) {
++				ar->Mem_Mat_Ob.end_cap = BLI_rand() % totmat;
++			}
++		}
 +	}
 +}
 +
@@ -681,6 +700,7 @@ Index: source/blender/blenkernel/intern/ama.c
 +				add_v3_v3(vec, dvec);
 +				if(quat) copy_qt_qt(quat, path->data[0].quat);
 +				if(radius) *radius= path->data[0].radius;
++				print_v4("Vec", vec);
 +			}
 +			else if(ctime > 1.0f) {
 +				sub_v3_v3v3(dvec, path->data[path->len-1].vec, path->data[path->len-2].vec);
@@ -690,6 +710,7 @@ Index: source/blender/blenkernel/intern/ama.c
 +				if(radius) *radius= path->data[path->len-1].radius;
 +				/* weight - not used but could be added */
 +			}
++			
 +		}
 +		return 1;
 +	}
@@ -702,20 +723,37 @@ Index: source/blender/blenkernel/intern/ama.c
 +	/* co: local coord, result local too */
 +	/* returns quaternion for rotation, using cd->no_rot_axis */
 +	/* axis is using another define!!! */
-+static int calc_curve_deform(Scene *scene, Object *par, float *co, CurveDeform *cd, float *quatp)
++static int calc_curve_deform(Scene *scene, Object *par, float *co, CurveDeform *cd, float *loc, float *cent)
 +{
 +	Curve *cu= par->data;
-+	float fac, loc[4], dir[3], new_quat[4], radius;
-+	
++	float fac, dir[3], new_quat[4], radius;
++	short /*upflag, */ index, axis = 1;
++
++	index= axis-1;
++	if(index>2)
++		index -= 3; /* negative  */
++
 +	/* to be sure, mostly after file load */
 +	if(cu->path==NULL) {
 +		makeDispListCurveTypes(scene, par, 0);
 +		if(cu->path==NULL) return 0;	// happens on append...
 +	}
-+	fac=0;
-+	if( where_on_path_deform(par, fac, loc, dir, new_quat, &radius)) {	/* returns OK */
-+		float quat[4], cent[3];
 +
++	if(ELEM3(axis, OB_NEGX+1, OB_NEGY+1, OB_NEGZ+1)) { /* OB_NEG# 0-5, MOD_CURVE_POS# 1-6 */
++		if(cu->flag & CU_STRETCH)
++			fac= (-co[index]-cd->dmax[index])/(cd->dmax[index] - cd->dmin[index]);
++		else
++			fac= (cd->dloc[index])/(cu->path->totdist) - (co[index]-cd->dmax[index])/(cu->path->totdist);
++	}
++	else {
++		if(cu->flag & CU_STRETCH)
++			fac= (co[index]-cd->dmin[index])/(cd->dmax[index] - cd->dmin[index]);
++		else
++			fac= (cd->dloc[index])/(cu->path->totdist) + (co[index]-cd->dmin[index])/(cu->path->totdist);
++	}
++
++	if( where_on_path_deform(par, fac, loc, dir, new_quat, &radius)) {	/* returns OK */
++		float quat[4]; //, cent[3];
 +		if(cd->no_rot_axis) {	/* set by caller */
 +
 +			/* this is not exactly the same as 2.4x, since the axis is having rotation removed rather than
@@ -750,9 +788,9 @@ Index: source/blender/blenkernel/intern/ama.c
 +
 +		/* zero the axis which is not used,
 +		 * the big block of text above now applies to these 3 lines */
-+		//quat_apply_track(quat, axis-1, (axis==1 || axis==3) ? 1:0); /* up flag is a dummy, set so no rotation is done */
-+		//vec_apply_track(cent, axis-1);
-+		//cent[axis < 4 ? axis-1 : axis-4]= 0.0f;
++		quat_apply_track(quat, axis-1, (axis==1 || axis==3) ? 1:0); /* up flag is a dummy, set so no rotation is done */
++		vec_apply_track(cent, axis-1);
++		cent[axis < 4 ? axis-1 : axis-4]= 0.0f;
 +
 +
 +		/* scale if enabled */
@@ -764,10 +802,7 @@ Index: source/blender/blenkernel/intern/ama.c
 +		mul_qt_v3(quat, cent);
 +
 +		/* translation */
-+		add_v3_v3v3(co, cent, loc);
-+
-+		if(quatp)
-+			copy_qt_qt(quatp, quat);
++		/*add_v3_v3v3(co, cent, loc);*/
 +
 +		return 1;
 +	}
@@ -775,36 +810,22 @@ Index: source/blender/blenkernel/intern/ama.c
 +}
 +
 +
-+void array_to_curve(Scene *scene, Object *cuOb, Object *target, float (*vertexCos)[3], int numVerts)
++void array_to_curve(Scene *scene, Object *cuOb, Object *target, float *vertexCos, float *vec, float *quat)
 +{
 +	Curve *cu;
-+	int a, flag;
 +	CurveDeform cd;
-+	//int use_vgroups;
-+		
++
 +	if(cuOb->type != OB_CURVE)
 +		return;
-+
 +	cu = cuOb->data;
-+	flag = cu->flag;
-+	cu->flag |= (CU_PATH|CU_FOLLOW); // needed for path & bevlist
-+
++	cu->flag |= (CU_PATH|CU_FOLLOW);
 +	init_curve_deform(cuOb, target, &cd, (cu->flag & CU_STRETCH)==0);
-+
-+	for(a = 0; a < numVerts; a++) {
-+		mul_m4_v3(cd.curvespace, vertexCos[a]);
-+	}
-+	
-+	for(a = 0; a < numVerts; a++) {
-+		calc_curve_deform(scene, cuOb, vertexCos[a], &cd, NULL);
-+		mul_m4_v3(cd.objectspace, vertexCos[a]);
-+	}
-+	cu->flag = flag;
++	calc_curve_deform(scene, cuOb, vertexCos, &cd, vec, quat);
 +}
 +
 Index: source/blender/blenkernel/intern/anim.c
 ===================================================================
---- source/blender/blenkernel/intern/anim.c	(revisione 42053)
+--- source/blender/blenkernel/intern/anim.c	(revisione 42626)
 +++ source/blender/blenkernel/intern/anim.c	(copia locale)
 @@ -31,6 +31,7 @@
  
@@ -822,7 +843,24 @@ Index: source/blender/blenkernel/intern/anim.c
  #include "DNA_scene_types.h"
  #include "DNA_vfont_types.h"
  
-@@ -754,6 +756,137 @@
+@@ -60,6 +62,7 @@
+ #include "BKE_key.h"
+ #include "BKE_lattice.h"
+ #include "BKE_main.h"
++#include "BKE_material.h"
+ #include "BKE_mesh.h"
+ #include "BKE_object.h"
+ #include "BKE_particle.h"
+@@ -654,7 +657,7 @@
+ 	vec[1]= data[0]*p0->vec[1] + data[1]*p1->vec[1] + data[2]*p2->vec[1] + data[3]*p3->vec[1] ; /* Y */
+ 	vec[2]= data[0]*p0->vec[2] + data[1]*p1->vec[2] + data[2]*p2->vec[2] + data[3]*p3->vec[2] ; /* Z */
+ 	vec[3]= data[0]*p0->vec[3] + data[1]*p1->vec[3] + data[2]*p2->vec[3] + data[3]*p3->vec[3] ; /* Tilt, should not be needed since we have quat still used */
+-
++	
+ 	if (quat) {
+ 		float totfac, q1[4], q2[4];
+ 
+@@ -754,6 +757,137 @@
  	}
  }
  
@@ -834,7 +872,7 @@ Index: source/blender/blenkernel/intern/anim.c
 +	float mat[4][4], tmat[4][4], offset[4][4], rot[4][4];
 +	ModifierData *md;
 +	int i, cont_rnd;
-+	float d_alp, alpha;
++	float d_alp, alpha=0;
 +	
 +	if(ob->dup_group==NULL) return;
 +		group= ob->dup_group;
@@ -857,19 +895,21 @@ Index: source/blender/blenkernel/intern/anim.c
 +					alpha = (float)6.2831 / amd->rays;
 +				copy_m4_m4(offset, amd->delta);
 +					
-+				for (i = 0; i < amd->count-1; i++)
-+				{
++				for (i = 0; i < amd->count-1; i++) {
 +					cont_rnd = 0;
-+					for(go= group->gobject.first; go; go= go->next) 
-+					{
++					for(go= group->gobject.first; go; go= go->next) {
 +						cont_rnd++;
 +						/* note, if you check on layer here, render goes wrong... it still deforms verts and uses parent imat */
-+						if(go->ob!=ob)
-+						{
-+							if (amd->rand_group & MOD_ARR_RAND_GROUP)
-+							{
++						if(go->ob!=ob) {
++							if (amd->rand_group & MOD_ARR_RAND_GROUP) {
 +								if ((amd->Mem_Ob[i].rand_group_obj != 0) && (amd->Mem_Ob[i].rand_group_obj != cont_rnd))
 +									continue;
++							} else if (amd->rand_group & MOD_ARR_RAND_MAT_GROUP) {
++								//assign_material(go->ob, *ob->mat, go->ob->totcol+1);
++								//go->ob->actcol = BLI_rand() % ob->totcol;
++
++								//printf("Totcol=%d\n", go->ob->totcol);
++								//printf("actcol=%d\n", go->ob->actcol);
 +							}
 +							/* Group Dupli Offset, should apply after everything else */
 +							if (group->dupli_ofs[0] || group->dupli_ofs[1] || group->dupli_ofs[2]) {
@@ -881,8 +921,7 @@ Index: source/blender/blenkernel/intern/anim.c
 +							}
 +						
 +							copy_m4_m4(tmat, mat);
-+							if (amd->rays>1)
-+							{
++							if (amd->rays>1) {
 +								unit_m4(rot);
 +								if (amd->rays_dir == MOD_ARR_RAYS_X)
 +									rotate_m4(rot,'X',d_alp);
@@ -903,17 +942,18 @@ Index: source/blender/blenkernel/intern/anim.c
 +									mul_m4_m4m4(mat, rot, tmat);
 +								}
 +							}
-+							else
-+							{
++							else {
 +								mul_m4_m4m4(mat, offset, tmat);
 +							}
 +							//Noise
-+							if (amd->mode & MOD_ARR_MOD_ADV)
-+							{
-+								if (amd->Mem_Ob[i].transform == 1)
-+								{
++							if (amd->mode & MOD_ARR_MOD_ADV) {
++								if (amd->Mem_Ob[i].transform == 1) {
++									float app[4][4];
++									unit_m4(app);
++									loc_eul_size_to_mat4(app, amd->Mem_Ob[i].loc, amd->Mem_Ob[i].rot, amd->Mem_Ob[i].scale);
++
 +									copy_m4_m4(tmat, mat);
-+									mul_m4_m4m4(mat, amd->Mem_Ob[i].location, tmat);
++									mul_m4_m4m4(mat, app, tmat);
 +								}
 +							}
 +						
@@ -927,8 +967,7 @@ Index: source/blender/blenkernel/intern/anim.c
 +							if(((dob->origlay & group->layer)==0 ||
 +								(G.rendering==0 && dob->ob->restrictflag & OB_RESTRICT_VIEW) ||
 +								(G.rendering && dob->ob->restrictflag & OB_RESTRICT_RENDER)) || 
-+								!(md->mode&eModifierMode_Realtime) || (!(md->mode&eModifierMode_Editmode) && (ob->mode == OB_MODE_EDIT)))
-+							{
++								!(md->mode&eModifierMode_Realtime) || (!(md->mode&eModifierMode_Editmode) && (ob->mode == OB_MODE_EDIT))) {
 +								dob->no_draw= 1;
 +							}
 +							else {
@@ -942,8 +981,7 @@ Index: source/blender/blenkernel/intern/anim.c
 +						}
 +					}
 +					//Increment for rays
-+					if (amd->rays>1)
-+					{
++					if (amd->rays>1) {
 +						d_alp = d_alp + alpha;
 +						if (d_alp>6.2831)
 +							d_alp=0;
@@ -960,7 +998,7 @@ Index: source/blender/blenkernel/intern/anim.c
  static void frames_duplilist(ListBase *lb, Scene *scene, Object *ob, int level, int animated)
  {
  	extern int enable_cu_speed;	/* object.c */
-@@ -1613,6 +1746,15 @@
+@@ -1598,6 +1732,15 @@
  				if(dob->type == OB_DUPLIGROUP)
  					copy_m4_m4(dob->ob->obmat, dob->mat);
  		}
@@ -976,11 +1014,23 @@ Index: source/blender/blenkernel/intern/anim.c
  	}
  }
  
+Index: source/blender/blenkernel/intern/lattice.c
+===================================================================
+--- source/blender/blenkernel/intern/lattice.c	(revisione 42626)
++++ source/blender/blenkernel/intern/lattice.c	(copia locale)
+@@ -638,7 +638,6 @@
+ 		vec_apply_track(cent, axis-1);
+ 		cent[axis < 4 ? axis-1 : axis-4]= 0.0f;
+ 
+-
+ 		/* scale if enabled */
+ 		if(cu->flag & CU_PATH_RADIUS)
+ 			mul_v3_fl(cent, radius);
 Index: source/blender/blenloader/intern/readfile.c
 ===================================================================
---- source/blender/blenloader/intern/readfile.c	(revisione 42053)
+--- source/blender/blenloader/intern/readfile.c	(revisione 42626)
 +++ source/blender/blenloader/intern/readfile.c	(copia locale)
-@@ -4073,6 +4073,15 @@
+@@ -4067,6 +4067,15 @@
  				}
  			}
  
@@ -996,7 +1046,7 @@ Index: source/blender/blenloader/intern/readfile.c
  			/* texture field */
  			if(ob->pd)
  				lib_link_partdeflect(fd, &ob->id, ob->pd);
-@@ -4393,6 +4402,11 @@
+@@ -4387,6 +4396,12 @@
  			if(wmd->cmap_curve)
  				direct_link_curvemapping(fd, wmd->cmap_curve);
  		}
@@ -1004,15 +1054,16 @@ Index: source/blender/blenloader/intern/readfile.c
 +			ArrayModifierData *amd = (ArrayModifierData*) md;
 +
 +			amd->Mem_Ob = newdataadr(fd, amd->Mem_Ob);
++			amd->Mem_Mat_Ob.mid_cap = newdataadr(fd, amd->Mem_Mat_Ob.mid_cap);
 +		}
  	}
  }
  
 Index: source/blender/blenloader/intern/writefile.c
 ===================================================================
---- source/blender/blenloader/intern/writefile.c	(revisione 42053)
+--- source/blender/blenloader/intern/writefile.c	(revisione 42626)
 +++ source/blender/blenloader/intern/writefile.c	(copia locale)
-@@ -1388,6 +1388,11 @@
+@@ -1388,6 +1388,12 @@
  			if (wmd->cmap_curve)
  				write_curvemapping(wd, wmd->cmap_curve);
  		}
@@ -1020,13 +1071,14 @@ Index: source/blender/blenloader/intern/writefile.c
 +			ArrayModifierData *amd = (ArrayModifierData*) md;
 +			
 +			writestruct(wd, DATA, "ArrayChangeObject", amd->count, amd->Mem_Ob);
++			writedata(wd, DATA, sizeof(int)*(amd->count_mc), amd->Mem_Mat_Ob.mid_cap);
 +		}
  	}
  }
  
 Index: source/blender/editors/object/object_intern.h
 ===================================================================
---- source/blender/editors/object/object_intern.h	(revisione 42053)
+--- source/blender/editors/object/object_intern.h	(revisione 42626)
 +++ source/blender/editors/object/object_intern.h	(copia locale)
 @@ -160,6 +160,7 @@
  void OBJECT_OT_meshdeform_bind(struct wmOperatorType *ot);
@@ -1038,9 +1090,9 @@ Index: source/blender/editors/object/object_intern.h
  void OBJECT_OT_constraint_add(struct wmOperatorType *ot);
 Index: source/blender/editors/object/object_modifier.c
 ===================================================================
---- source/blender/editors/object/object_modifier.c	(revisione 42053)
+--- source/blender/editors/object/object_modifier.c	(revisione 42626)
 +++ source/blender/editors/object/object_modifier.c	(copia locale)
-@@ -204,6 +204,10 @@
+@@ -201,6 +201,10 @@
  	else if(md->type == eModifierType_Smoke) {
  		ob->dt = OB_TEXTURE;
  	}
@@ -1051,7 +1103,7 @@ Index: source/blender/editors/object/object_modifier.c
  	else if(md->type == eModifierType_Multires) {
  		int ok= 1;
  		Mesh *me= ob->data;
-@@ -1624,3 +1628,49 @@
+@@ -1658,3 +1662,49 @@
  	RNA_def_boolean(ot->srna, "free", FALSE, "Free", "Free the bake, rather than generating it");
  }
  
@@ -1103,7 +1155,7 @@ Index: source/blender/editors/object/object_modifier.c
 +}
 Index: source/blender/editors/object/object_ops.c
 ===================================================================
---- source/blender/editors/object/object_ops.c	(revisione 42053)
+--- source/blender/editors/object/object_ops.c	(revisione 42626)
 +++ source/blender/editors/object/object_ops.c	(copia locale)
 @@ -143,7 +143,8 @@
  	WM_operatortype_append(OBJECT_OT_meshdeform_bind);
@@ -1117,18 +1169,23 @@ Index: source/blender/editors/object/object_ops.c
  	WM_operatortype_append(POSE_OT_constraint_add);
 Index: source/blender/makesdna/DNA_modifier_types.h
 ===================================================================
---- source/blender/makesdna/DNA_modifier_types.h	(revisione 42053)
+--- source/blender/makesdna/DNA_modifier_types.h	(revisione 42626)
 +++ source/blender/makesdna/DNA_modifier_types.h	(copia locale)
-@@ -177,17 +177,43 @@
+@@ -178,17 +178,56 @@
  /* Mask Modifier -> flag */
  #define MOD_MASK_INV			(1<<0)
  
 +
 +typedef struct ArrayChangeObject {
-+	float location[4][4];
++	//float location[4][4];
++	float rot[3];
++	float scale[3];
++	float loc[3];
 +	/*0 not modified
 +	  1 modified
 +	*/
++	float cu_cent[3];
++	float cu_loc[4];
 +	int transform;
 +	int id_mat;
 +	int rand_group_obj;
@@ -1140,6 +1197,12 @@ Index: source/blender/makesdna/DNA_modifier_types.h
 +	int count;
 +	int distribution;
 +} ObjectCap;*/
++
++typedef struct Mat_ObCap {
++	int *mid_cap;
++	int start_cap;
++	int end_cap;
++} Mat_ObCap;
 +
  typedef struct ArrayModifierData {
  	ModifierData modifier;
@@ -1159,12 +1222,14 @@ Index: source/blender/makesdna/DNA_modifier_types.h
  	struct Object *offset_ob;
 +	/* stores information about objects subject to random */
 +	struct ArrayChangeObject *Mem_Ob;
++	/* stores the material of the "Object Cap" */
++	struct Mat_ObCap Mem_Mat_Ob;
 +	/* group linked to the modifier */
 +	struct Group *arr_group;
  	/* a constant duplicate offset;
  	   1 means the duplicates are 1 unit apart
  	*/
-@@ -196,14 +222,20 @@
+@@ -197,14 +236,20 @@
  	   1 means the duplicates are 1 object-width apart
  	*/
  	float scale[3];
@@ -1186,14 +1251,16 @@ Index: source/blender/makesdna/DNA_modifier_types.h
  	*/
  	int fit_type;
  	/* flags specifying how total offset is calculated; binary OR of:
-@@ -219,12 +251,39 @@
+@@ -220,22 +265,111 @@
  	int flags;
  	/* the number of duplicates to generate for MOD_ARR_FIXEDCOUNT */
  	int count;
 +	/* the number of duplicates of Mid Cap and type of distribution */
 +	int count_mc;
 +	int dist_mc;
-+	/*  */
++	/* Indicates whether you use a random material or the original*/
++	int mat_ob;
++	/* Indicates whether to use the Start Cap and End Cap on the curve of the Mid Cap */
 +	int outer_cp;
 +	/* number of rays and the direction of the Clones */
 +	int rays;
@@ -1211,31 +1278,49 @@ Index: source/blender/makesdna/DNA_modifier_types.h
 +	/* direction Offset */
 +	int sign;
 +	/* keeps the ratio on the scale */
-+	int proportion;
++	int flag_offset;
 +	/* how to distribute the clones on a curve */
 +	int dist_cu;
 +	/* ability to randomization of objects belonging to the group linked */
 +	int rand_group;
-+	int pad1;
++	//int pad1;
  } ArrayModifierData;
  
  /* ArrayModifierData->fit_type */
- #define MOD_ARR_FIXEDCOUNT 0
- #define MOD_ARR_FITLENGTH  1
+-#define MOD_ARR_FIXEDCOUNT 0
+-#define MOD_ARR_FITLENGTH  1
 -#define MOD_ARR_FITCURVE   2
-+#define MOD_ARR_FITBETWEEN 2
++#define MOD_ARR_FIXEDCOUNT		0
++#define MOD_ARR_FITLENGTH		1
++#define MOD_ARR_FITBETWEEN		2
  
  /* ArrayModifierData->offset_type */
- #define MOD_ARR_OFF_CONST    (1<<0)
-@@ -232,9 +291,54 @@
- #define MOD_ARR_OFF_OBJ      (1<<2)
+-#define MOD_ARR_OFF_CONST    (1<<0)
+-#define MOD_ARR_OFF_RELATIVE (1<<1)
+-#define MOD_ARR_OFF_OBJ      (1<<2)
++#define MOD_ARR_OFF_CONST		(1<<0)
++#define MOD_ARR_OFF_RELATIVE	(1<<1)
++#define MOD_ARR_OFF_OBJ			(1<<2)
  
  /* ArrayModifierData->flags */
 -#define MOD_ARR_MERGE      (1<<0)
 -#define MOD_ARR_MERGEFINAL (1<<1)
-+#define MOD_ARR_MERGE      	(1<<0)
-+#define MOD_ARR_MERGEFINAL 	(1<<1)
++#define MOD_ARR_MERGE      		(1<<0)
++#define MOD_ARR_MERGEFINAL 		(1<<1)
  
++/* ArrayModifierData->mat_ob */
++/* Array */
++#define MOD_ARR_AR_MAT_RND     	(1<<0)
++/* Start Cap */
++#define MOD_ARR_SC_MAT_RND     	(1<<1)
++#define MOD_ARR_SC_MAT_OR 		(1<<2)
++/* Mid Cap */
++#define MOD_ARR_MC_MAT_RND     	(1<<3)
++#define MOD_ARR_MC_MAT_OR 		(1<<4)
++/* End Cap */
++#define MOD_ARR_EC_MAT_RND     	(1<<5)
++#define MOD_ARR_EC_MAT_OR 		(1<<6)
++
 +/* ArrayModifierData->type */
 +#define MOD_ARR_MOD_NRM			(1<<0)
 +#define MOD_ARR_MOD_CURVE		(1<<1)
@@ -1251,44 +1336,46 @@ Index: source/blender/makesdna/DNA_modifier_types.h
 +#define MOD_ARR_MOD_ADV_CLONE	(1<<4)
 +
 +/* ArrayModifierData->sign */
-+#define MOD_ARR_SIGN_P		(1<<0)
-+#define MOD_ARR_SIGN_L		(1<<1)
++#define MOD_ARR_SIGN_P			(1<<0)
++#define MOD_ARR_SIGN_L			(1<<1)
 +
 +/* ArrayModifierData->lock */
-+#define MOD_ARR_LOCK		(1<<0)
++#define MOD_ARR_LOCK			(1<<0)
 +
-+/* ArrayModifierData->proportion */
-+#define MOD_ARR_PROP		(1<<0)
++/* ArrayModifierData->flag_offset */
++#define MOD_ARR_PROP			(1<<0)
++#define MOD_ARR_LOCAL			(1<<1)
 +
 +/* ArrayModifierData->rand_mat */
-+#define MOD_ARR_MAT			(1<<0)
-+#define MOD_ARR_SEQ			(1<<1)
++#define MOD_ARR_MAT				(1<<0)
++#define MOD_ARR_SEQ				(1<<1)
 +
 +/* ArrayModifierData->rays_dir */
-+#define MOD_ARR_RAYS_X 0
-+#define MOD_ARR_RAYS_Y 1
-+#define MOD_ARR_RAYS_Z 2
++#define MOD_ARR_RAYS_X			0
++#define MOD_ARR_RAYS_Y			1
++#define MOD_ARR_RAYS_Z			2
 +
 +/* ArrayModifierData->rand_group */
-+#define MOD_ARR_RAND_GROUP    (1<<0)
++#define MOD_ARR_RAND_GROUP		(1<<0)
++#define MOD_ARR_RAND_MAT_GROUP  (1<<1)
 +
 +/* ArrayModifierData->dist_cu */
-+#define MOD_ARR_DIST_EVENLY    (1<<0)
-+#define MOD_ARR_DIST_SEGMENT   (1<<1)
++#define MOD_ARR_DIST_EVENLY		(1<<0)
++#define MOD_ARR_DIST_SEGMENT	(1<<1)
 +
 +/* ArrayModifierData->dist_mc */
-+#define MOD_ARR_DIST_SEQ     (1<<0)
-+#define MOD_ARR_DIST_HALF    (1<<1)
-+#define MOD_ARR_DIST_CURVE   (1<<2)
++#define MOD_ARR_DIST_SEQ		(1<<0)
++#define MOD_ARR_DIST_HALF		(1<<1)
++#define MOD_ARR_DIST_CURVE		(1<<2)
 +
  typedef struct MirrorModifierData {
  	ModifierData modifier;
  
 Index: source/blender/makesdna/DNA_object_types.h
 ===================================================================
---- source/blender/makesdna/DNA_object_types.h	(revisione 42053)
+--- source/blender/makesdna/DNA_object_types.h	(revisione 42626)
 +++ source/blender/makesdna/DNA_object_types.h	(copia locale)
-@@ -283,9 +283,12 @@
+@@ -288,9 +288,12 @@
  	int index;
  	float mat[4][4], omat[4][4];
  	float orco[3], uv[2];
@@ -1303,7 +1390,7 @@ Index: source/blender/makesdna/DNA_object_types.h
  } DupliObject;
  
  /* **************** OBJECT ********************* */
-@@ -333,7 +336,7 @@
+@@ -338,7 +341,7 @@
  /* (short) transflag */
  /* flags 1 and 2 were unused or relics from past features */
  #define OB_NEG_SCALE		4
@@ -1312,7 +1399,7 @@ Index: source/blender/makesdna/DNA_object_types.h
  #define OB_DUPLIFRAMES		8
  #define OB_DUPLIVERTS		16
  #define OB_DUPLIROT			32
-@@ -343,8 +346,9 @@
+@@ -348,8 +351,9 @@
  #define OB_DUPLIFACES		512
  #define OB_DUPLIFACES_SCALE	1024
  #define OB_DUPLIPARTS		2048
@@ -1326,7 +1413,7 @@ Index: source/blender/makesdna/DNA_object_types.h
  /* XXX: many old flags for features removed due to incompatability 
 Index: source/blender/makesrna/intern/rna_modifier.c
 ===================================================================
---- source/blender/makesrna/intern/rna_modifier.c	(revisione 42053)
+--- source/blender/makesrna/intern/rna_modifier.c	(revisione 42626)
 +++ source/blender/makesrna/intern/rna_modifier.c	(copia locale)
 @@ -591,6 +591,16 @@
  	modifier_object_set(ptr->id.data, &((ArrayModifierData*)ptr->data)->end_cap, OB_MESH, value);
@@ -1444,7 +1531,7 @@ Index: source/blender/makesrna/intern/rna_modifier.c
  	/* Caps */
  	prop= RNA_def_property(srna, "start_cap", PROP_POINTER, PROP_NONE);
  	RNA_def_property_ui_text(prop, "Start Cap", "Mesh object to use as a start cap");
-@@ -1506,11 +1583,158 @@
+@@ -1506,11 +1583,188 @@
  	RNA_def_property_flag(prop, PROP_EDITABLE|PROP_ID_SELF_CHECK);
  	RNA_def_property_update(prop, 0, "rna_Modifier_update");
  
@@ -1499,6 +1586,26 @@ Index: source/blender/makesrna/intern/rna_modifier.c
  	RNA_def_property_flag(prop, PROP_EDITABLE|PROP_ID_SELF_CHECK);
  	RNA_def_property_update(prop, 0, "rna_Modifier_dependency_update");
 +
++	prop= RNA_def_property(srna, "rand_mat_array", PROP_BOOLEAN, PROP_TRANSLATION);
++	RNA_def_property_boolean_sdna(prop, NULL, "mat_ob", MOD_ARR_AR_MAT_RND);
++	RNA_def_property_ui_text(prop, "Array", "Material random to Array");
++	RNA_def_property_update(prop, 0, "rna_Modifier_update");
++
++	prop= RNA_def_property(srna, "rand_mat_sc", PROP_BOOLEAN, PROP_TRANSLATION);
++	RNA_def_property_boolean_sdna(prop, NULL, "mat_ob", MOD_ARR_SC_MAT_RND);
++	RNA_def_property_ui_text(prop, "Start Cap", "Material random to Start Cap");
++	RNA_def_property_update(prop, 0, "rna_Modifier_update");
++
++	prop= RNA_def_property(srna, "rand_mat_mc", PROP_BOOLEAN, PROP_TRANSLATION);
++	RNA_def_property_boolean_sdna(prop, NULL, "mat_ob", MOD_ARR_MC_MAT_RND);
++	RNA_def_property_ui_text(prop, "Mid Cap", "Material random to Mid Cap");
++	RNA_def_property_update(prop, 0, "rna_Modifier_update");
++
++	prop= RNA_def_property(srna, "rand_mat_ec", PROP_BOOLEAN, PROP_TRANSLATION);
++	RNA_def_property_boolean_sdna(prop, NULL, "mat_ob", MOD_ARR_EC_MAT_RND);
++	RNA_def_property_ui_text(prop, "End Cap", "Material random to End Cap");
++	RNA_def_property_update(prop, 0, "rna_Modifier_update");
++
 +	/* Advanced parameters */
 +	prop= RNA_def_property(srna, "use_advanced", PROP_BOOLEAN, PROP_NONE);
 +	RNA_def_property_boolean_sdna(prop, NULL, "mode", MOD_ARR_MOD_ADV);
@@ -1530,20 +1637,25 @@ Index: source/blender/makesrna/intern/rna_modifier.c
 +	prop= RNA_def_property(srna, "scale_offset", PROP_FLOAT, PROP_XYZ);
 +	RNA_def_property_float_sdna(prop, NULL, "scale_offset");
 +	RNA_def_property_range(prop, 0, 10);
-+	RNA_def_property_ui_range(prop, 0, 10, 1,5);
++	RNA_def_property_ui_range(prop, 0, 10, 1, 3);
 +	RNA_def_property_ui_text(prop, "Scale Offset Displacement", "Add a scale offset to vertices or object");
 +	RNA_def_property_update(prop, NC_OBJECT|ND_TRANSFORM, "rna_Modifier_update");
 +
-+	prop= RNA_def_property(srna, "scale", PROP_FLOAT, PROP_NONE);
++	prop= RNA_def_property(srna, "scale", PROP_FLOAT, PROP_XYZ);
 +	RNA_def_property_float_sdna(prop, NULL, "scale_offset[0]");
-+	RNA_def_property_range(prop, 0, FLT_MAX);
-+	RNA_def_property_ui_range(prop, 0, FLT_MAX, 1, 5);
++	RNA_def_property_range(prop, 0, 10);
++	RNA_def_property_ui_range(prop, 0, 10, 1, 3);
 +	RNA_def_property_ui_text(prop, "Scale Offset Displacement", "Add a scale offset to vertices or object");
 +	RNA_def_property_update(prop, NC_OBJECT|ND_TRANSFORM, "rna_Modifier_update");
 +
 +	prop= RNA_def_property(srna, "proportion", PROP_BOOLEAN, PROP_TRANSLATION);
-+	RNA_def_property_boolean_sdna(prop, NULL, "proportion", MOD_ARR_SIGN_P);
++	RNA_def_property_boolean_sdna(prop, NULL, "flag_offset", MOD_ARR_PROP);
 +	RNA_def_property_ui_text(prop, "Constrain Proportions", "Constrain Proportions");
++	RNA_def_property_update(prop, 0, "rna_Modifier_update");
++
++	prop= RNA_def_property(srna, "local_rot", PROP_BOOLEAN, PROP_TRANSLATION);
++	RNA_def_property_boolean_sdna(prop, NULL, "flag_offset", MOD_ARR_LOCAL);
++	RNA_def_property_ui_text(prop, "Local Rotation Offset Displacement", "Add a local rotation offset to vertices or object");
 +	RNA_def_property_update(prop, 0, "rna_Modifier_update");
 +
 +	prop= RNA_def_property(srna, "material", PROP_ENUM, PROP_NONE);
@@ -1586,6 +1698,11 @@ Index: source/blender/makesrna/intern/rna_modifier.c
 +	RNA_def_property_ui_text(prop, "Rand Object", "Object random group");
 +	RNA_def_property_update(prop, 0, "rna_Modifier_update");
 +
++	prop= RNA_def_property(srna, "rand_mat_group", PROP_BOOLEAN, PROP_TRANSLATION);
++	RNA_def_property_boolean_sdna(prop, NULL, "rand_group", MOD_ARR_RAND_MAT_GROUP);
++	RNA_def_property_ui_text(prop, "Dupli Group", "Material random to Dupli Group");
++	RNA_def_property_update(prop, 0, "rna_Modifier_update");
++
 +	prop= RNA_def_property(srna, "all_curve", PROP_BOOLEAN, PROP_TRANSLATION);
 +	RNA_def_property_boolean_sdna(prop, NULL, "dist_cu", MOD_ARR_DIST_EVENLY);
 +	RNA_def_property_ui_text(prop, "Spread Evenly", "Spread evenly on a curve");
@@ -1603,7 +1720,7 @@ Index: source/blender/makesrna/intern/rna_modifier.c
  }
  
  static void rna_def_modifier_edgesplit(BlenderRNA *brna)
-@@ -3116,6 +3340,7 @@
+@@ -3120,6 +3374,7 @@
  	rna_def_modifier_hook(brna);
  	rna_def_modifier_softbody(brna);
  	rna_def_modifier_boolean(brna);
@@ -1613,7 +1730,7 @@ Index: source/blender/makesrna/intern/rna_modifier.c
  	rna_def_modifier_displace(brna);
 Index: source/blender/modifiers/intern/MOD_array.c
 ===================================================================
---- source/blender/modifiers/intern/MOD_array.c	(revisione 42053)
+--- source/blender/modifiers/intern/MOD_array.c	(revisione 42626)
 +++ source/blender/modifiers/intern/MOD_array.c	(copia locale)
 @@ -35,6 +35,8 @@
  
@@ -1655,7 +1772,7 @@ Index: source/blender/modifiers/intern/MOD_array.c
  	amd->count = 2;
  	amd->offset[0] = amd->offset[1] = amd->offset[2] = 0;
  	amd->scale[0] = 1;
-@@ -73,6 +79,25 @@
+@@ -73,6 +79,28 @@
  	amd->fit_type = MOD_ARR_FIXEDCOUNT;
  	amd->offset_type = MOD_ARR_OFF_RELATIVE;
  	amd->flags = 0;
@@ -1664,12 +1781,13 @@ Index: source/blender/modifiers/intern/MOD_array.c
 +	amd->mode = !MOD_ARR_MOD_ADV;
 +	amd->loc_offset[0] = amd->loc_offset[1] = amd->loc_offset[2] = 0;
 +	amd->rot_offset[0] = amd->rot_offset[1] = amd->rot_offset[2] = 0;
-+	amd->scale_offset[0] = amd->scale_offset[1] = amd->scale_offset[2] = 0;
++	amd->scale_offset[0] = amd->scale_offset[1] = amd->scale_offset[2] = 1;
 +	amd->sign = MOD_ARR_SIGN_P;
 +	amd->lock = !MOD_ARR_LOCK;
-+	amd->proportion = MOD_ARR_PROP;
++	amd->flag_offset = MOD_ARR_PROP;
 +	amd->rays = 1;
 +	amd->rand_mat = MOD_ARR_MAT;
++	amd->mat_ob = MOD_ARR_AR_MAT_RND;
 +	amd->cont_mat = 1;
 +	amd->count_mc = 1;
 +	amd->dist_mc = MOD_ARR_DIST_SEQ;
@@ -1678,10 +1796,12 @@ Index: source/blender/modifiers/intern/MOD_array.c
 +	amd->rand_group = !MOD_ARR_RAND_GROUP;
 +	amd->dist_cu = MOD_ARR_DIST_EVENLY;
 +	amd->outer_cp = !MOD_ARR_CP_FIRST;
++	amd->Mem_Mat_Ob.start_cap = 0;
++	amd->Mem_Mat_Ob.end_cap = 0;
  }
  
  static void copyData(ModifierData *md, ModifierData *target)
-@@ -81,7 +106,9 @@
+@@ -81,7 +109,9 @@
  	ArrayModifierData *tamd = (ArrayModifierData*) target;
  
  	tamd->start_cap = amd->start_cap;
@@ -1691,7 +1811,7 @@ Index: source/blender/modifiers/intern/MOD_array.c
  	tamd->curve_ob = amd->curve_ob;
  	tamd->offset_ob = amd->offset_ob;
  	tamd->count = amd->count;
-@@ -92,6 +119,26 @@
+@@ -92,6 +122,30 @@
  	tamd->fit_type = amd->fit_type;
  	tamd->offset_type = amd->offset_type;
  	tamd->flags = amd->flags;
@@ -1703,10 +1823,14 @@ Index: source/blender/modifiers/intern/MOD_array.c
 +	copy_v3_v3(tamd->scale_offset, amd->scale_offset);
 +	tamd->sign = amd->sign;	
 +	tamd->lock = amd->lock;
-+	tamd->proportion = amd->proportion;
++	tamd->flag_offset = amd->flag_offset;
 +	tamd->rays = amd->rays;
 +	tamd->Mem_Ob = MEM_dupallocN(amd->Mem_Ob);
++	tamd->Mem_Mat_Ob.start_cap = amd->Mem_Mat_Ob.start_cap;
++	tamd->Mem_Mat_Ob.end_cap = amd->Mem_Mat_Ob.end_cap;
++	tamd->Mem_Mat_Ob.mid_cap = MEM_dupallocN(amd->Mem_Mat_Ob.mid_cap);
 +	tamd->rand_mat = amd->rand_mat;
++	tamd->mat_ob = amd->mat_ob;
 +	tamd->cont_mat = amd->cont_mat;
 +	tamd->count_mc = amd->count_mc;
 +	tamd->dist_mc = amd->dist_mc;
@@ -1718,7 +1842,7 @@ Index: source/blender/modifiers/intern/MOD_array.c
  }
  
  static void foreachObjectLink(
-@@ -102,8 +149,10 @@
+@@ -102,8 +156,10 @@
  	ArrayModifierData *amd = (ArrayModifierData*) md;
  
  	walk(userData, ob, &amd->start_cap);
@@ -1729,7 +1853,7 @@ Index: source/blender/modifiers/intern/MOD_array.c
  	walk(userData, ob, &amd->offset_ob);
  }
  
-@@ -118,6 +167,12 @@
+@@ -118,6 +174,12 @@
  		dag_add_relation(forest, curNode, obNode,
  		                 DAG_RL_DATA_DATA | DAG_RL_OB_DATA, "Array Modifier");
  	}
@@ -1742,7 +1866,7 @@ Index: source/blender/modifiers/intern/MOD_array.c
  	if (amd->end_cap) {
  		DagNode *curNode = dag_get_node(forest, amd->end_cap);
  
-@@ -130,6 +185,12 @@
+@@ -130,6 +192,12 @@
  		dag_add_relation(forest, curNode, obNode,
  		                 DAG_RL_DATA_DATA | DAG_RL_OB_DATA, "Array Modifier");
  	}
@@ -1755,7 +1879,7 @@ Index: source/blender/modifiers/intern/MOD_array.c
  	if (amd->offset_ob) {
  		DagNode *curNode = dag_get_node(forest, amd->offset_ob);
  
-@@ -138,115 +199,44 @@
+@@ -138,115 +206,44 @@
  	}
  }
  
@@ -1850,12 +1974,12 @@ Index: source/blender/modifiers/intern/MOD_array.c
  	float final_offset[4][4];
 -	float tmp_mat[4][4];
 +	float mid_offset[4][4], half_offset[4][4];
-+	float tmp_mat[4][4]; //, local[4][4];
++	float tmp_mat[4][4], prec_mid[4][4], local[4][4];
  	float length = amd->length;
 +	float alpha = 0, d_alp = 0, circle;
 +	float f_o;
 +	int i, j, flag;
-+	int dim, start;
++	int start, start_mc;
  	int count = amd->count;
  	int numVerts, numEdges, numFaces;
  	int maxVerts, maxEdges, maxFaces;
@@ -1885,9 +2009,13 @@ Index: source/blender/modifiers/intern/MOD_array.c
  
  	unit_m4(offset);
  
-@@ -280,68 +270,151 @@
+@@ -279,69 +276,206 @@
+ 		             NULL, NULL, NULL, NULL, NULL);
  		copy_m4_m4(offset, result_mat);
  	}
++	
++	if ((amd->type & MOD_ARR_MOD_CURVE) && (amd->curve_ob))
++		length = length_fitcurve(amd, scene);
  
 -	if(amd->fit_type == MOD_ARR_FITCURVE && amd->curve_ob) {
 -		Curve *cu = amd->curve_ob->data;
@@ -1904,28 +2032,31 @@ Index: source/blender/modifiers/intern/MOD_array.c
 -			}
 -			if(cu->path)
 -				length = scale*cu->path->totdist;
-+	if (amd->fit_type & MOD_ARR_FITBETWEEN) {
-+		count = count + 2;
-+		if ((amd->offset_type & MOD_ARR_OFF_OBJ) && (amd->offset_ob)) {
-+			//float dist = sqrt(dot_v3v3(amd->offset_ob->obmat[3], amd->offset_ob->obmat[3]));
-+			offset[3][0] = amd->offset_ob->obmat[3][0] / (count - 1);
-+			offset[3][1] = amd->offset_ob->obmat[3][1] / (count - 1);
-+			offset[3][2] = amd->offset_ob->obmat[3][2] / (count - 1);
++	/* calculate the maximum number of copies which will fit within the
++	prescribed length */
++	if (amd->fit_type & MOD_ARR_FITLENGTH) { // || (amd->type & MOD_ARR_MOD_CURVE)) {
++		if (amd->type & MOD_ARR_MOD_NRM) {
++			count = length_to_count(length, offset[3]);
++			amd->count = count;
  		}
 +		else {
-+			offset[3][0] = offset[3][0] / (count - 1);
-+			offset[3][1] = offset[3][1] / (count - 1);
-+			offset[3][2] = offset[3][2] / (count - 1);
++			count = length_to_count(amd->length, offset[3]);
++			amd->count = count;
 +		}
  	}
- 
-+	if(amd->type == MOD_ARR_MOD_CURVE && amd->curve_ob) {
-+		length = length_fitcurve(amd, scene);
++	else {
++		if ((amd->type & MOD_ARR_MOD_CURVE) && (amd->curve_ob)) {
++			amd->length = length;
++		}
++		else {
++			amd->length = count_to_length(count, offset[3]);
++			length = amd->length;
++		}
 +	}
-+
- 	/* calculate the maximum number of copies which will fit within the
- 	prescribed length */
- 	if(amd->fit_type == MOD_ARR_FITLENGTH
+ 
+-	/* calculate the maximum number of copies which will fit within the
+-	prescribed length */
+-	if(amd->fit_type == MOD_ARR_FITLENGTH
 -		  || amd->fit_type == MOD_ARR_FITCURVE) {
 -		float dist = sqrt(dot_v3v3(offset[3], offset[3]));
 -
@@ -1936,16 +2067,28 @@ Index: source/blender/modifiers/intern/MOD_array.c
 -		else
 -			/* if the offset has no translation, just make one copy */
 -			count = 1;
-+		  || amd->type == MOD_ARR_MOD_CURVE) {
-+		/*if ((amd->fit_type == MOD_ARR_FITLENGTH) && (count>2)){
-+			amd->length = count_to_length(count, offset[3]);
-+			length = amd->length;
-+		}*/
-+		count = length_to_count(length, offset[3]);
-+		amd->count = count;
++	if (amd->fit_type & MOD_ARR_FITBETWEEN) {
++		count = count + 2;
++		if (amd->type & MOD_ARR_MOD_NRM) {
++			if ((amd->offset_type & MOD_ARR_OFF_OBJ) && (amd->offset_ob)) {
++				//float dist = sqrt(dot_v3v3(amd->offset_ob->obmat[3], amd->offset_ob->obmat[3]));
++				offset[3][0] = amd->offset_ob->obmat[3][0] / (count - 1);
++				offset[3][1] = amd->offset_ob->obmat[3][1] / (count - 1);
++				offset[3][2] = amd->offset_ob->obmat[3][2] / (count - 1);
++			}
++			else {
++				offset[3][0] = offset[3][0] / (count - 1);
++				offset[3][1] = offset[3][1] / (count - 1);
++				offset[3][2] = offset[3][2] / (count - 1);
++			}
++		} 
++		else { /* amd->type & MOD_ARR_MOD_CURVE*/
++			offset[3][0] = offset[3][0] * (count - 1);
++			offset[3][1] = offset[3][1] * (count - 1);
++			offset[3][2] = offset[3][2] * (count - 1);
++		}
  	}
--
-+	
+ 
  	if(count < 1)
  		count = 1;
 +	
@@ -2009,30 +2152,58 @@ Index: source/blender/modifiers/intern/MOD_array.c
 +	flag = 0;
 +	if ((amd->mode & MOD_ARR_MOD_ADV) || (amd->mode & MOD_ARR_MOD_ADV_MAT)){
 +		start = 0;
++		start_mc = 0;
 +		if (!amd->Mem_Ob)
-+			amd->Mem_Ob = MEM_callocN(sizeof(*amd->Mem_Ob) * (count), "Mem_Ob");
++			amd->Mem_Ob = MEM_callocN(sizeof(*amd->Mem_Ob) * count, "Mem_Ob");
 +		else {
++			int dim = 0;
 +			dim = MEM_allocN_len(amd->Mem_Ob) / sizeof(*amd->Mem_Ob);
 +			if (dim < count) {
-+				amd->Mem_Ob = MEM_reallocN(amd->Mem_Ob, sizeof(*amd->Mem_Ob) * (count));
++				amd->Mem_Ob = MEM_reallocN(amd->Mem_Ob, sizeof(*amd->Mem_Ob) * count);
 +				start = dim;
 +			}
++			else if (dim > count) {
++				amd->Mem_Ob = MEM_reallocN(amd->Mem_Ob, sizeof(*amd->Mem_Ob) * count);
++				start = amd->count_mc;
++			}
 +		}
-+		
+ 
++		if (!amd->Mem_Mat_Ob.mid_cap)
++			amd->Mem_Mat_Ob.mid_cap = MEM_callocN(sizeof(int) * (amd->count_mc), "Mem_Mat_Ob");
++		else {
++			int dim = 0;
++			dim = MEM_allocN_len(amd->Mem_Mat_Ob.mid_cap) / sizeof(*amd->Mem_Mat_Ob.mid_cap);
++			if (dim < amd->count_mc) {
++				amd->Mem_Mat_Ob.mid_cap = MEM_reallocN(amd->Mem_Mat_Ob.mid_cap, sizeof(*amd->Mem_Mat_Ob.mid_cap) * amd->count_mc);
++				start_mc = dim;
++			}
++			else if (dim > amd->count_mc) {
++				amd->Mem_Mat_Ob.mid_cap = MEM_reallocN(amd->Mem_Mat_Ob.mid_cap, sizeof(*amd->Mem_Mat_Ob.mid_cap) * amd->count_mc);
++				start_mc = amd->count_mc;
++			}
++		}
 +		//Inizializzare i nuovi cloni creati
 +		if (!amd->lock) {
-+			init_offset(start, count, amd);
++			if (amd->Mem_Mat_Ob.mid_cap) {
++				if (start_mc != amd->count_mc)
++					init_mat_oc(start_mc, amd->count_mc, amd->Mem_Mat_Ob.mid_cap);
++			}
++			if (start != count)
++				init_offset(start, count, amd);
 +			create_offset(count, ob->totcol, amd, ob);
 +			amd->lock = 1;
 +			flag = 1;
 +		}
-+		else 
-+			if (start!=0)// || (amd->mode & MOD_ARR_MOD_ADV_MAT))
++		else {
++			if ((start != 0) && (start != count)) // || (amd->mode & MOD_ARR_MOD_ADV_MAT))
 +				init_offset(start, count, amd);
++			if ((start_mc != 0) && (start_mc != amd->count_mc))
++ 				init_mat_oc(start_mc, amd->count_mc, amd->Mem_Mat_Ob.mid_cap);
++		}
 +	}
 +	
 +	f_o = count-1;
- 
++
 +	if (amd->rays>1) {
 +		alpha = (float)6.2831 / amd->rays;
 +		circle = (float)(count - 1) / amd->rays;
@@ -2054,6 +2225,16 @@ Index: source/blender/modifiers/intern/MOD_array.c
 +		mid_offset[3][0] = mid_offset[3][0] / 2;
 +		mid_offset[3][1] = mid_offset[3][1] / 2;
 +		mid_offset[3][2] = mid_offset[3][2] / 2;
++		if (amd->mode & MOD_ARR_MOD_ADV) {
++			if (amd->Mem_Ob[0].transform == 1) {
++				float app[4][4];
++				unit_m4(app);
++				loc_eul_size_to_mat4(app, amd->Mem_Ob[0].loc, amd->Mem_Ob[0].rot, amd->Mem_Ob[0].scale);
++				copy_m4_m4(prec_mid, mid_offset);
++				copy_m4_m4(tmp_mat, mid_offset);
++				mul_m4_m4m4(mid_offset, app, tmp_mat);
++			}
++		}
 +	}
 +	else if (amd->dist_mc & MOD_ARR_DIST_HALF){
 +		copy_m4_m4(half_offset, final_offset);
@@ -2067,8 +2248,28 @@ Index: source/blender/modifiers/intern/MOD_array.c
  	numVerts = numEdges = numFaces = 0;
  	mvert = CDDM_get_verts(result);
  
-@@ -400,15 +473,77 @@
+@@ -349,13 +483,13 @@
+ 		indexMap[i].merge = -1; /* default to no merge */
+ 		indexMap[i].merge_final = 0; /* default to no merge */
+ 	}
+-
++	
+ 	for (i = 0; i < maxVerts; i++) {
+ 		MVert *inMV;
+ 		MVert *mv = &mvert[numVerts];
+ 		MVert *mv2;
+ 		float co[3];
+-
++		
+ 		inMV = &src_mvert[i];
  
+ 		DM_copy_vert_data(dm, result, i, numVerts, 1);
+@@ -397,18 +531,129 @@
+ 				}
+ 			}
+ 		}
+-
++		copy_m4_m4(local, offset);
  		/* if no merging, generate copies of this vert */
  		if(indexMap[i].merge < 0) {
 +			if (amd->rays>1)
@@ -2085,8 +2286,7 @@ Index: source/blender/modifiers/intern/MOD_array.c
 +				//si ottiene una spirale
 +				mul_m4_v3(offset, co);
 +				copy_v3_v3(mv2->co, co);*/
-+				if (amd->rays>1)
-+				{
++				if (amd->rays>1) {
 +					float ro[3];
 +					unit_m4(rot);
 +					if (amd->rays_dir == MOD_ARR_RAYS_X)
@@ -2104,7 +2304,7 @@ Index: source/blender/modifiers/intern/MOD_array.c
 +						mul_m4_v3(rot, ro);
 +						copy_v3_v3(mv2->co, ro);
 +					}
-+					else{
++					else {
 +						copy_v3_v3(ro,co);
 +						mul_m4_v3(rot, ro);
 +						copy_v3_v3(mv2->co, ro);
@@ -2113,8 +2313,7 @@ Index: source/blender/modifiers/intern/MOD_array.c
 +					if (d_alp>6.2831)
 +						d_alp=0;
 +				}
-+				else
-+				{
++				else {
 +					/*2)*/
 +					mul_m4_v3(offset, co);
 +					copy_v3_v3(mv2->co, co);
@@ -2123,36 +2322,87 @@ Index: source/blender/modifiers/intern/MOD_array.c
  
 -				mul_m4_v3(offset, co);
 -				copy_v3_v3(mv2->co, co);
-+				if (amd->mode & MOD_ARR_MOD_ADV)
-+				{	
-+					if (amd->Mem_Ob[j].transform)
-+					{
++				if (amd->mode & MOD_ARR_MOD_ADV) {	
++					if (amd->Mem_Ob[j].transform) {
 +						float fo[3];
-+						//float cent[3];
-+						
-+						//copy_v3_v3(cent, mv2->co);
-+						
-+						copy_v3_v3(fo, mv2->co);
-+						mul_m4_v3(amd->Mem_Ob[j].location, fo);
-+						copy_v3_v3(mv2->co, fo);
-+						
-+						//unit_m4(local);
-+						//copy_v3_v3(local[3], cent);
-+						//copy_v3_v3(fo, mv2->co);
-+						//mul_m4_v3(local, fo);
-+						//copy_v3_v3(mv2->co, fo);
-+						
++						float app[4][4];
++						unit_m4(app);
++
++						if (amd->flag_offset & MOD_ARR_LOCAL) {
++							float cent[3];
++							float quat[4];
++							
++							eul_to_quat(quat, amd->Mem_Ob[j].rot);
++							copy_v3_v3(cent, mv2->co);
++							quat_apply_track(quat, 0, 1);
++							vec_apply_track(cent, 0);
++							cent[0] = 0;
++
++							/* scale */
++							mul_v3_v3(cent, amd->Mem_Ob[j].scale);
++							/* local rotation */
++							normalize_qt(quat);
++							mul_qt_v3(quat, cent);
++
++							loc_quat_size_to_mat4(app, amd->Mem_Ob[j].loc, quat, amd->Mem_Ob[j].scale);
++							add_v3_v3v3(local[3], app[3], local[3]);
++							
++							add_v3_v3v3(fo, cent, local[3]);
++														
++							copy_v3_v3(mv2->co, fo);
++							mul_m4_m4m4(local, local, offset);
++						}
++						else {
++							loc_eul_size_to_mat4(app, amd->Mem_Ob[j].loc, amd->Mem_Ob[j].rot, amd->Mem_Ob[j].scale);
++							copy_v3_v3(fo, mv2->co);
++							mul_m4_v3(app, fo);
++							copy_v3_v3(mv2->co, fo);
++						}
++					}
++				}
++				
++				if ((amd->type & MOD_ARR_MOD_CURVE) && (amd->curve_ob)) {
++					if (amd->dist_cu & MOD_ARR_DIST_EVENLY){
++						if (i==0){
++							float fo[3];
++							float cent[3];
++							float loc[4];
++							float app[4][4];
++
++							unit_m4(app);
++							copy_v3_v3(fo, mv2->co);
++							array_to_curve(scene, amd->curve_ob, ob, fo, loc, cent);
++							copy_v3_v3(amd->Mem_Ob[j].cu_cent, cent);
++							copy_v4_v4(amd->Mem_Ob[j].cu_loc, loc);
++							copy_v3_v3(app[3], amd->Mem_Ob[j].cu_loc);
++							mul_m4_v3(app, fo);
++							//add_v3_v3v3(fo, cent, loc);
++							copy_v3_v3(mv2->co, fo);
++						}
++						else {
++							float fo[3];
++							float app[4][4];
++							unit_m4(app);
++							copy_v3_v3(fo, mv2->co);
++							/*print_v3("cent", amd->Mem_Ob[j].cu_cent);
++							print_v4("loc", amd->Mem_Ob[j].cu_loc);*/
++							//add_v3_v3v3(fo, amd->Mem_Ob[j].cu_cent, amd->Mem_Ob[j].cu_loc);
++							copy_v3_v3(app[3], amd->Mem_Ob[j].cu_loc);
++							mul_m4_v3(app, fo);
++							print_v3("fo", fo);
++							copy_v3_v3(mv2->co, fo);
++						}
 +					}
 +				}
  			}
  		} else if(indexMap[i].merge != i && indexMap[i].merge_final) {
  			/* if this vert is not merging with itself, and it is merging
-@@ -553,6 +688,12 @@
+@@ -553,6 +798,12 @@
  
  			numFaces++;
  
 +			/*Rand Material*/
-+			if ((flag = 1) && (amd->mode & MOD_ARR_MOD_ADV_MAT) && (ob->totcol>1))
++			if ((flag = 1) && (amd->mode & MOD_ARR_MOD_ADV_MAT) && (amd->mat_ob & MOD_ARR_AR_MAT_RND) && (ob->totcol>1))
 +			{
 +					mf2->mat_nr = amd->Mem_Ob[j-1].id_mat;
 +					flag = 0;
@@ -2160,7 +2410,7 @@ Index: source/blender/modifiers/intern/MOD_array.c
  			/* if the face has fewer than 3 vertices, don't create it */
  			if(test_index_face_maxvert(mf2, &result->faceData, numFaces-1, inMF.v4?4:3, numVerts) < 3) {
  				numFaces--;
-@@ -561,7 +702,7 @@
+@@ -561,7 +812,7 @@
  		}
  	}
  
@@ -2169,7 +2419,7 @@ Index: source/blender/modifiers/intern/MOD_array.c
  	if(start_cap) {
  		float startoffset[4][4];
  		MVert *cap_mvert;
-@@ -570,7 +711,7 @@
+@@ -570,7 +821,7 @@
  		int *origindex;
  		int *vert_map;
  		int capVerts, capEdges, capFaces;
@@ -2178,7 +2428,7 @@ Index: source/blender/modifiers/intern/MOD_array.c
  		capVerts = start_cap->getNumVerts(start_cap);
  		capEdges = start_cap->getNumEdges(start_cap);
  		capFaces = start_cap->getNumFaces(start_cap);
-@@ -580,6 +721,14 @@
+@@ -580,6 +831,14 @@
  
  		invert_m4_m4(startoffset, offset);
  
@@ -2193,7 +2443,7 @@ Index: source/blender/modifiers/intern/MOD_array.c
  		vert_map = MEM_callocN(sizeof(*vert_map) * capVerts,
  		"arrayModifier_doArray vert_map");
  
-@@ -618,6 +767,7 @@
+@@ -618,6 +877,7 @@
  				numVerts++;
  			}
  		}
@@ -2201,7 +2451,7 @@ Index: source/blender/modifiers/intern/MOD_array.c
  		origindex = result->getEdgeDataArray(result, CD_ORIGINDEX);
  		for(i = 0; i < capEdges; i++) {
  			int v1, v2;
-@@ -635,6 +785,7 @@
+@@ -635,6 +895,7 @@
  				numEdges++;
  			}
  		}
@@ -2209,7 +2459,17 @@ Index: source/blender/modifiers/intern/MOD_array.c
  		origindex = result->getFaceDataArray(result, CD_ORIGINDEX);
  		for(i = 0; i < capFaces; i++) {
  			DM_copy_face_data(start_cap, result, i, numFaces, 1);
-@@ -662,7 +813,129 @@
+@@ -653,7 +914,8 @@
+ 				test_index_face(&mface[numFaces], &result->faceData,
+ 				numFaces, 3);
+ 			}
+-
++			if ((amd->mode & MOD_ARR_MOD_ADV_MAT) && (amd->mat_ob & MOD_ARR_SC_MAT_RND) && (ob->totcol>1))
++				mface[numFaces].mat_nr = amd->Mem_Mat_Ob.start_cap;
+ 			origindex[numFaces] = ORIGINDEX_NONE;
+ 
+ 			numFaces++;
+@@ -662,7 +924,143 @@
  		MEM_freeN(vert_map);
  		start_cap->release(start_cap);
  	}
@@ -2303,15 +2563,29 @@ Index: source/blender/modifiers/intern/MOD_array.c
 +					test_index_face(&mface[numFaces], &result->faceData,
 +					numFaces, 3);
 +				}
-+
++				if ((amd->mode & MOD_ARR_MOD_ADV_MAT) && (amd->mat_ob & MOD_ARR_MC_MAT_RND) && (ob->totcol>1))
++					mface[numFaces].mat_nr = amd->Mem_Mat_Ob.mid_cap[j];
 +				origindex[numFaces] = ORIGINDEX_NONE;
-+
 +				numFaces++;
 +			}
 +
 +			if (amd->dist_mc & MOD_ARR_DIST_SEQ){
++				if (amd->mode & MOD_ARR_MOD_ADV) {
++					if (amd->Mem_Ob[j+1].transform == 1)
++						copy_m4_m4(mid_offset, prec_mid);
++				}
 +				mul_m4_m4m4(tmp_mat, mid_offset, offset);
 +				copy_m4_m4(mid_offset, tmp_mat);
++				if (amd->mode & MOD_ARR_MOD_ADV) {
++					if (amd->Mem_Ob[j+1].transform == 1) {
++						float app[4][4];
++						unit_m4(app);
++						loc_eul_size_to_mat4(app, amd->Mem_Ob[j+1].loc, amd->Mem_Ob[j+1].rot, amd->Mem_Ob[j+1].scale);
++						copy_m4_m4(prec_mid, mid_offset);
++						copy_m4_m4(tmp_mat, mid_offset);
++						mul_m4_m4m4(mid_offset, app, tmp_mat);
++					}
++				}
 +			}
 +			else if (amd->dist_mc & MOD_ARR_DIST_HALF){
 +				mul_m4_m4m4(tmp_mat, mid_offset, half_offset);
@@ -2339,7 +2613,7 @@ Index: source/blender/modifiers/intern/MOD_array.c
  	if(end_cap) {
  		float endoffset[4][4];
  		MVert *cap_mvert;
-@@ -681,6 +954,13 @@
+@@ -681,6 +1079,13 @@
  
  		mul_m4_m4m4(endoffset, final_offset, offset);
  
@@ -2353,7 +2627,7 @@ Index: source/blender/modifiers/intern/MOD_array.c
  		vert_map = MEM_callocN(sizeof(*vert_map) * capVerts,
  		"arrayModifier_doArray vert_map");
  
-@@ -719,6 +999,7 @@
+@@ -719,6 +1124,7 @@
  				numVerts++;
  			}
  		}
@@ -2361,7 +2635,7 @@ Index: source/blender/modifiers/intern/MOD_array.c
  		origindex = result->getEdgeDataArray(result, CD_ORIGINDEX);
  		for(i = 0; i < capEdges; i++) {
  			int v1, v2;
-@@ -736,6 +1017,7 @@
+@@ -736,6 +1142,7 @@
  				numEdges++;
  			}
  		}
@@ -2369,24 +2643,29 @@ Index: source/blender/modifiers/intern/MOD_array.c
  		origindex = result->getFaceDataArray(result, CD_ORIGINDEX);
  		for(i = 0; i < capFaces; i++) {
  			DM_copy_face_data(end_cap, result, i, numFaces, 1);
-@@ -763,6 +1045,16 @@
+@@ -754,6 +1161,8 @@
+ 				test_index_face(&mface[numFaces], &result->faceData,
+ 				numFaces, 3);
+ 			}
++			if ((amd->mode & MOD_ARR_MOD_ADV_MAT) && (amd->mat_ob & MOD_ARR_EC_MAT_RND) && (ob->totcol>1))
++				mface[numFaces].mat_nr = amd->Mem_Mat_Ob.end_cap;
+ 			origindex[numFaces] = ORIGINDEX_NONE;
+ 
+ 			numFaces++;
+@@ -763,6 +1172,12 @@
  		end_cap->release(end_cap);
  	}
  
-+	if(amd->type == MOD_ARR_MOD_CURVE && amd->curve_ob) {
-+		if (amd->dist_cu == MOD_ARR_DIST_EVENLY){
-+			float (*cos)[3] = MEM_mallocN(sizeof(*cos)*numVerts, "vertex_array_to_curve");
-+	
-+			for (i=0; i<numVerts; i++)
-+				VECCOPY(cos[i], mvert[i].co);
-+			array_to_curve(scene, amd->curve_ob, ob, cos, numVerts);
++	/*if ((amd->type & MOD_ARR_MOD_CURVE) && (amd->curve_ob)) {
++		if (amd->dist_cu & MOD_ARR_DIST_EVENLY){
++			array_to_curve(scene, amd->curve_ob, ob, mvert, numVerts);
 +		}
-+	}
++	}*/
 +
  	BLI_edgehash_free(edges, NULL);
  	MEM_freeN(indexMap);
  
-@@ -783,9 +1075,18 @@
+@@ -783,9 +1198,18 @@
  
  	result = arrayModifier_doArray(amd, md->scene, ob, dm, 0);
  
@@ -2407,7 +2686,7 @@ Index: source/blender/modifiers/intern/MOD_array.c
  	return result;
  }
  
-@@ -796,6 +1097,16 @@
+@@ -796,6 +1220,16 @@
  	return applyModifier(md, ob, dm, 0, 1);
  }
  
@@ -2424,7 +2703,7 @@ Index: source/blender/modifiers/intern/MOD_array.c
  
  ModifierTypeInfo modifierType_Array = {
  	/* name */              "Array",
-@@ -817,12 +1128,11 @@
+@@ -817,12 +1251,11 @@
  	/* applyModifierEM */   applyModifierEM,
  	/* initData */          initData,
  	/* requiredDataMask */  NULL,
@@ -2440,9 +2719,9 @@ Index: source/blender/modifiers/intern/MOD_array.c
  };
 Index: source/blender/render/intern/source/convertblender.c
 ===================================================================
---- source/blender/render/intern/source/convertblender.c	(revisione 42053)
+--- source/blender/render/intern/source/convertblender.c	(revisione 42626)
 +++ source/blender/render/intern/source/convertblender.c	(copia locale)
-@@ -4715,7 +4715,8 @@
+@@ -4712,7 +4712,8 @@
  	/* override not showing object when duplis are used with particles */
  	if(ob->transflag & OB_DUPLIPARTS)
  		; /* let particle system(s) handle showing vs. not showing */
@@ -2452,7 +2731,7 @@ Index: source/blender/render/intern/source/convertblender.c
  		return 0;
  	
  	/* don't add non-basic meta objects, ends up having renderobjects with no geometry */
-@@ -4752,7 +4753,7 @@
+@@ -4749,7 +4750,7 @@
  	for(psys=obd->particlesystem.first; psys; psys=psys->next)
  		if(!ELEM5(psys->part->ren_as, PART_DRAW_BB, PART_DRAW_LINE, PART_DRAW_PATH, PART_DRAW_OB, PART_DRAW_GR))
  			return 0;
@@ -2461,7 +2740,7 @@ Index: source/blender/render/intern/source/convertblender.c
  	/* don't allow lamp, animated duplis, or radio render */
  	return (render_object_type(obd->type) &&
  			(!(dob->type == OB_DUPLIGROUP) || !dob->animated));
-@@ -4819,17 +4820,19 @@
+@@ -4816,17 +4817,19 @@
  	/* simple preventing of too deep nested groups */
  	if(level>MAX_DUPLI_RECUR) return;
  
@@ -2476,14 +2755,14 @@ Index: source/blender/render/intern/source/convertblender.c
  		if(ob->flag & OB_DONE) {
  			if(ob->transflag & OB_RENDER_DUPLI) {
  				if(allow_render_object(re, ob, nolamps, onlyselected, actob)) {
- 					init_render_object(re, ob, NULL, 0, timeoffset, vectorlay);
+ 					init_render_object(re, ob, NULL, 0, timeoffset);
  					ob->transflag &= ~OB_RENDER_DUPLI;
 -
 +					
  					if(ob->dup_group)
- 						add_group_render_dupli_obs(re, ob->dup_group, nolamps, onlyselected, actob, timeoffset, vectorlay, level+1);
+ 						add_group_render_dupli_obs(re, ob->dup_group, nolamps, onlyselected, actob, timeoffset, level+1);
  				}
-@@ -4907,10 +4910,14 @@
+@@ -4904,10 +4907,14 @@
  					Object *obd= dob->ob;
  					
  					copy_m4_m4(obd->obmat, dob->mat);
@@ -2501,7 +2780,7 @@ Index: source/blender/render/intern/source/convertblender.c
  
  					if(obd->restrictflag & OB_RESTRICT_RENDER)
  						continue;
-@@ -4926,7 +4933,6 @@
+@@ -4923,7 +4930,6 @@
  						ObjectRen *obr = NULL;
  						int psysindex;
  						float mat[4][4];
