@@ -5,20 +5,21 @@ WORK IN PROGRESS:
 
 Advanced Modifier Array v0.5 beta3 new features and fixed bug (from v0.5.2) 14\12\2011:
 
-    1.  FIX: Fixed a display bug in "Edit Mode" of the "Mid Cap".
-    2.  FIX: Initialization of variables for the rand offset.
-    3.  UPD: New UI and improvements, based on PDF of Leandro Cavalheiro.
+    1.  FIX: "Mid Cap" appears in "Curves" without "Curve Cap".
+    2.  FIX: Fixed a display bug in "Edit Mode" of the "Mid Cap".
+    3.  FIX: Initialization of variables for the rand offset.
+    4.  UPD: New UI and improvements, based on PDF of Leandro Cavalheiro.
              (https://github.com/ruesp83/Blender---AMA/blob/master/patch-ama/pdf/array_ui.pdf)
-    4.  UPD: Two ways to use the modifier:
+    5.  UPD: Two ways to use the modifier:
              - "REGULAR" : Standard Method of cloning.
              - "PATH"    : Cloning along curve.
-    5.  UPD: The "Offset Between" is now in the "Fit Type".
-    6.  ADD: Ability to bind object "Mid Cap" to a different curve from that of the copies.
-    7.  ADD: Ability to add to the curve of the "Mid Cap" also "Start Cap" and "End Cap",
+    6.  UPD: The "Offset Between" is now in the "Fit Type".
+    7.  ADD: Ability to bind object "Mid Cap" to a different curve from that of the copies.
+    8.  ADD: Ability to add to the curve of the "Mid Cap" also "Start Cap" and "End Cap",
              respectively the first and last Control Points.
-    8.  ADD: "Scale" can have negative values, to create clones smaller than the original.
-    9.  ADD: The "Mid Cap" is subject to noise, but only in the "Sequence".
-    10. ADD: "Start Cap - Mid Cap - End Cap" now have the ability to use a random material
+    9.  ADD: "Scale" can have negative values, to create clones smaller than the original.
+    10.  ADD: The "Mid Cap" is subject to noise, but only in the "Sequence".
+    11. ADD: "Start Cap - Mid Cap - End Cap" now have the ability to use a random material
              belonging to the object cloned.
 
 

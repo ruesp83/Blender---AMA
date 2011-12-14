@@ -328,7 +328,7 @@ static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 		count = 1;
 	
 	/**/
-	if (amd->dist_mc & MOD_ARR_DIST_CURVE && amd->curve_cap){
+	if ((amd->dist_mc & MOD_ARR_DIST_CURVE) && (amd->curve_cap)){
 		int dec = 0;
 		Curve *cu = amd->curve_cap->data;
 		nu = cu->nurb.first;
@@ -925,7 +925,8 @@ static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 		start_cap->release(start_cap);
 	}
 	
-	if(mid_cap) {
+	if ((mid_cap) && ((amd->dist_mc & MOD_ARR_DIST_SEQ) || (amd->dist_mc & MOD_ARR_DIST_HALF) ||
+		((amd->dist_mc & MOD_ARR_DIST_CURVE) && (amd->curve_cap)))) {
 		MVert *cap_mvert;
 		MEdge *cap_medge;
 		MFace *cap_mface;
