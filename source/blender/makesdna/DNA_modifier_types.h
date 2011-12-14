@@ -179,10 +179,15 @@ typedef struct MaskModifierData {
 
 
 typedef struct ArrayChangeObject {
-	float location[4][4];
+	//float location[4][4];
+	float rot[3];
+	float scale[3];
+	float loc[3];
 	/*0 not modified
 	  1 modified
 	*/
+	float cu_cent[3];
+	float cu_loc[4];
 	int transform;
 	int id_mat;
 	int rand_group_obj;
@@ -282,7 +287,7 @@ typedef struct ArrayModifierData {
 	/* direction Offset */
 	int sign;
 	/* keeps the ratio on the scale */
-	int proportion;
+	int flag_offset;
 	/* how to distribute the clones on a curve */
 	int dist_cu;
 	/* ability to randomization of objects belonging to the group linked */
@@ -338,8 +343,9 @@ typedef struct ArrayModifierData {
 /* ArrayModifierData->lock */
 #define MOD_ARR_LOCK			(1<<0)
 
-/* ArrayModifierData->proportion */
+/* ArrayModifierData->flag_offset */
 #define MOD_ARR_PROP			(1<<0)
+#define MOD_ARR_LOCAL			(1<<1)
 
 /* ArrayModifierData->rand_mat */
 #define MOD_ARR_MAT				(1<<0)

@@ -1697,8 +1697,13 @@ static void rna_def_modifier_array(BlenderRNA *brna)
 	RNA_def_property_update(prop, NC_OBJECT|ND_TRANSFORM, "rna_Modifier_update");
 
 	prop= RNA_def_property(srna, "proportion", PROP_BOOLEAN, PROP_TRANSLATION);
-	RNA_def_property_boolean_sdna(prop, NULL, "proportion", MOD_ARR_SIGN_P);
+	RNA_def_property_boolean_sdna(prop, NULL, "flag_offset", MOD_ARR_PROP);
 	RNA_def_property_ui_text(prop, "Constrain Proportions", "Constrain Proportions");
+	RNA_def_property_update(prop, 0, "rna_Modifier_update");
+
+	prop= RNA_def_property(srna, "local_rot", PROP_BOOLEAN, PROP_TRANSLATION);
+	RNA_def_property_boolean_sdna(prop, NULL, "flag_offset", MOD_ARR_LOCAL);
+	RNA_def_property_ui_text(prop, "Local Rotation Offset Displacement", "Add a local rotation offset to vertices or object");
 	RNA_def_property_update(prop, 0, "rna_Modifier_update");
 
 	prop= RNA_def_property(srna, "material", PROP_ENUM, PROP_NONE);

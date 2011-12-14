@@ -657,7 +657,7 @@ int where_on_path(Object *ob, float ctime, float *vec, float *dir, float *quat, 
 	vec[1]= data[0]*p0->vec[1] + data[1]*p1->vec[1] + data[2]*p2->vec[1] + data[3]*p3->vec[1] ; /* Y */
 	vec[2]= data[0]*p0->vec[2] + data[1]*p1->vec[2] + data[2]*p2->vec[2] + data[3]*p3->vec[2] ; /* Z */
 	vec[3]= data[0]*p0->vec[3] + data[1]*p1->vec[3] + data[2]*p2->vec[3] + data[3]*p3->vec[3] ; /* Tilt, should not be needed since we have quat still used */
-
+	
 	if (quat) {
 		float totfac, q1[4], q2[4];
 
@@ -765,7 +765,7 @@ static void group_arrayduplilist(ListBase *lb, Scene *scene, Object *ob, int lev
 	float mat[4][4], tmat[4][4], offset[4][4], rot[4][4];
 	ModifierData *md;
 	int i, cont_rnd;
-	float d_alp, alpha;
+	float d_alp, alpha=0;
 	
 	if(ob->dup_group==NULL) return;
 		group= ob->dup_group;
@@ -841,8 +841,12 @@ static void group_arrayduplilist(ListBase *lb, Scene *scene, Object *ob, int lev
 							//Noise
 							if (amd->mode & MOD_ARR_MOD_ADV) {
 								if (amd->Mem_Ob[i].transform == 1) {
+									float app[4][4];
+									unit_m4(app);
+									loc_eul_size_to_mat4(app, amd->Mem_Ob[i].loc, amd->Mem_Ob[i].rot, amd->Mem_Ob[i].scale);
+
 									copy_m4_m4(tmat, mat);
-									mul_m4_m4m4(mat, amd->Mem_Ob[i].location, tmat);
+									mul_m4_m4m4(mat, app, tmat);
 								}
 							}
 						

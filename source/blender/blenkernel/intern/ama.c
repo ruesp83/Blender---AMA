@@ -200,7 +200,7 @@ void array_offset(const float max_off[3], float rit[3], int prop, int sign)
 			rit[0] = rit[0]*(-1);
 	}
 	
-	if (!prop) {
+	if (!(prop & MOD_ARR_PROP)) {
 		rit[1] = f_rand_max(max_off[1]); 
 		if (sign & MOD_ARR_SIGN_L) {
 			if (sign & MOD_ARR_SIGN_P) {
@@ -243,7 +243,12 @@ void init_offset(const int start, const int end, ArrayModifierData *ar)
 	int i;
 
 	for (i=start; i<end; i++) {
-		unit_m4(ar->Mem_Ob[i].location);
+		//unit_m4(ar->Mem_Ob[i].location);
+		zero_v3(ar->Mem_Ob[i].rot);
+		ar->Mem_Ob[i].scale[0] = ar->Mem_Ob[i].scale[1] = ar->Mem_Ob[i].scale[2] = 1;
+		zero_v3(ar->Mem_Ob[i].loc);
+		zero_v3(ar->Mem_Ob[i].cu_cent);
+		zero_v4(ar->Mem_Ob[i].cu_loc);
 		ar->Mem_Ob[i].id_mat = 0;
 		ar->Mem_Ob[i].transform = 0;
 		ar->Mem_Ob[i].rand_group_obj = 0;
@@ -275,7 +280,7 @@ void create_offset(const int n, const int totmat, ArrayModifierData *ar, Object 
 				ar->Mem_Ob[i].transform = 1;
 			}
 			if ((ar->scale_offset[0]!=1) || (ar->scale_offset[1]!=1) || (ar->scale_offset[2]!=1)) {
-				array_offset(ar->scale_offset, scale, ar->proportion, ar->sign);
+				array_offset(ar->scale_offset, scale, ar->flag_offset, ar->sign);
 				ar->Mem_Ob[i].transform = 1;
 			}
 			if ((ar->loc_offset[0]!=0) || (ar->loc_offset[1]!=0) || (ar->loc_offset[2]!=0)) {
@@ -283,7 +288,14 @@ void create_offset(const int n, const int totmat, ArrayModifierData *ar, Object 
 				ar->Mem_Ob[i].transform = 1;
 			}
 			if (ar->Mem_Ob[i].transform) {
-				loc_eul_size_to_mat4(ar->Mem_Ob[i].location, loc, rot, scale);
+				//loc_eul_size_to_mat4(ar->Mem_Ob[i].location, loc, rot, scale);
+				copy_v3_v3(ar->Mem_Ob[i].rot, rot);
+				//Scaling
+				//size_to_mat4(ar->Mem_Ob[i].location,scale);
+				copy_v3_v3(ar->Mem_Ob[i].scale, scale);
+				//Location
+				//translate_m4(ar->Mem_Ob[i].location,loc[0],loc[1],loc[2]);
+				copy_v3_v3(ar->Mem_Ob[i].loc, loc);
 			}
 			if (ar->rand_group & MOD_ARR_RAND_GROUP) {
 				ar->Mem_Ob[i].rand_group_obj = BLI_rand() % BLI_countlist(&group->gobject);
@@ -382,6 +394,7 @@ static int where_on_path_deform(Object *ob, float ctime, float *vec, float *dir,
 				add_v3_v3(vec, dvec);
 				if(quat) copy_qt_qt(quat, path->data[0].quat);
 				if(radius) *radius= path->data[0].radius;
+				print_v4("Vec", vec);
 			}
 			else if(ctime > 1.0f) {
 				sub_v3_v3v3(dvec, path->data[path->len-1].vec, path->data[path->len-2].vec);
@@ -391,6 +404,7 @@ static int where_on_path_deform(Object *ob, float ctime, float *vec, float *dir,
 				if(radius) *radius= path->data[path->len-1].radius;
 				/* weight - not used but could be added */
 			}
+			
 		}
 		return 1;
 	}
@@ -403,20 +417,37 @@ static int where_on_path_deform(Object *ob, float ctime, float *vec, float *dir,
 	/* co: local coord, result local too */
 	/* returns quaternion for rotation, using cd->no_rot_axis */
 	/* axis is using another define!!! */
-static int calc_curve_deform(Scene *scene, Object *par, float *co, CurveDeform *cd, float *quatp)
+static int calc_curve_deform(Scene *scene, Object *par, float *co, CurveDeform *cd, float *loc, float *cent)
 {
 	Curve *cu= par->data;
-	float fac, loc[4], dir[3], new_quat[4], radius;
-	
+	float fac, dir[3], new_quat[4], radius;
+	short /*upflag, */ index, axis = 1;
+
+	index= axis-1;
+	if(index>2)
+		index -= 3; /* negative  */
+
 	/* to be sure, mostly after file load */
 	if(cu->path==NULL) {
 		makeDispListCurveTypes(scene, par, 0);
 		if(cu->path==NULL) return 0;	// happens on append...
 	}
-	fac=0;
-	if( where_on_path_deform(par, fac, loc, dir, new_quat, &radius)) {	/* returns OK */
-		float quat[4], cent[3];
 
+	if(ELEM3(axis, OB_NEGX+1, OB_NEGY+1, OB_NEGZ+1)) { /* OB_NEG# 0-5, MOD_CURVE_POS# 1-6 */
+		if(cu->flag & CU_STRETCH)
+			fac= (-co[index]-cd->dmax[index])/(cd->dmax[index] - cd->dmin[index]);
+		else
+			fac= (cd->dloc[index])/(cu->path->totdist) - (co[index]-cd->dmax[index])/(cu->path->totdist);
+	}
+	else {
+		if(cu->flag & CU_STRETCH)
+			fac= (co[index]-cd->dmin[index])/(cd->dmax[index] - cd->dmin[index]);
+		else
+			fac= (cd->dloc[index])/(cu->path->totdist) + (co[index]-cd->dmin[index])/(cu->path->totdist);
+	}
+
+	if( where_on_path_deform(par, fac, loc, dir, new_quat, &radius)) {	/* returns OK */
+		float quat[4]; //, cent[3];
 		if(cd->no_rot_axis) {	/* set by caller */
 
 			/* this is not exactly the same as 2.4x, since the axis is having rotation removed rather than
@@ -451,9 +482,9 @@ static int calc_curve_deform(Scene *scene, Object *par, float *co, CurveDeform *
 
 		/* zero the axis which is not used,
 		 * the big block of text above now applies to these 3 lines */
-		//quat_apply_track(quat, axis-1, (axis==1 || axis==3) ? 1:0); /* up flag is a dummy, set so no rotation is done */
-		//vec_apply_track(cent, axis-1);
-		//cent[axis < 4 ? axis-1 : axis-4]= 0.0f;
+		quat_apply_track(quat, axis-1, (axis==1 || axis==3) ? 1:0); /* up flag is a dummy, set so no rotation is done */
+		vec_apply_track(cent, axis-1);
+		cent[axis < 4 ? axis-1 : axis-4]= 0.0f;
 
 
 		/* scale if enabled */
@@ -465,10 +496,7 @@ static int calc_curve_deform(Scene *scene, Object *par, float *co, CurveDeform *
 		mul_qt_v3(quat, cent);
 
 		/* translation */
-		add_v3_v3v3(co, cent, loc);
-
-		if(quatp)
-			copy_qt_qt(quatp, quat);
+		/*add_v3_v3v3(co, cent, loc);*/
 
 		return 1;
 	}
@@ -476,37 +504,16 @@ static int calc_curve_deform(Scene *scene, Object *par, float *co, CurveDeform *
 }
 
 
-void array_to_curve(Scene *scene, Object *cuOb, Object *target, float (*vertexCos)[3], int numVerts)
+void array_to_curve(Scene *scene, Object *cuOb, Object *target, float *vertexCos, float *vec, float *quat)
 {
 	Curve *cu;
-	int a, flag;
 	CurveDeform cd;
-	//int use_vgroups;
-		
+
 	if(cuOb->type != OB_CURVE)
 		return;
-
 	cu = cuOb->data;
-	flag = cu->flag;
-	cu->flag |= (CU_PATH|CU_FOLLOW); // needed for path & bevlist
-
+	cu->flag |= (CU_PATH|CU_FOLLOW);
 	init_curve_deform(cuOb, target, &cd, (cu->flag & CU_STRETCH)==0);
-
-	cd.dmin[0]= cd.dmin[1]= cd.dmin[2]= -1.0f;
-	cd.dmax[0]= cd.dmax[1]= cd.dmax[2]=  0.0f;
-
-	/* set mesh min max bounds */
-	INIT_MINMAX(cd.dmin, cd.dmax);
-
-	for(a = 0; a < numVerts; a++) {
-		mul_m4_v3(cd.curvespace, vertexCos[a]);
-		DO_MINMAX(vertexCos[a], cd.dmin, cd.dmax);
-	}
-	
-	for(a = 0; a < numVerts; a++) {
-		calc_curve_deform(scene, cuOb, vertexCos[a], &cd, NULL);
-		mul_m4_v3(cd.objectspace, vertexCos[a]);
-	}
-	cu->flag = flag;
+	calc_curve_deform(scene, cuOb, vertexCos, &cd, vec, quat);
 }
 

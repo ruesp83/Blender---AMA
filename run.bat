@@ -1,2 +1,2 @@
 cd ..
-run-blender-ama-64.bat
+run-64.bat

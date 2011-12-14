@@ -87,7 +87,7 @@ static void initData(ModifierData *md)
 	amd->scale_offset[0] = amd->scale_offset[1] = amd->scale_offset[2] = 1;
 	amd->sign = MOD_ARR_SIGN_P;
 	amd->lock = !MOD_ARR_LOCK;
-	amd->proportion = MOD_ARR_PROP;
+	amd->flag_offset = MOD_ARR_PROP;
 	amd->rays = 1;
 	amd->rand_mat = MOD_ARR_MAT;
 	amd->mat_ob = MOD_ARR_AR_MAT_RND;
@@ -130,7 +130,7 @@ static void copyData(ModifierData *md, ModifierData *target)
 	copy_v3_v3(tamd->scale_offset, amd->scale_offset);
 	tamd->sign = amd->sign;	
 	tamd->lock = amd->lock;
-	tamd->proportion = amd->proportion;
+	tamd->flag_offset = amd->flag_offset;
 	tamd->rays = amd->rays;
 	tamd->Mem_Ob = MEM_dupallocN(amd->Mem_Ob);
 	tamd->Mem_Mat_Ob.start_cap = amd->Mem_Mat_Ob.start_cap;
@@ -214,7 +214,7 @@ static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 	float offset[4][4];
 	float final_offset[4][4];
 	float mid_offset[4][4], half_offset[4][4];
-	float tmp_mat[4][4], prec_mid[4][4]; //, local[4][4];
+	float tmp_mat[4][4], prec_mid[4][4], local[4][4];
 	float length = amd->length;
 	float alpha = 0, d_alp = 0, circle;
 	float f_o;
@@ -276,38 +276,54 @@ static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 		             NULL, NULL, NULL, NULL, NULL);
 		copy_m4_m4(offset, result_mat);
 	}
-
-	if (amd->fit_type & MOD_ARR_FITBETWEEN) {
-		count = count + 2;
-		if ((amd->offset_type & MOD_ARR_OFF_OBJ) && (amd->offset_ob)) {
-			//float dist = sqrt(dot_v3v3(amd->offset_ob->obmat[3], amd->offset_ob->obmat[3]));
-			offset[3][0] = amd->offset_ob->obmat[3][0] / (count - 1);
-			offset[3][1] = amd->offset_ob->obmat[3][1] / (count - 1);
-			offset[3][2] = amd->offset_ob->obmat[3][2] / (count - 1);
-		}
-		else {
-			offset[3][0] = offset[3][0] / (count - 1);
-			offset[3][1] = offset[3][1] / (count - 1);
-			offset[3][2] = offset[3][2] / (count - 1);
-		}
-	}
-
-	if(amd->type == MOD_ARR_MOD_CURVE && amd->curve_ob) {
+	
+	if ((amd->type & MOD_ARR_MOD_CURVE) && (amd->curve_ob))
 		length = length_fitcurve(amd, scene);
-	}
 
 	/* calculate the maximum number of copies which will fit within the
 	prescribed length */
-	if(amd->fit_type == MOD_ARR_FITLENGTH
-		  || amd->type == MOD_ARR_MOD_CURVE) {
-		/*if ((amd->fit_type == MOD_ARR_FITLENGTH) && (count>2)){
+	if (amd->fit_type & MOD_ARR_FITLENGTH) { // || (amd->type & MOD_ARR_MOD_CURVE)) {
+		if (amd->type & MOD_ARR_MOD_NRM) {
+			count = length_to_count(length, offset[3]);
+			amd->count = count;
+		}
+		else {
+			count = length_to_count(amd->length, offset[3]);
+			amd->count = count;
+		}
+	}
+	else {
+		if ((amd->type & MOD_ARR_MOD_CURVE) && (amd->curve_ob)) {
+			amd->length = length;
+		}
+		else {
 			amd->length = count_to_length(count, offset[3]);
 			length = amd->length;
-		}*/
-		count = length_to_count(length, offset[3]);
-		amd->count = count;
+		}
 	}
-	
+
+	if (amd->fit_type & MOD_ARR_FITBETWEEN) {
+		count = count + 2;
+		if (amd->type & MOD_ARR_MOD_NRM) {
+			if ((amd->offset_type & MOD_ARR_OFF_OBJ) && (amd->offset_ob)) {
+				//float dist = sqrt(dot_v3v3(amd->offset_ob->obmat[3], amd->offset_ob->obmat[3]));
+				offset[3][0] = amd->offset_ob->obmat[3][0] / (count - 1);
+				offset[3][1] = amd->offset_ob->obmat[3][1] / (count - 1);
+				offset[3][2] = amd->offset_ob->obmat[3][2] / (count - 1);
+			}
+			else {
+				offset[3][0] = offset[3][0] / (count - 1);
+				offset[3][1] = offset[3][1] / (count - 1);
+				offset[3][2] = offset[3][2] / (count - 1);
+			}
+		} 
+		else { /* amd->type & MOD_ARR_MOD_CURVE*/
+			offset[3][0] = offset[3][0] * (count - 1);
+			offset[3][1] = offset[3][1] * (count - 1);
+			offset[3][2] = offset[3][2] * (count - 1);
+		}
+	}
+
 	if(count < 1)
 		count = 1;
 	
@@ -442,9 +458,12 @@ static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 		mid_offset[3][2] = mid_offset[3][2] / 2;
 		if (amd->mode & MOD_ARR_MOD_ADV) {
 			if (amd->Mem_Ob[0].transform == 1) {
+				float app[4][4];
+				unit_m4(app);
+				loc_eul_size_to_mat4(app, amd->Mem_Ob[0].loc, amd->Mem_Ob[0].rot, amd->Mem_Ob[0].scale);
 				copy_m4_m4(prec_mid, mid_offset);
 				copy_m4_m4(tmp_mat, mid_offset);
-				mul_m4_m4m4(mid_offset, amd->Mem_Ob[0].location, tmp_mat);
+				mul_m4_m4m4(mid_offset, app, tmp_mat);
 			}
 		}
 	}
@@ -464,13 +483,13 @@ static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 		indexMap[i].merge = -1; /* default to no merge */
 		indexMap[i].merge_final = 0; /* default to no merge */
 	}
-
+	
 	for (i = 0; i < maxVerts; i++) {
 		MVert *inMV;
 		MVert *mv = &mvert[numVerts];
 		MVert *mv2;
 		float co[3];
-
+		
 		inMV = &src_mvert[i];
 
 		DM_copy_vert_data(dm, result, i, numVerts, 1);
@@ -512,7 +531,7 @@ static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 				}
 			}
 		}
-
+		copy_m4_m4(local, offset);
 		/* if no merging, generate copies of this vert */
 		if(indexMap[i].merge < 0) {
 			if (amd->rays>1)
@@ -529,8 +548,7 @@ static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 				//si ottiene una spirale
 				mul_m4_v3(offset, co);
 				copy_v3_v3(mv2->co, co);*/
-				if (amd->rays>1)
-				{
+				if (amd->rays>1) {
 					float ro[3];
 					unit_m4(rot);
 					if (amd->rays_dir == MOD_ARR_RAYS_X)
@@ -548,7 +566,7 @@ static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 						mul_m4_v3(rot, ro);
 						copy_v3_v3(mv2->co, ro);
 					}
-					else{
+					else {
 						copy_v3_v3(ro,co);
 						mul_m4_v3(rot, ro);
 						copy_v3_v3(mv2->co, ro);
@@ -557,33 +575,83 @@ static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 					if (d_alp>6.2831)
 						d_alp=0;
 				}
-				else
-				{
+				else {
 					/*2)*/
 					mul_m4_v3(offset, co);
 					copy_v3_v3(mv2->co, co);
 					/******/
 				}
 
-				if (amd->mode & MOD_ARR_MOD_ADV)
-				{	
-					if (amd->Mem_Ob[j].transform)
-					{
+				if (amd->mode & MOD_ARR_MOD_ADV) {	
+					if (amd->Mem_Ob[j].transform) {
 						float fo[3];
-						//float cent[3];
-						
-						//copy_v3_v3(cent, mv2->co);
-						
-						copy_v3_v3(fo, mv2->co);
-						mul_m4_v3(amd->Mem_Ob[j].location, fo);
-						copy_v3_v3(mv2->co, fo);
-						
-						//unit_m4(local);
-						//copy_v3_v3(local[3], cent);
-						//copy_v3_v3(fo, mv2->co);
-						//mul_m4_v3(local, fo);
-						//copy_v3_v3(mv2->co, fo);
-						
+						float app[4][4];
+						unit_m4(app);
+
+						if (amd->flag_offset & MOD_ARR_LOCAL) {
+							float cent[3];
+							float quat[4];
+							
+							eul_to_quat(quat, amd->Mem_Ob[j].rot);
+							copy_v3_v3(cent, mv2->co);
+							quat_apply_track(quat, 0, 1);
+							vec_apply_track(cent, 0);
+							cent[0] = 0;
+
+							/* scale */
+							mul_v3_v3(cent, amd->Mem_Ob[j].scale);
+							/* local rotation */
+							normalize_qt(quat);
+							mul_qt_v3(quat, cent);
+
+							loc_quat_size_to_mat4(app, amd->Mem_Ob[j].loc, quat, amd->Mem_Ob[j].scale);
+							add_v3_v3v3(local[3], app[3], local[3]);
+							
+							add_v3_v3v3(fo, cent, local[3]);
+														
+							copy_v3_v3(mv2->co, fo);
+							mul_m4_m4m4(local, local, offset);
+						}
+						else {
+							loc_eul_size_to_mat4(app, amd->Mem_Ob[j].loc, amd->Mem_Ob[j].rot, amd->Mem_Ob[j].scale);
+							copy_v3_v3(fo, mv2->co);
+							mul_m4_v3(app, fo);
+							copy_v3_v3(mv2->co, fo);
+						}
+					}
+				}
+				
+				if ((amd->type & MOD_ARR_MOD_CURVE) && (amd->curve_ob)) {
+					if (amd->dist_cu & MOD_ARR_DIST_EVENLY){
+						if (i==0){
+							float fo[3];
+							float cent[3];
+							float loc[4];
+							float app[4][4];
+
+							unit_m4(app);
+							copy_v3_v3(fo, mv2->co);
+							array_to_curve(scene, amd->curve_ob, ob, fo, loc, cent);
+							copy_v3_v3(amd->Mem_Ob[j].cu_cent, cent);
+							copy_v4_v4(amd->Mem_Ob[j].cu_loc, loc);
+							copy_v3_v3(app[3], amd->Mem_Ob[j].cu_loc);
+							mul_m4_v3(app, fo);
+							//add_v3_v3v3(fo, cent, loc);
+							copy_v3_v3(mv2->co, fo);
+						}
+						else {
+							float fo[3];
+							float app[4][4];
+							unit_m4(app);
+							copy_v3_v3(fo, mv2->co);
+							/*print_v3("cent", amd->Mem_Ob[j].cu_cent);
+							print_v4("loc", amd->Mem_Ob[j].cu_loc);*/
+							//add_v3_v3v3(fo, amd->Mem_Ob[j].cu_cent, amd->Mem_Ob[j].cu_loc);
+							copy_v3_v3(app[3], amd->Mem_Ob[j].cu_loc);
+							mul_m4_v3(app, fo);
+							print_v3("fo", fo);
+							copy_v3_v3(mv2->co, fo);
+						}
 					}
 				}
 			}
@@ -961,9 +1029,12 @@ static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 				copy_m4_m4(mid_offset, tmp_mat);
 				if (amd->mode & MOD_ARR_MOD_ADV) {
 					if (amd->Mem_Ob[j+1].transform == 1) {
+						float app[4][4];
+						unit_m4(app);
+						loc_eul_size_to_mat4(app, amd->Mem_Ob[j+1].loc, amd->Mem_Ob[j+1].rot, amd->Mem_Ob[j+1].scale);
 						copy_m4_m4(prec_mid, mid_offset);
 						copy_m4_m4(tmp_mat, mid_offset);
-						mul_m4_m4m4(mid_offset, amd->Mem_Ob[j+1].location, tmp_mat);
+						mul_m4_m4m4(mid_offset, app, tmp_mat);
 					}
 				}
 			}
@@ -1101,15 +1172,11 @@ static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 		end_cap->release(end_cap);
 	}
 
-	if(amd->type == MOD_ARR_MOD_CURVE && amd->curve_ob) {
+	/*if ((amd->type & MOD_ARR_MOD_CURVE) && (amd->curve_ob)) {
 		if (amd->dist_cu & MOD_ARR_DIST_EVENLY){
-			float (*cos)[3] = MEM_mallocN(sizeof(*cos)*numVerts, "vertex_array_to_curve");
-	
-			for (i=0; i<numVerts; i++)
-				VECCOPY(cos[i], mvert[i].co);
-			array_to_curve(scene, amd->curve_ob, ob, cos, numVerts);
+			array_to_curve(scene, amd->curve_ob, ob, mvert, numVerts);
 		}
-	}
+	}*/
 
 	BLI_edgehash_free(edges, NULL);
 	MEM_freeN(indexMap);

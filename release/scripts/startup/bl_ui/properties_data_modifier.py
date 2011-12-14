@@ -166,12 +166,13 @@ class DATA_PT_modifiers(ModifierButtonsPanel, Panel):
             off_box = col.row()
             off_box.column().prop(md, "location_offset", text="Location")
             off_box.column().prop(md, "rotation_offset", text="Rotation")
-            off_box2 = off_box.split().column()
-            off_box2.column().prop(md, "proportion", text="Scale")
             if (md.proportion):
-                off_box2.column().prop(md, "scale", text="")
+                off_box.column().prop(md, "scale", text="Scale")
             else:
-                off_box2.column().prop(md, "scale_offset", text="")
+                off_box.column().prop(md, "scale_offset", text="Scale")
+            row = col.row()
+            row.prop(md, "proportion", text="Scale")
+            row.prop(md, "local_rot", text="Local Rotation")
 
         col = layout.column()
         box = col.box()
