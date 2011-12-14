@@ -1,51 +1,103 @@
+WORK IN PROGRESS:
+    1. Local Rotation.
+    2. Array distributed on a curve.
+
+
+Advanced Modifier Array v0.5 beta3 new features and fixed bug (from v0.5.2) 14\12\2011:
+
+    1.  FIX: Fixed a display bug in "Edit Mode" of the "Mid Cap".
+    2.  FIX: Initialization of variables for the rand offset.
+    3.  UPD: New UI and improvements, based on PDF of Leandro Cavalheiro.
+             (https://github.com/ruesp83/Blender---AMA/blob/master/patch-ama/pdf/array_ui.pdf)
+    4.  UPD: Two ways to use the modifier:
+             - "REGULAR" : Standard Method of cloning.
+             - "PATH"    : Cloning along curve.
+    5.  UPD: The "Offset Between" is now in the "Fit Type".
+    6.  ADD: Ability to bind object "Mid Cap" to a different curve from that of the copies.
+    7.  ADD: Ability to add to the curve of the "Mid Cap" also "Start Cap" and "End Cap",
+             respectively the first and last Control Points.
+    8.  ADD: "Scale" can have negative values, to create clones smaller than the original.
+    9.  ADD: The "Mid Cap" is subject to noise, but only in the "Sequence".
+    10. ADD: "Start Cap - Mid Cap - End Cap" now have the ability to use a random material
+             belonging to the object cloned.
+
+
+Advanced Modifier Array v0.5 beta2 new features and fixed bug (from v0.5.1) 3\11\2011:
+
+    1. ADD: Ability to add a "Mid Cap" in various sequences and on "Control Points" of a Bezier
+            and NURBS curve.
+    2. ADD: Ability to add multiple clones of a "Mid Cap".
+
+
+Advanced Modifier Array v0.5 beta1 new features and fixed bug (from v0.4) 27\08\2011:
+
+    1. FIX: When you allocate a new clone, the assigned material is not the first but the next.
+    2. ADD: Added option "Sequence" in the tab "Advanced Material".
+    3. ADD: Possibility of repeating a material many times, in the mode: "Sequence".
+    4. ADD: Ability to add a central object "Mid Cap".
+
+
 Advanced Modifier Array v0.4 new features and fixed bug (from v0.3) 17\08\2011:
 
-	1.	FIX: Failure to deallocate the last clone.
-	2.	FIX: The Dupli Group maintains the "Noise Offset" even if the Advanced Noise
-			   is disabled.
-	3.	FIX: Elimination from the undo of the button "Refresh For. Offsets". So the undo of 
-			   the clones work well.
-	4.	FIX: The functions for the "Offset Noise" now use the functions in "BLI_rand.h".
-	5.	FIX: "final_offset" was calculated with a clone more.
-	6.	ADD: Each clone can now be associated with a random element of the "Dupli Group".
-	7.	ADD: The "Dupli Group" respects the "Restrict Mode" of the modifiers.
-	8.	ADD: Updating the "Count" when you change the "Fit Type" except for "Fit Length".
-	9.	ADD: New UI
-	10.	ADD: The "Noise Offset" for Loc-Rot-Scale now has no limits.
-	11. ADD: The "Offset Noise" now has 5 decimal digits.
-	12. DEL: Elimination of the "noise factor".
-	
+    1.  FIX: Failure to deallocate the last clone.
+    2.  FIX: The Dupli Group maintains the "Noise Offset" even if the Advanced Noise
+             is disabled.
+    3.  FIX: Elimination from the undo of the button "Refresh For. Offsets". So the undo of
+             the clones work well.
+    4.  FIX: The functions for the "Offset Noise" now use the functions in "BLI_rand.h".
+    5.  FIX: "final_offset" was calculated with a clone more.
+    6.  ADD: Each clone can now be associated with a random element of the "Dupli Group".
+    7.  ADD: The "Dupli Group" respects the "Restrict Mode" of the modifiers.
+    8.  ADD: Updating the "Count" when you change the "Fit Type" except for "Fit Length".
+    9.  ADD: New UI.
+    10. ADD: The "Noise Offset" for Loc-Rot-Scale now has no limits.
+    11. ADD: The "Offset Noise" now has 5 decimal digits.
+    12. DEL: Elimination of the "noise factor".
+
+
 Advanced Modifier Array v0.3 5\03\2011:
 
-	1.	ADD: Random variation of the position, with the choice of direction.
-	2.	ADD: Noise Factor: multiplicative offset value
-	3.	ADD: Lock offset
-	4.	ADD: Saving and reading the offset locked
-	5.	ADD: Offset for scaling and rotation. (The rotation is based on the center of 
-			   the main subject)
-	6.	ADD: Distributes the elements in a circle on an axis to choose.
-	7.	ADD: Material random to each cloned
-	8.	ADD: Ability to tie a group array.
-	9.	ADD: Cloning between two points. 
-			  Feature inspired by Mode 501: http://www.youtube.com/watch?v=mInaC4t8Vcc
-	10. ADD: New UI
-	11. ADD: The noise offset is now updated only when pressing "Refresh Ad. Offset", 
-			   inherent to the style of Blender.
+    1.  ADD: Random variation of the position, with the choice of direction.
+    2.  ADD: Noise Factor: multiplicative offset value.
+    3.  ADD: Lock offset.
+    4.  ADD: Saving and reading the offset locked.
+    5.  ADD: Offset for scaling and rotation. (The rotation is based on the center of
+             the main subject)
+    6.  ADD: Distributes the elements in a circle on an axis to choose.
+    7.  ADD: Material random to each cloned.
+    8.  ADD: Ability to tie a group array.
+    9.  ADD: Cloning between two points.
+             Feature inspired by Mode 501: http://www.youtube.com/watch?v=mInaC4t8Vcc
+    10. ADD: New UI.
+    11. ADD: The noise offset is now updated only when pressing "Refresh Ad. Offset",
+             inherent to the style of Blender.
+
+
+GIT:
+
+    https://github.com/ruesp83/Blender---AMA
 
 
 TODO:
 
-	- Add offset to the rotation on its axis.
-	- Choose the direction of the offset for the X-Y-Z
-	- To activate the "Dupli Group" even when you press the button "Apply" of the modifier.
-	- Assign a color ramp to the modifier array for color gradient.
-	- Assign the material of the clone to "Dupli Group" inherent.
-	- - Material at random also the "Dupli Group."
-	- Insert an object at the center as the beginning and end.
-	- - Allow to merge to the clones.
-	- - Determine the number of clones Mid object.
-	- Associating a curve to the array.
-	- Create a form to aspirale with clones.
+    - ALTA  :
+        - Dupli Group:
+        - - Assign the material of the clone to "Dupli Group" inherent.
+        - - Material at random also the "Dupli Group".
+        - Enter a button to the randomization of the materials. So it does not change the rand 
+          offset.
+        - Associating a curve to the array.
+
+    - MEDIA :
+        - Add offset to the rotation on its axis.
+        - Choose the direction of the offset for the X-Y-Z.
+        - To activate the "Dupli Group" even when you press the button "Apply" of the modifier.
+        - Assign a color ramp to the modifier array for color gradient.
+        - Mid Cap:
+        - - Allow to merge to the clones (Merge Verts).
+        - OB-CAP: Keep the original material for each Cap.
+        - Create a form to aspirale with clones.
+        - MultiScatter.
 
 
 Video 5\03\2011:
