@@ -5,21 +5,22 @@ WORK IN PROGRESS:
 
 Advanced Modifier Array v0.5 beta3 new features and fixed bug (from v0.5.2) 14\12\2011:
 
-    1.  FIX: "Mid Cap" visualizzato in modalità "Curve" anche senza "Curve Cap".
-    2.  FIX: Visualizzazione errata in "Edit Mode" del "Mid-Cap".
-    3.  FIX: Mancata inizializzazione delle variabili che indicano l'offset random.
-    4.  UPD: Nuova UI basata sul PDF di Leandro Cavalheiro.
+    1.  FIX: "Start Cap" e "End Cap" visualizzati in modalità "Curve" anche senza "Curve Cap".
+    2.  FIX: "Mid Cap" visualizzato in modalità "Curve" anche senza "Curve Cap".
+    3.  FIX: Visualizzazione errata in "Edit Mode" del "Mid-Cap".
+    4.  FIX: Mancata inizializzazione delle variabili che indicano l'offset random.
+    5.  UPD: Nuova UI basata sul PDF di Leandro Cavalheiro.
              (https://github.com/ruesp83/Blender---AMA/blob/master/patch-ama/pdf/array_ui.pdf)
-    5.  UPD: Due modalità per usare il modificatore:
+    6.  UPD: Due modalità per usare il modificatore:
              - "REGULAR" : Metodo Standard di clonazione.
              - "PATH"    : Clonazione lungo una curva.
-    6.  UPD: L'opzione "Between Offset" ora si trova nell'elenco "Fit Type".
-    7.  ADD: Possibilità di legare l'oggetto "Mid Cap" a una curva diversa da quella delle copie.
-    8.  ADD: Possibilità di aggiungere alla curva del "Mid Cap" anche lo "Start Cap" e l'"End Cap",
+    7.  UPD: L'opzione "Between Offset" ora si trova nell'elenco "Fit Type".
+    8.  ADD: Possibilità di legare l'oggetto "Mid Cap" a una curva diversa da quella delle copie.
+    9.  ADD: Possibilità di aggiungere alla curva del "Mid Cap" anche lo "Start Cap" e l'"End Cap",
              rispettivamente al primo e all'ultimo Control Points.
-    9.  ADD: "Scale" può avere valori negativi, per creare cloni più piccoli dell'originale.
-    10. ADD: Il "Mid Cap" è soggetto al noise, ma solo nella modalità "Sequence".
-    11. ADD: "Start Cap - Mid Cap - End Cap" ora hanno la possibilità di usare un materiale random,
+    10. ADD: "Scale" può avere valori negativi, per creare cloni più piccoli dell'originale.
+    11. ADD: Il "Mid Cap" è soggetto al noise, ma solo nella modalità "Sequence".
+    12. ADD: "Start Cap - Mid Cap - End Cap" ora hanno la possibilità di usare un materiale random,
              appartenente all'oggetto clonato.
 
 

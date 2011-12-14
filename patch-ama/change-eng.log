@@ -5,7 +5,7 @@ WORK IN PROGRESS:
 
 Advanced Modifier Array v0.5 beta3 new features and fixed bug (from v0.5.2) 14\12\2011:
 
-    1.  FIX: "Mid Cap" appears in "Curves" without "Curve Cap".
+    1.  FIX: "Start Cap" and "End Cap" appears in "Curves" without "Curve Cap".
     2.  FIX: Fixed a display bug in "Edit Mode" of the "Mid Cap".
     3.  FIX: Initialization of variables for the rand offset.
     4.  UPD: New UI and improvements, based on PDF of Leandro Cavalheiro.

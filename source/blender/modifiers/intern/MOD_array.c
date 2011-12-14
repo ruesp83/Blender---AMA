@@ -831,14 +831,14 @@ static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 
 		invert_m4_m4(startoffset, offset);
 
-		
-		if (amd->outer_cp & MOD_ARR_CP_FIRST && amd->start_cap && amd->curve_cap) {
-			if (nu->bezt)
-				copy_v3_v3(startoffset[3], nu->bezt[0].vec[1]);
-			else
-				copy_v3_v3(startoffset[3], nu->bp[0].vec);
+		if (amd->dist_mc & MOD_ARR_DIST_CURVE) {
+			if (amd->outer_cp & MOD_ARR_CP_FIRST && amd->start_cap && amd->curve_cap) {
+				if (nu->bezt)
+					copy_v3_v3(startoffset[3], nu->bezt[0].vec[1]);
+				else
+					copy_v3_v3(startoffset[3], nu->bp[0].vec);
+			}
 		}
-
 		vert_map = MEM_callocN(sizeof(*vert_map) * capVerts,
 		"arrayModifier_doArray vert_map");
 
@@ -1044,17 +1044,15 @@ static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 				copy_m4_m4(mid_offset, tmp_mat);
 			}
 			else if (amd->dist_mc & MOD_ARR_DIST_CURVE){
-				if  (amd->curve_cap) {
-					if (amd->outer_cp & MOD_ARR_CP_FIRST && amd->start_cap)
-						inc = 1;
-					else 
-						inc = 0;
-					if (j+1 < amd->count_mc){
-						if (nu->bezt)
-							copy_v3_v3(mid_offset[3], nu->bezt[j+1+inc].vec[1]);
-						else
-							copy_v3_v3(mid_offset[3], nu->bp[j+1+inc].vec);
-					}
+				if (amd->outer_cp & MOD_ARR_CP_FIRST && amd->start_cap)
+					inc = 1;
+				else 
+					inc = 0;
+				if (j+1 < amd->count_mc){
+					if (nu->bezt)
+						copy_v3_v3(mid_offset[3], nu->bezt[j+1+inc].vec[1]);
+					else
+						copy_v3_v3(mid_offset[3], nu->bp[j+1+inc].vec);
 				}
 			}
 		}
@@ -1079,14 +1077,14 @@ static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 		cap_mface = end_cap->getFaceArray(end_cap);
 
 		mul_m4_m4m4(endoffset, final_offset, offset);
-
-		if (amd->outer_cp & MOD_ARR_CP_LAST && amd->end_cap && amd->curve_cap) {
-			if (nu->bezt)
-				copy_v3_v3(endoffset[3], nu->bezt[nu->pntsu - 1].vec[1]);
-			else
-				copy_v3_v3(endoffset[3], nu->bp[nu->pntsu * nu->pntsv - 1].vec);
+		if (amd->dist_mc & MOD_ARR_DIST_CURVE) {
+			if (amd->outer_cp & MOD_ARR_CP_LAST && amd->end_cap && amd->curve_cap) {
+				if (nu->bezt)
+					copy_v3_v3(endoffset[3], nu->bezt[nu->pntsu - 1].vec[1]);
+				else
+					copy_v3_v3(endoffset[3], nu->bp[nu->pntsu * nu->pntsv - 1].vec);
+			}
 		}
-
 		vert_map = MEM_callocN(sizeof(*vert_map) * capVerts,
 		"arrayModifier_doArray vert_map");
 
