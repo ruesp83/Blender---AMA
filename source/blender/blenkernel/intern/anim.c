@@ -808,9 +808,9 @@ static void group_arrayduplilist(ListBase *lb, Scene *scene, Object *ob, int lev
 							if (group->dupli_ofs[0] || group->dupli_ofs[1] || group->dupli_ofs[2]) {
 								copy_m4_m4(tmat, go->ob->obmat);
 								sub_v3_v3v3(tmat[3], tmat[3], group->dupli_ofs);
-								mul_m4_m4m4(mat, tmat, ob->obmat);
+								mult_m4_m4m4(mat, ob->obmat, tmat);
 							} else {
-								mul_m4_m4m4(mat, go->ob->obmat, ob->obmat);
+								mult_m4_m4m4(mat, ob->obmat, go->ob->obmat);
 							}
 						
 							copy_m4_m4(tmat, mat);
@@ -823,20 +823,20 @@ static void group_arrayduplilist(ListBase *lb, Scene *scene, Object *ob, int lev
 								else
 									rotate_m4(rot,'Z',d_alp);
 								if (d_alp == 0){
-									mul_m4_m4m4(mat, offset, tmat);
+									mult_m4_m4m4(mat, tmat, offset);
 
 									copy_m4_m4(tmat, mat);
-									mul_m4_m4m4(mat, rot, tmat);
+									mult_m4_m4m4(mat, tmat, rot);
 								}
 								else{
-									mul_m4_m4m4(mat, offset, tmat);
+									mult_m4_m4m4(mat, tmat, offset);
 
 									copy_m4_m4(tmat, mat);
-									mul_m4_m4m4(mat, rot, tmat);
+									mult_m4_m4m4(mat, tmat, rot);
 								}
 							}
 							else {
-								mul_m4_m4m4(mat, offset, tmat);
+								mult_m4_m4m4(mat, tmat, offset);
 							}
 							//Noise
 							if (amd->mode & MOD_ARR_MOD_ADV) {
@@ -846,7 +846,7 @@ static void group_arrayduplilist(ListBase *lb, Scene *scene, Object *ob, int lev
 									loc_eul_size_to_mat4(app, amd->Mem_Ob[i].loc, amd->Mem_Ob[i].rot, amd->Mem_Ob[i].scale);
 
 									copy_m4_m4(tmat, mat);
-									mul_m4_m4m4(mat, app, tmat);
+									mult_m4_m4m4(mat, tmat, app);
 								}
 							}
 						
@@ -881,7 +881,7 @@ static void group_arrayduplilist(ListBase *lb, Scene *scene, Object *ob, int lev
 					}
 					//Offset for clone group
 					if (d_alp == 0)
-						mul_m4_m4m4(offset, offset, amd->delta);
+						mult_m4_m4m4(offset, amd->delta, offset);
 				}
 			}
 		}

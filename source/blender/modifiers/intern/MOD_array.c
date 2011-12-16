@@ -463,7 +463,7 @@ static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 				loc_eul_size_to_mat4(app, amd->Mem_Ob[0].loc, amd->Mem_Ob[0].rot, amd->Mem_Ob[0].scale);
 				copy_m4_m4(prec_mid, mid_offset);
 				copy_m4_m4(tmp_mat, mid_offset);
-				mul_m4_m4m4(mid_offset, app, tmp_mat);
+				mult_m4_m4m4(mid_offset, tmp_mat, app);
 			}
 		}
 	}
@@ -610,7 +610,7 @@ static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 							add_v3_v3v3(fo, cent, local[3]);
 														
 							copy_v3_v3(mv2->co, fo);
-							mul_m4_m4m4(local, local, offset);
+							mult_m4_m4m4(local, offset, local);
 						}
 						else {
 							loc_eul_size_to_mat4(app, amd->Mem_Ob[j].loc, amd->Mem_Ob[j].rot, amd->Mem_Ob[j].scale);
@@ -1026,7 +1026,7 @@ static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 					if (amd->Mem_Ob[j+1].transform == 1)
 						copy_m4_m4(mid_offset, prec_mid);
 				}
-				mul_m4_m4m4(tmp_mat, mid_offset, offset);
+				mult_m4_m4m4(tmp_mat, offset, mid_offset);
 				copy_m4_m4(mid_offset, tmp_mat);
 				if (amd->mode & MOD_ARR_MOD_ADV) {
 					if (amd->Mem_Ob[j+1].transform == 1) {
@@ -1035,12 +1035,12 @@ static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 						loc_eul_size_to_mat4(app, amd->Mem_Ob[j+1].loc, amd->Mem_Ob[j+1].rot, amd->Mem_Ob[j+1].scale);
 						copy_m4_m4(prec_mid, mid_offset);
 						copy_m4_m4(tmp_mat, mid_offset);
-						mul_m4_m4m4(mid_offset, app, tmp_mat);
+						mult_m4_m4m4(mid_offset, tmp_mat, app);
 					}
 				}
 			}
 			else if (amd->dist_mc & MOD_ARR_DIST_HALF){
-				mul_m4_m4m4(tmp_mat, mid_offset, half_offset);
+				mult_m4_m4m4(tmp_mat, half_offset, mid_offset);
 				copy_m4_m4(mid_offset, tmp_mat);
 			}
 			else if (amd->dist_mc & MOD_ARR_DIST_CURVE){

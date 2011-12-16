@@ -346,7 +346,7 @@ void create_offset(const int n, const int totmat, ArrayModifierData *ar, Object 
 static void init_curve_deform(Object *par, Object *ob, CurveDeform *cd, int dloc)
 {
 	invert_m4_m4(ob->imat, ob->obmat);
-	mul_m4_m4m4(cd->objectspace, par->obmat, ob->imat);
+	mult_m4_m4m4(cd->objectspace, ob->imat, par->obmat);
 	invert_m4_m4(cd->curvespace, cd->objectspace);
 	copy_m3_m4(cd->objectspace3, cd->objectspace);
 	
