@@ -8,7 +8,7 @@ else:
     LCGDIR = '../lib/linux'
 LIBDIR = "#${LCGDIR}"
 
-BF_PYTHON_ABI_FLAGS = 'm'  # Most common for linux distros
+BF_PYTHON_ABI_FLAGS = 'mu'  # Most common for linux distros
 BF_PYTHON = '/usr'
 BF_PYTHON_LIBPATH = '${BF_PYTHON}/lib'
 BF_PYTHON_VERSION = '3.2'

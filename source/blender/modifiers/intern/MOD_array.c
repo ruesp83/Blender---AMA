@@ -447,7 +447,7 @@ static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 	/* calculate the offset matrix of the final copy (for merging) */
 	unit_m4(final_offset);
 	for(j=0; j < f_o; j++) {
-		mul_m4_m4m4(tmp_mat, final_offset, offset);
+		mult_m4_m4m4(tmp_mat, offset, final_offset);
 		copy_m4_m4(final_offset, tmp_mat);
 	}
 	
@@ -1076,7 +1076,7 @@ static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 		cap_medge = end_cap->getEdgeArray(end_cap);
 		cap_mface = end_cap->getFaceArray(end_cap);
 
-		mul_m4_m4m4(endoffset, final_offset, offset);
+		mult_m4_m4m4(endoffset, offset, final_offset);
 		if (amd->dist_mc & MOD_ARR_DIST_CURVE) {
 			if (amd->outer_cp & MOD_ARR_CP_LAST && amd->end_cap && amd->curve_cap) {
 				if (nu->bezt)

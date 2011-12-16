@@ -6,20 +6,21 @@ WORK IN PROGRESS:
 Advanced Modifier Array v0.5 beta3 new features and fixed bug (from v0.5.2) 14\12\2011:
 
     1.  FIX: "Start Cap" and "End Cap" appears in "Curves" without "Curve Cap".
-    2.  FIX: Fixed a display bug in "Edit Mode" of the "Mid Cap".
-    3.  FIX: Initialization of variables for the rand offset.
-    4.  UPD: New UI and improvements, based on PDF of Leandro Cavalheiro.
+    2.  FIX: "Mid Cap" appears in "Curves" without "Curve Cap".
+    3.  FIX: Fixed a display bug in "Edit Mode" of the "Mid Cap".
+    4.  FIX: Initialization of variables for the rand offset.
+    5.  UPD: New UI and improvements, based on PDF of Leandro Cavalheiro.
              (https://github.com/ruesp83/Blender---AMA/blob/master/patch-ama/pdf/array_ui.pdf)
-    5.  UPD: Two ways to use the modifier:
+    6.  UPD: Two ways to use the modifier:
              - "REGULAR" : Standard Method of cloning.
              - "PATH"    : Cloning along curve.
-    6.  UPD: The "Offset Between" is now in the "Fit Type".
-    7.  ADD: Ability to bind object "Mid Cap" to a different curve from that of the copies.
-    8.  ADD: Ability to add to the curve of the "Mid Cap" also "Start Cap" and "End Cap",
+    7.  UPD: The "Offset Between" is now in the "Fit Type".
+    8.  ADD: Ability to bind object "Mid Cap" to a different curve from that of the copies.
+    9.  ADD: Ability to add to the curve of the "Mid Cap" also "Start Cap" and "End Cap",
              respectively the first and last Control Points.
-    9.  ADD: "Scale" can have negative values, to create clones smaller than the original.
-    10.  ADD: The "Mid Cap" is subject to noise, but only in the "Sequence".
-    11. ADD: "Start Cap - Mid Cap - End Cap" now have the ability to use a random material
+    10. ADD: "Scale" can have negative values, to create clones smaller than the original.
+    11. ADD: The "Mid Cap" is subject to noise, but only in the "Sequence".
+    12. ADD: "Start Cap - Mid Cap - End Cap" now have the ability to use a random material
              belonging to the object cloned.
 
 
@@ -101,17 +102,18 @@ TODO:
         - MultiScatter.
 
 
-Video 5\03\2011:
+Video 14\12\2011:
 1)http://vimeo.com/15561032
 2)http://vimeo.com/16762503
 3)http://vimeo.com/20675851
 4)http://vimeo.com/28236738
+5 NEW)http://vimeo.com/33667212
 
 
-Builds 12\11\2010: (old)
+Builds 14\12\2011:
 32: Blender-AMA-32.rar
 64: Blender-AMA-64.rar
 
 
-Patch 12\11\2010: (old)
+Patch 14\12\2011:
 - AMA.patch
