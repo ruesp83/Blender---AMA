@@ -1,6 +1,9 @@
 WORK IN PROGRESS:
-    1. Rotazione locale.
-    2. Array distribuito su una curva.
+    1. Array distribuito su una curva.
+
+
+Advanced Modifier Array v0.5 beta4 new features and fixed bug (from v0.5.3) __\__\2012:
+    1. ADD: Rotazione Locale: Rotazione in base ai propri assi.
 
 
 Advanced Modifier Array v0.5 beta3 new features and fixed bug (from v0.5.2) 14\12\2011:
@@ -93,7 +96,6 @@ TODO:
         - Associare una curva all'array.
 
     - MEDIA :
-        - Aggiungere offset per la rotazione in base ai propri assi.
         - Scegliere la direzione dell'offset per la X-Y-Z.
         - Rendere attivo il "Dupli Group" anche quando si preme il tasto "Apply" del modificatore.
         - Associare una ramp color al modifier array per color gradient.

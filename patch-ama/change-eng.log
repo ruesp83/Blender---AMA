@@ -1,6 +1,9 @@
 WORK IN PROGRESS:
-    1. Local Rotation.
-    2. Array distributed on a curve.
+    1. Array distributed on a curve.
+
+
+Advanced Modifier Array v0.5 beta4 new features and fixed bug (from v0.5.3) __\__\2012:
+    1. ADD: Local Rotation: Rotation on its own axis.
 
 
 Advanced Modifier Array v0.5 beta3 new features and fixed bug (from v0.5.2) 14\12\2011:
@@ -91,7 +94,6 @@ TODO:
         - Associating a curve to the array.
 
     - MEDIA :
-        - Add offset to the rotation on its axis.
         - Choose the direction of the offset for the X-Y-Z.
         - To activate the "Dupli Group" even when you press the button "Apply" of the modifier.
         - Assign a color ramp to the modifier array for color gradient.
