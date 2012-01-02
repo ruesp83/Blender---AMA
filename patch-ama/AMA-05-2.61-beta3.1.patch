@@ -1014,30 +1014,6 @@ Index: source/blender/blenkernel/intern/anim.c
  	}
  }
  
-Index: source/blender/blenkernel/intern/lattice.c
-===================================================================
---- source/blender/blenkernel/intern/lattice.c	(revisione 43073)
-+++ source/blender/blenkernel/intern/lattice.c	(copia locale)
-@@ -638,7 +638,6 @@
- 		vec_apply_track(cent, axis-1);
- 		cent[axis < 4 ? axis-1 : axis-4]= 0.0f;
- 
--
- 		/* scale if enabled */
- 		if(cu->flag & CU_PATH_RADIUS)
- 			mul_v3_fl(cent, radius);
-Index: source/blender/blenlib/BLI_math_matrix.h
-===================================================================
---- source/blender/blenlib/BLI_math_matrix.h	(revisione 43073)
-+++ source/blender/blenlib/BLI_math_matrix.h	(copia locale)
-@@ -68,6 +68,7 @@
- void sub_m4_m4m4(float R[4][4], float A[4][4], float B[4][4]);
- 
- void mul_m3_m3m3(float R[3][3], float A[3][3], float B[3][3]);
-+void mult_m4_m4m4(float R[4][4], float B[4][4], float A[4][4]);
- void mul_m4_m3m4(float R[4][4], float A[3][3], float B[4][4]);
- void mul_m4_m4m3(float R[4][4], float A[4][4], float B[3][3]);
- /* note: the A,B arguments are reversed compared to previous mul_m4_m4m4
 Index: source/blender/blenloader/intern/readfile.c
 ===================================================================
 --- source/blender/blenloader/intern/readfile.c	(revisione 43073)

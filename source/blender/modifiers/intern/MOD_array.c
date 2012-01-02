@@ -214,7 +214,7 @@ static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 	float offset[4][4];
 	float final_offset[4][4];
 	float mid_offset[4][4], half_offset[4][4];
-	float tmp_mat[4][4], prec_mid[4][4], local[4][4];
+	float tmp_mat[4][4], prec_mid[4][4];
 	float length = amd->length;
 	float alpha = 0, d_alp = 0, circle;
 	float f_o;
@@ -531,7 +531,6 @@ static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 				}
 			}
 		}
-		copy_m4_m4(local, offset);
 		/* if no merging, generate copies of this vert */
 		if(indexMap[i].merge < 0) {
 			if (amd->rays>1)
@@ -589,28 +588,16 @@ static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 						unit_m4(app);
 
 						if (amd->flag_offset & MOD_ARR_LOCAL) {
-							float cent[3];
-							float quat[4];
-							
-							eul_to_quat(quat, amd->Mem_Ob[j].rot);
-							copy_v3_v3(cent, mv2->co);
-							quat_apply_track(quat, 0, 1);
-							vec_apply_track(cent, 0);
-							cent[0] = 0;
+							float loc[4][4];
 
-							/* scale */
-							mul_v3_v3(cent, amd->Mem_Ob[j].scale);
-							/* local rotation */
-							normalize_qt(quat);
-							mul_qt_v3(quat, cent);
-
-							loc_quat_size_to_mat4(app, amd->Mem_Ob[j].loc, quat, amd->Mem_Ob[j].scale);
-							add_v3_v3v3(local[3], app[3], local[3]);
-							
-							add_v3_v3v3(fo, cent, local[3]);
-														
+							copy_v3_v3(fo, mv->co);
+							copy_v3_v3(app[3], fo);
+							loc_eul_size_to_mat4(app, amd->Mem_Ob[j].loc, amd->Mem_Ob[j].rot, amd->Mem_Ob[j].scale);
+							mul_m4_v3(app, fo);
+							copy_m4_m4(loc, offset);
+							mul_v3_fl(loc[3], j+1);
+							mul_m4_v3(loc, fo);
 							copy_v3_v3(mv2->co, fo);
-							mult_m4_m4m4(local, offset, local);
 						}
 						else {
 							loc_eul_size_to_mat4(app, amd->Mem_Ob[j].loc, amd->Mem_Ob[j].rot, amd->Mem_Ob[j].scale);
