@@ -65,6 +65,7 @@ set(SRC
 	intern/math_base.c
 	intern/math_base_inline.c
 	intern/math_color.c
+	intern/math_color_inline.c
 	intern/math_geom.c
 	intern/math_geom_inline.c
 	intern/math_matrix.c
@@ -87,6 +88,7 @@ set(SRC
 	intern/voxel.c
 	intern/winstuff.c
 
+	BLI_array.h
 	BLI_args.h
 	BLI_blenlib.h
 	BLI_boxpack2d.h

@@ -816,7 +816,8 @@ void BKE_movieclip_reload(MovieClip *clip)
 
 void BKE_movieclip_update_scopes(MovieClip *clip, MovieClipUser *user, MovieClipScopes *scopes)
 {
-	if(scopes->ok) return;
+	if(scopes->ok)
+		return;
 
 	if(scopes->track_preview) {
 		IMB_freeImBuf(scopes->track_preview);
@@ -827,8 +828,10 @@ void BKE_movieclip_update_scopes(MovieClip *clip, MovieClipUser *user, MovieClip
 	scopes->track= NULL;
 
 	if(clip) {
-		if(clip->tracking.act_track) {
-			MovieTrackingTrack *track= clip->tracking.act_track;
+		MovieTrackingTrack *act_track= BKE_tracking_active_track(&clip->tracking);
+
+		if(act_track) {
+			MovieTrackingTrack *track= act_track;
 			MovieTrackingMarker *marker= BKE_tracking_get_marker(track, user->framenr);
 
 			if(marker->flag&MARKER_DISABLED) {
@@ -918,15 +921,17 @@ static void movieclip_build_proxy_ibuf(MovieClip *clip, ImBuf *ibuf, int cfra, i
 	IMB_freeImBuf(scaleibuf);
 }
 
-void BKE_movieclip_build_proxy_frame(MovieClip *clip, struct MovieDistortion *distortion,
+void BKE_movieclip_build_proxy_frame(MovieClip *clip, int clip_flag, struct MovieDistortion *distortion,
 			int cfra, int *build_sizes, int build_count, int undistorted)
 {
 	ImBuf *ibuf;
 	MovieClipUser user;
 
 	user.framenr= cfra;
+	user.render_flag= 0;
+	user.render_size= MCLIP_PROXY_RENDER_SIZE_FULL;
 
-	ibuf= BKE_movieclip_get_ibuf_flag(clip, &user, 0);
+	ibuf= BKE_movieclip_get_ibuf_flag(clip, &user, clip_flag);
 
 	if(ibuf) {
 		ImBuf *tmpibuf= ibuf;

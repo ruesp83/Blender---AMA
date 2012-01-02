@@ -16,11 +16,13 @@
 #
 # ##### END GPL LICENSE BLOCK #####
 
+DEV = False
+
 bl_info = {
     "name": "Renderfarm.fi",
     "author": "Nathan Letwory <nathan@letworyinteractive.com>, Jesse Kaukonen <jesse.kaukonen@gmail.com>",
-    "version": (12,),
-    "blender": (2, 6, 0),
+    "version": (13,),
+    "blender": (2, 6, 1),
     "api": 41934,
     "location": "Render > Engine > Renderfarm.fi",
     "description": "Send .blend as session to http://www.renderfarm.fi to render",
@@ -85,6 +87,15 @@ bpy.particleBakeWarning = False
 bpy.childParticleWarning = False
 bpy.simulationWarning = False
 bpy.ready = False
+
+if DEV:
+    rffi_xmlrpc_secure = r'http://192.168.0.109/burp/xmlrpc'
+    rffi_xmlrpc = r'http://192.168.0.109/burp/xmlrpc'
+    rffi_xmlrpc_upload = '192.168.0.109'
+else:
+    rffi_xmlrpc_secure = r'https://xmlrpc.renderfarm.fi/burp/xmlrpc'
+    rffi_xmlrpc = r'http://xmlrpc.renderfarm.fi/burp/xmlrpc'
+    rffi_xmlrpc_upload = 'xmlrpc.renderfarm.fi'
 
 def renderEngine(render_engine):
     bpy.utils.register_class(render_engine)
@@ -616,9 +627,9 @@ def encode_multipart_data(data, files):
     
     return body, headers
 
-def send_post(url, data, files):
-    connection = http.client.HTTPConnection('xmlrpc.renderfarm.fi')
-    connection.request('POST', '/file', *encode_multipart_data(data, files))
+def send_post(data, files):
+    connection = http.client.HTTPConnection(rffi_xmlrpc_upload)
+    connection.request('POST', '/burp/storage', *encode_multipart_data(data, files)) # was /file
     response = connection.getresponse()
     res = response.read()
     return res
@@ -634,7 +645,7 @@ def md5_for_file(filepath):
         md5hash.update(data)
     return md5hash.hexdigest()
 
-def upload_file(key, userid, sessionid, server, path):
+def upload_file(key, userid, sessionid, path):
     assert isabs(path)
     assert isfile(path)
     data = {
@@ -646,16 +657,13 @@ def upload_file(key, userid, sessionid, server, path):
     files = {
         'blenderfile': path
     }
-    r = send_post(server, data, files)
-    #print 'Uploaded %r' % (path)
+    r = send_post(data, files)
     
     return r
 
 def run_upload(key, userid, sessionid, path):
-    #print('Upload', path)
-    r = upload_file(key, userid, sessionid, r'http://xmlrpc.renderfarm.fi/file', path)
+    r = upload_file(key, userid, sessionid, path)
     o = xmlrpc.client.loads(r)
-    print("Done!")
     return o[0][0]
 
 def ore_upload(op, context):
@@ -669,11 +677,11 @@ def ore_upload(op, context):
         bpy.context.scene.render.engine = 'RENDERFARMFI_RENDER'
         return {'CANCELLED'}
     try:
-        authproxy = xmlrpc.client.ServerProxy(r'https://xmlrpc.renderfarm.fi/auth')
+        authproxy = xmlrpc.client.ServerProxy(rffi_xmlrpc_secure)
         res = authproxy.auth.getSessionKey(ore.username, ore.hash)
         key = res['key']
         userid = res['userId']
-        proxy = xmlrpc.client.ServerProxy(r'http://xmlrpc.renderfarm.fi/session')
+        proxy = xmlrpc.client.ServerProxy(rffi_xmlrpc) #r'http://xmlrpc.renderfarm.fi/session')
         proxy._ServerProxy__transport.user_agent = 'Renderfarm.fi Uploader/%s' % (bpy.CURRENT_VERSION)
         res = proxy.session.createSession(userid, key)
         sessionid = res['sessionId']
@@ -707,7 +715,7 @@ def ore_upload(op, context):
         op.report(set(['ERROR']), 'An error occurred while sending submission to Renderfarm.fi')
     
     bpy.context.scene.render.engine = 'RENDERFARMFI_RENDER'
-    doRefresh()
+    doRefresh(op)
     return {'FINISHED'}
 
 def setStatus(property, status):
@@ -750,53 +758,71 @@ class OreSession:
     
     def percentageComplete(self):
         totFrames = self.endframe - self.startframe
+        done = 0
         if totFrames != 0:
             done = math.floor((self.frames / totFrames)*100)
-        else:
-            done = math.floor((self.frames / (totFrames+0.01))*100)
         
         if done > 100:
             done = 100
         return done
 
-def xmlSessionsToOreSessions(sessions, queue):
-    #bpy.ore_sessions = []
+def xmlSessionsToOreSessions(sessions, stage=None): #, queue):
     output = []
-    sessionFilter = []
-    sessionFilter = sessions[queue]
-    for sid in sessionFilter:
-        s = sessionFilter[sid]['title']
-        t = sessionFilter[sid]['timestamps']
-        sinfo = OreSession(sid, s) 
-        if queue in ('completed', 'active'):
-            sinfo.frames = sessionFilter[sid]['framesRendered']
-        sinfo.startframe = sessionFilter[sid]['startFrame']
-        sinfo.endframe = sessionFilter[sid]['endFrame']
-        #bpy.ore_sessions.append(sinfo)
+    for session in sessions:
+        s = session['title']
+        if stage:
+            s = s + ' (' + stage + ')'
+        #t = session['timestamps']
+        sinfo = OreSession(session['sessionId'], s) 
+        if stage in ('Completed', 'Active'):
+            sinfo.frames = session['framesRendered']
+        sinfo.startframe = session['startFrame']
+        sinfo.endframe = session['endFrame']
         output.append(sinfo)
     return output
 
-def doRefresh():
+def doRefresh(op, rethrow=False):
     sce = bpy.context.scene
     ore = sce.ore_render
     try:
-        userproxy = xmlrpc.client.ServerProxy(r'https://xmlrpc.renderfarm.fi/user')
-        sessions = userproxy.user.getAllSessions(ore.username, ore.hash, 'completed')
+    
+        proxy = xmlrpc.client.ServerProxy(rffi_xmlrpc_secure)
+        res = proxy.auth.getSessionKey(ore.username, ore.hash)
+        userid = res['userID']
+        proxy = xmlrpc.client.ServerProxy(rffi_xmlrpc)
+
         bpy.ore_sessions = []
-        bpy.ore_sessions = xmlSessionsToOreSessions(sessions, 'completed')
+
+        sessions = proxy.session.getSessions(userid, 'accept', 0, 100, 'full')
+        bpy.ore_sessions = xmlSessionsToOreSessions(sessions, stage='Pending')
+        bpy.ore_pending_sessions = bpy.ore_sessions
+
+        sessions = proxy.session.getSessions(userid, 'completed', 0, 100, 'full')
+        bpy.ore_sessions = xmlSessionsToOreSessions(sessions, stage='Completed')
         bpy.ore_completed_sessions = bpy.ore_sessions
-        bpy.ore_cancelled_sessions = xmlSessionsToOreSessions(sessions, 'canceled')
-        sessions = userproxy.user.getAllSessions(ore.username, ore.hash, 'accept')
-        bpy.ore_pending_sessions = xmlSessionsToOreSessions(sessions, 'accept')
-        sessions = userproxy.user.getAllSessions(ore.username, ore.hash, 'active')
-        bpy.ore_active_sessions = xmlSessionsToOreSessions(sessions, 'active')
+
+        sessions = proxy.session.getSessions(userid, 'cancelled', 0, 100, 'full')
+        bpy.ore_sessions = xmlSessionsToOreSessions(sessions, stage='Cancelled')
+        bpy.ore_cancelled_sessions = bpy.ore_sessions
+
+        sessions = proxy.session.getSessions(userid, 'render', 0, 100, 'full')
+        bpy.ore_sessions = xmlSessionsToOreSessions(sessions, stage='Rendering')
+        bpy.ore_active_sessions = bpy.ore_sessions
         
         updateCompleteSessionList(ore)
         
         return 0
     except xmlrpc.client.Error as v:
-        self.report({'WARNING'}, "Error at refresh")
+        op.report({'WARNING'}, "Error at refresh : " + str(v.faultCode) + " " + v.faultString)
         print(v)
+        if rethrow:
+            raise v
+        return 1
+    except Exception as v:
+        op.report({'WARNING'}, "Non XMLRPC Error at refresh: " + str(v))
+        print(v)
+        if rethrow:
+            raise v
         return 1
 
 class ORE_RefreshOp(bpy.types.Operator):
@@ -804,7 +830,7 @@ class ORE_RefreshOp(bpy.types.Operator):
     bl_label = 'Refresh'
     
     def execute(self, context):
-        result = doRefresh()
+        result = doRefresh(self)
         if (result == 0):
             return {'FINISHED'}
         else:
@@ -834,8 +860,8 @@ def updateCompleteSessionList(ore):
     bpy.ore_complete_session_queue = []
     bpy.ore_complete_session_queue.extend(bpy.ore_pending_sessions)
     bpy.ore_complete_session_queue.extend(bpy.ore_active_sessions)
-    #bpy.ore_complete_session_queue.extend(bpy.ore_completed_sessions)
-    #bpy.ore_complete_session_queue.extend(bpy.ore_cancelled_sessions)
+    bpy.ore_complete_session_queue.extend(bpy.ore_completed_sessions)
+    bpy.ore_complete_session_queue.extend(bpy.ore_cancelled_sessions)
     
     bpy.ore_active_session_queue = bpy.ore_complete_session_queue
     updateSessionList(ore.all_sessions, ore)
@@ -856,15 +882,19 @@ class ORE_CancelSession(bpy.types.Operator):
     def execute(self, context):
         sce = context.scene
         ore = sce.ore_render
-        userproxy = xmlrpc.client.ServerProxy(r'https://xmlrpc.renderfarm.fi/user')
+        proxy = xmlrpc.client.ServerProxy(rffi_xmlrpc_secure)
         if len(bpy.ore_complete_session_queue)>0:
             s = bpy.ore_complete_session_queue[ore.selected_session]
             try:
-                userproxy.user.cancelSession(ore.username, ore.hash, int(s.id))
-                doRefresh()
-                self.report(set(['INFO']), 'Session ' + s.title + ' with id ' + s.id + ' cancelled')
-            except:
-                self.report(set(['ERROR']), 'Could not cancel session ' + s.title + ' with id ' + s.id)
+                res = proxy.auth.getSessionKey(ore.username, ore.hash)
+                key = res['key']
+                userid = res['userId']
+                res = proxy.session.cancelSession(userid, key, s.id)
+                doRefresh(self)
+                self.report(set(['INFO']), 'Session ' + s.title + ' with id ' + str(s.id) + ' cancelled')
+            except xmlrpc.client.Error as v:
+                self.report(set(['ERROR']), 'Could not cancel session ' + s.title + ' with id ' + str(s.id))
+                print(v)
                 bpy.cancelError = True
                 bpy.errorStartTime = time.time()
         
@@ -959,27 +989,7 @@ class ORE_LoginOp(bpy.types.Operator):
                 ore.loginInserted = False
         
         try:
-            userproxy = xmlrpc.client.ServerProxy(r'https://xmlrpc.renderfarm.fi/user')
-            sessions = userproxy.user.getAllSessions(ore.username, ore.hash, 'completed')
-            bpy.ore_sessions = xmlSessionsToOreSessions(sessions, 'completed')
-            bpy.ore_completed_sessions = bpy.ore_sessions
-            bpy.ore_cancelled_sessions = xmlSessionsToOreSessions(sessions, 'canceled')
-            sessions = userproxy.user.getAllSessions(ore.username, ore.hash, 'accept')
-            bpy.ore_pending_sessions = xmlSessionsToOreSessions(sessions, 'accept')
-            sessions = userproxy.user.getAllSessions(ore.username, ore.hash, 'active')
-            bpy.ore_active_sessions = xmlSessionsToOreSessions(sessions, 'active')
-            
-            bpy.ore_active_session_queue = bpy.ore_completed_sessions
-            updateSessionList(ore.completed_sessions, ore)
-            
-            bpy.ore_active_session_queue = bpy.ore_pending_sessions
-            updateSessionList(ore.pending_sessions, ore)
-            
-            bpy.ore_active_session_queue = bpy.ore_active_sessions
-            updateSessionList(ore.active_sessions, ore)
-            
-            bpy.ore_active_session_queue = bpy.ore_cancelled_sessions
-            updateSessionList(ore.rejected_sessions, ore)
+            doRefresh(self, True)
             
             ore.passwordCorrect = True
             ore.loginInserted = True
@@ -993,17 +1003,6 @@ class ORE_LoginOp(bpy.types.Operator):
             self.report({'WARNING'}, "Incorrect login")
             print(v)
             return {'CANCELLED'}
-        
-        all_sessions = []
-        bpy.ore_complete_session_queue = []
-        
-        bpy.ore_complete_session_queue.extend(bpy.ore_pending_sessions)
-        bpy.ore_complete_session_queue.extend(bpy.ore_active_sessions)
-        #bpy.ore_complete_session_queue.extend(bpy.ore_completed_sessions)
-        #bpy.ore_complete_session_queue.extend(bpy.ore_cancelled_sessions)
-        
-        bpy.ore_active_session_queue = bpy.ore_complete_session_queue
-        updateSessionList(ore.all_sessions, ore)
         
         return {'FINISHED'}
 

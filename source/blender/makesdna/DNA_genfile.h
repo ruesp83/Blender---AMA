@@ -25,13 +25,13 @@
  * ***** END GPL LICENSE BLOCK *****
  */
 
-#ifndef GENFILE_H
-#define GENFILE_H
-
 /** \file DNA_genfile.h
  *  \ingroup DNA
  *  \brief blenloader genfile private function prototypes
  */
+
+#ifndef DNA_GENFILE_H
+#define DNA_GENFILE_H
 
 struct SDNA;
 
@@ -48,12 +48,13 @@ typedef enum eSDNA_Type {
 	SDNA_TYPE_ULONG    = 6,
 	SDNA_TYPE_FLOAT    = 7,
 	SDNA_TYPE_DOUBLE   = 8,
-	SDNA_TYPE_INT64    = 9
-	/* ,SDNA_TYPE_VOID     = 10 */ /* nothing uses yet */
+	SDNA_TYPE_INT64    = 9,
+	SDNA_TYPE_UINT64   = 10
+	/* ,SDNA_TYPE_VOID     = 11 */ /* nothing uses yet */
 } eSDNA_Type;
 
 /* define so switch statements don't complain */
-#define SDNA_TYPE_VOID 10
+#define SDNA_TYPE_VOID 11
 
 struct SDNA *DNA_sdna_from_data(void *data, int datalen, int do_endian_swap);
 void DNA_sdna_free(struct SDNA *sdna);
