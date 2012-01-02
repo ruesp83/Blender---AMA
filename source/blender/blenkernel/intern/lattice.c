@@ -638,6 +638,7 @@ static int calc_curve_deform(Scene *scene, Object *par, float *co, short axis, C
 		vec_apply_track(cent, axis-1);
 		cent[axis < 4 ? axis-1 : axis-4]= 0.0f;
 
+
 		/* scale if enabled */
 		if(cu->flag & CU_PATH_RADIUS)
 			mul_v3_fl(cent, radius);
