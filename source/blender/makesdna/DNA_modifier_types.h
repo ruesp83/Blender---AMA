@@ -181,16 +181,13 @@ typedef struct MaskModifierData {
 
 
 typedef struct ArrayChangeObject {
-	//float location[4][4];
 	float rot[3];
 	float scale[3];
 	float loc[3];
-	/*0 not modified
-	  1 modified
-	*/
+	
 	float cu_cent[3];
 	float cu_loc[4];
-	int transform;
+	int transform; /* 0 not modified, 1 modified */
 	int id_mat;
 	int rand_group_obj;
 } ArrayChangeObject;

@@ -590,12 +590,15 @@ static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 						if (amd->flag_offset & MOD_ARR_LOCAL) {
 							float loc[4][4];
 
+							/* copy of the original coordinates */
 							copy_v3_v3(fo, mv->co);
 							copy_v3_v3(app[3], fo);
 							loc_eul_size_to_mat4(app, amd->Mem_Ob[j].loc, amd->Mem_Ob[j].rot, amd->Mem_Ob[j].scale);
 							mul_m4_v3(app, fo);
+							/* recalculates the offset of the clone */
 							copy_m4_m4(loc, offset);
 							mul_v3_fl(loc[3], j+1);
+							/* calculates the new coordinates of the clone */
 							mul_m4_v3(loc, fo);
 							copy_v3_v3(mv2->co, fo);
 						}

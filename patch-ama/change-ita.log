@@ -101,6 +101,7 @@ TODO:
         - Associare una ramp color al modifier array per color gradient.
         - Mid Cap:
         - - Permettere di legarlo ai cloni (Merge Verts).
+		- - Distribuirli in base al "Rays".
         - OB-CAP: Mantenere materiale originale per ogni Cap.
         - Creare i cloni con una forma ad aspirale.
         - MultiScatter

@@ -288,13 +288,11 @@ void create_offset(const int n, const int totmat, ArrayModifierData *ar, Object 
 				ar->Mem_Ob[i].transform = 1;
 			}
 			if (ar->Mem_Ob[i].transform) {
-				//loc_eul_size_to_mat4(ar->Mem_Ob[i].location, loc, rot, scale);
+				/* Rotation */
 				copy_v3_v3(ar->Mem_Ob[i].rot, rot);
-				//Scaling
-				//size_to_mat4(ar->Mem_Ob[i].location,scale);
+				/* Scaling */
 				copy_v3_v3(ar->Mem_Ob[i].scale, scale);
-				//Location
-				//translate_m4(ar->Mem_Ob[i].location,loc[0],loc[1],loc[2]);
+				/* Location */
 				copy_v3_v3(ar->Mem_Ob[i].loc, loc);
 			}
 			if (ar->rand_group & MOD_ARR_RAND_GROUP) {
@@ -302,14 +300,14 @@ void create_offset(const int n, const int totmat, ArrayModifierData *ar, Object 
 				ar->Mem_Ob[i].rand_group_obj++;
 			}
 		}
-
+		/* Random Material Clone */
 		if (ar->mode & MOD_ARR_MOD_ADV_MAT) {
 			if (totmat>1) {
-				/*random*/
+				/* Random */
 				if ((ar->rand_mat & MOD_ARR_MAT) && (ar->mat_ob & MOD_ARR_AR_MAT_RND)) {
 					ar->Mem_Ob[i].id_mat = BLI_rand() % totmat;
 				}
-				else { /*sequence*/
+				else { /* Sequence */
 					if (cont_mat == 0 ){
 						cont_mat = ar->cont_mat;
 						if (act_mat + 1 < totmat)
@@ -324,9 +322,10 @@ void create_offset(const int n, const int totmat, ArrayModifierData *ar, Object 
 		}
 
 	}
+
+	/* Random Material Object Cap */
 	if (ar->mode & MOD_ARR_MOD_ADV_MAT) {
 		if (totmat>1) {
-			/*random*/
 			if ((ar->rand_mat & MOD_ARR_MAT) && (ar->mat_ob & MOD_ARR_SC_MAT_RND)) {
 				ar->Mem_Mat_Ob.start_cap = BLI_rand() % totmat;
 			}
