@@ -920,6 +920,7 @@ static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 		MVert *cap_mvert;
 		MEdge *cap_medge;
 		MFace *cap_mface;
+		float d_alp_md, alpha_md;
 		int *origindex;
 		int *vert_map;
 		int capVerts, capEdges, capFaces;
@@ -931,6 +932,10 @@ static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 		cap_mvert = mid_cap->getVertArray(mid_cap);
 		cap_medge = mid_cap->getEdgeArray(mid_cap);
 		cap_mface = mid_cap->getFaceArray(mid_cap);
+
+		/*d_alp_md = 0;
+		if (amd->rays > 1)
+			alpha_md = (float)6.2831 / amd->rays;*/
 
 		vert_map = MEM_callocN(sizeof(*vert_map) * capVerts,
 				"arrayModifier_doArray vert_map");
@@ -1012,6 +1017,33 @@ static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 			}
 
 			if (amd->dist_mc & MOD_ARR_DIST_SEQ){
+				/********/
+				/*if (amd->rays>1) {
+					float rot[4][4];
+					unit_m4(rot);
+					if (amd->rays_dir == MOD_ARR_RAYS_X)
+						rotate_m4(rot,'X',d_alp_md);
+					else if (amd->rays_dir == MOD_ARR_RAYS_Y)
+						rotate_m4(rot,'Y',d_alp_md);
+					else
+						rotate_m4(rot,'Z',d_alp_md);
+					if (d_alp_md == 0){
+						mult_m4_m4m4(mid_offset, tmat, offset);
+
+						copy_m4_m4(tmat, mid_offset);
+						mult_m4_m4m4(mid_offset, tmat, rot);
+					}
+					else{
+						mult_m4_m4m4(mid_offset, tmat, offset);
+
+						copy_m4_m4(tmat, mid_offset);
+						mult_m4_m4m4(mid_offset, tmat, rot);
+					}
+				}
+				else {
+					mult_m4_m4m4(mid_offset, tmat, offset);
+				}*/
+				/********/
 				if (amd->mode & MOD_ARR_MOD_ADV) {
 					if (amd->Mem_Ob[j+1].transform == 1)
 						copy_m4_m4(mid_offset, prec_mid);

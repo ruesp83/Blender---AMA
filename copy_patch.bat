@@ -10,6 +10,8 @@ copy source\blender\editors\object\object_modifier.c J:\Blender---AMA\source\ble
 copy source\blender\editors\object\object_ops.c J:\Blender---AMA\source\blender\editors\object /Y
 copy source\blender\makesdna\DNA_modifier_types.h J:\Blender---AMA\source\blender\makesdna /Y
 copy source\blender\makesdna\DNA_object_types.h J:\Blender---AMA\source\blender\makesdna /Y
+copy source\blender\makesdna\DNA_group_types.h J:\Blender---AMA\source\blender\makesdna /Y
 copy source\blender\makesrna\intern\rna_modifier.c J:\Blender---AMA\source\blender\makesrna\intern /Y
 copy source\blender\modifiers\intern\MOD_array.c J:\Blender---AMA\source\blender\modifiers\intern /Y
 copy source\blender\render\intern\source\convertblender.c J:\Blender---AMA\source\blender\render\intern\source /Y
+copy patch-ama J:\Blender---AMA\patch-ama /Y
