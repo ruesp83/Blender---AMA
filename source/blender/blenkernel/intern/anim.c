@@ -657,7 +657,7 @@ int where_on_path(Object *ob, float ctime, float *vec, float *dir, float *quat, 
 	vec[1]= data[0]*p0->vec[1] + data[1]*p1->vec[1] + data[2]*p2->vec[1] + data[3]*p3->vec[1] ; /* Y */
 	vec[2]= data[0]*p0->vec[2] + data[1]*p1->vec[2] + data[2]*p2->vec[2] + data[3]*p3->vec[2] ; /* Z */
 	vec[3]= data[0]*p0->vec[3] + data[1]*p1->vec[3] + data[2]*p2->vec[3] + data[3]*p3->vec[3] ; /* Tilt, should not be needed since we have quat still used */
-	
+
 	if (quat) {
 		float totfac, q1[4], q2[4];
 
@@ -768,7 +768,7 @@ static void group_arrayduplilist(ListBase *lb, Scene *scene, Object *ob, int lev
 	float d_alp, alpha=0;
 	
 	if(ob->dup_group==NULL) return;
-		group= ob->dup_group;
+	group= ob->dup_group;
 	
 	/* simple preventing of too deep nested groups */
 	if(level>MAX_DUPLI_RECUR) return;
@@ -838,7 +838,7 @@ static void group_arrayduplilist(ListBase *lb, Scene *scene, Object *ob, int lev
 							else {
 								mult_m4_m4m4(mat, tmat, offset);
 							}
-							//Noise
+							/* Noise */
 							if (amd->mode & MOD_ARR_MOD_ADV) {
 								if (amd->Mem_Ob[i].transform == 1) {
 									float app[4][4];
@@ -873,13 +873,13 @@ static void group_arrayduplilist(ListBase *lb, Scene *scene, Object *ob, int lev
 							}
 						}
 					}
-					//Increment for rays
+					/* Increment for rays */
 					if (amd->rays>1) {
 						d_alp = d_alp + alpha;
 						if (d_alp>6.2831)
 							d_alp=0;
 					}
-					//Offset for clone group
+					/* Offset for clone group */
 					if (d_alp == 0)
 						mult_m4_m4m4(offset, amd->delta, offset);
 				}
