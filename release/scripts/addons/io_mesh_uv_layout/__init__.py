@@ -23,7 +23,6 @@ bl_info = {
     "author": "Campbell Barton, Matt Ebb",
     "version": (1, 0),
     "blender": (2, 5, 8),
-    "api": 35622,
     "location": "Image-Window > UVs > Export UV Layout",
     "description": "Export the UV layout as a 2D graphic",
     "warning": "",
@@ -74,6 +73,11 @@ class ExportUVLayout(bpy.types.Operator):
     export_all = BoolProperty(
             name="All UVs",
             description="Export all UVs in this mesh (not just visible ones)",
+            default=False,
+            )
+    modified = BoolProperty(
+            name="Modified",
+            description="Exports UVs from the modified mesh",
             default=False,
             )
     mode = EnumProperty(
@@ -127,9 +131,7 @@ class ExportUVLayout(bpy.types.Operator):
 
         return image_width, image_height
 
-    def _face_uv_iter(self, context):
-        obj = context.active_object
-        mesh = obj.data
+    def _face_uv_iter(self, context, mesh):
         uv_layer = mesh.uv_textures.active.data
         uv_layer_len = len(uv_layer)
 
@@ -167,8 +169,6 @@ class ExportUVLayout(bpy.types.Operator):
         if is_editmode:
             bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
 
-        mesh = obj.data
-
         mode = self.mode
 
         filepath = self.filepath
@@ -186,8 +186,16 @@ class ExportUVLayout(bpy.types.Operator):
             from . import export_uv_svg
             func = export_uv_svg.write
 
+        if self.modified:
+            mesh = obj.to_mesh(context.scene, True, 'PREVIEW')
+        else:
+            mesh = obj.data
+
         func(fw, mesh, self.size[0], self.size[1], self.opacity,
-             lambda: self._face_uv_iter(context))
+             lambda: self._face_uv_iter(context, mesh))
+
+        if self.modified:
+            bpy.data.meshes.remove(mesh)
 
         if is_editmode:
             bpy.ops.object.mode_set(mode='EDIT', toggle=False)

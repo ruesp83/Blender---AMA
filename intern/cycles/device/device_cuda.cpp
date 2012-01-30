@@ -106,11 +106,6 @@ public:
 		}
 	}
 
-	static int cuda_align_up(int& offset, int alignment)
-	{
-		return (offset + alignment - 1) & ~(alignment - 1);
-	}
-
 #ifdef NDEBUG
 #define cuda_abort()
 #else
@@ -192,26 +187,6 @@ public:
 	{
 		cuda_push_context();
 		cuda_assert(cuCtxDetach(cuContext))
-	}
-
-	bool support_full_kernel()
-	{
-		int major, minor;
-		cuDeviceComputeCapability(&major, &minor, cuDevId);
-
-		return (major >= 2);
-	}
-
-	string description()
-	{
-		/* print device information */
-		char deviceName[256];
-
-		cuda_push_context();
-		cuDeviceGetName(deviceName, 256, cuDevId);
-		cuda_pop_context();
-
-		return string("CUDA ") + deviceName;
 	}
 
 	bool support_device(bool experimental)
@@ -341,9 +316,11 @@ public:
 		cuda_pop_context();
 	}
 
-	void mem_copy_from(device_memory& mem, size_t offset, size_t size)
+	void mem_copy_from(device_memory& mem, int y, int w, int h, int elem)
 	{
-		/* todo: offset is ignored */
+		size_t offset = elem*y*w;
+		size_t size = elem*w*h;
+
 		cuda_push_context();
 		cuda_assert(cuMemcpyDtoH((uchar*)mem.data_pointer + offset,
 			(CUdeviceptr)((uchar*)mem.device_pointer + offset), size))
@@ -503,7 +480,7 @@ public:
 		offset += sizeof(d_rng_state);
 
 		int sample = task.sample;
-		offset = cuda_align_up(offset, __alignof(sample));
+		offset = align_up(offset, __alignof(sample));
 
 		cuda_assert(cuParamSeti(cuPathTrace, offset, task.sample))
 		offset += sizeof(task.sample);
@@ -567,7 +544,7 @@ public:
 		offset += sizeof(d_buffer);
 
 		int sample = task.sample;
-		offset = cuda_align_up(offset, __alignof(sample));
+		offset = align_up(offset, __alignof(sample));
 
 		cuda_assert(cuParamSeti(cuFilmConvert, offset, task.sample))
 		offset += sizeof(task.sample);
@@ -636,7 +613,7 @@ public:
 		offset += sizeof(d_offset);
 
 		int shader_eval_type = task.shader_eval_type;
-		offset = cuda_align_up(offset, __alignof(shader_eval_type));
+		offset = align_up(offset, __alignof(shader_eval_type));
 
 		cuda_assert(cuParamSeti(cuDisplace, offset, task.shader_eval_type))
 		offset += sizeof(task.shader_eval_type);
@@ -863,6 +840,8 @@ void device_cuda_info(vector<DeviceInfo>& devices)
 	if(cuDeviceGetCount(&count) != CUDA_SUCCESS)
 		return;
 	
+	vector<DeviceInfo> display_devices;
+	
 	for(int num = 0; num < count; num++) {
 		char name[256];
 		int attr;
@@ -877,12 +856,21 @@ void device_cuda_info(vector<DeviceInfo>& devices)
 		info.id = string_printf("CUDA_%d", num);
 		info.num = num;
 
-		/* if device has a kernel timeout, assume it is used for display */
-		if(cuDeviceGetAttribute(&attr, CU_DEVICE_ATTRIBUTE_KERNEL_EXEC_TIMEOUT, num) == CUDA_SUCCESS && attr == 1)
-			info.display_device = true;
+		int major, minor;
+		cuDeviceComputeCapability(&major, &minor, num);
+		info.advanced_shading = (major >= 2);
 
-		devices.push_back(info);
+		/* if device has a kernel timeout, assume it is used for display */
+		if(cuDeviceGetAttribute(&attr, CU_DEVICE_ATTRIBUTE_KERNEL_EXEC_TIMEOUT, num) == CUDA_SUCCESS && attr == 1) {
+			info.display_device = true;
+			display_devices.push_back(info);
+		}
+		else
+			devices.push_back(info);
 	}
+
+	if(!display_devices.empty())
+		devices.insert(devices.end(), display_devices.begin(), display_devices.end());
 }
 
 CCL_NAMESPACE_END

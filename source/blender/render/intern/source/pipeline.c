@@ -1894,6 +1894,7 @@ static void validate_render_settings(Render *re)
 	if(RE_engine_is_external(re)) {
 		/* not supported yet */
 		re->r.scemode &= ~(R_EXR_TILE_FILE|R_FULL_SAMPLE);
+		re->r.mode &= ~R_FIELDS;
 	}
 }
 
@@ -2047,7 +2048,8 @@ static int do_write_image_or_movie(Render *re, Main *bmain, Scene *scene, bMovie
 			dofree = 1;
 		}
 
-		ok= mh->append_movie(&re->r, scene->r.cfra, (int *)rect32, rres.rectx, rres.recty, re->reports);
+		ok= mh->append_movie(&re->r, scene->r.sfra, scene->r.cfra, (int *)rect32,
+		                     rres.rectx, rres.recty, re->reports);
 		if(dofree) {
 			MEM_freeN(rect32);
 		}

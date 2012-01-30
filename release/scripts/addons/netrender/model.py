@@ -185,6 +185,7 @@ class RenderFile:
         self.start = start
         self.end = end
         self.force = False
+        
 
     def serialize(self):
         return 	{
@@ -195,6 +196,7 @@ class RenderFile:
                     "end": self.end,
                     "signature": self.signature,
                     "force": self.force
+                    
                 }
 
     @staticmethod
@@ -278,7 +280,7 @@ class RenderJob:
     def __len__(self):
         return len(self.frames)
 
-    def countFrames(self, status=QUEUED):
+    def countFrames(self, status=FRAME_QUEUED):
         total = 0
         for f in self.frames:
             if f.status == status:
@@ -287,17 +289,17 @@ class RenderJob:
         return total
 
     def countSlaves(self):
-        return len(set((frame.slave for frame in self.frames if frame.status == DISPATCHED)))
+        return len(set((frame.slave for frame in self.frames if frame.status == FRAME_DISPATCHED)))
 
     def statusText(self):
         return JOB_STATUS_TEXT[self.status]
 
     def framesStatus(self):
         results = {
-                                QUEUED: 0,
-                                DISPATCHED: 0,
-                                DONE: 0,
-                                ERROR: 0
+                                FRAME_QUEUED: 0,
+                                FRAME_DISPATCHED: 0,
+                                FRAME_DONE: 0,
+                                FRAME_ERROR: 0
                             }
 
         for frame in self.frames:
@@ -319,10 +321,10 @@ class RenderJob:
         else:
             return None
 
-    def serialize(self, frames = None):
+    def serialize(self, frames = None,withFiles=True,withFrames=True):
         min_frame = min((f.number for f in frames)) if frames else -1
         max_frame = max((f.number for f in frames)) if frames else -1
-        return 	{
+        data={
                             "id": self.id,
                             "type": self.type,
                             "subtype": self.subtype,
@@ -330,8 +332,6 @@ class RenderJob:
                             "category": self.category,
                             "tags": tuple(self.tags),
                             "status": self.status,
-                            "files": [f.serialize() for f in self.files if f.start == -1 or not frames or (f.start <= max_frame and f.end >= min_frame)],
-                            "frames": [f.serialize() for f in self.frames if not frames or f in frames],
                             "chunks": self.chunks,
                             "priority": self.priority,
                             "usage": self.usage,
@@ -341,7 +341,13 @@ class RenderJob:
                             "resolution": self.resolution,
                             "render": self.render
                         }
-
+        if (withFiles):
+           data["files"]=[f.serialize() for f in self.files if f.start == -1 or not frames or (f.start <= max_frame and f.end >= min_frame)]
+          
+        if (withFrames):
+           data["frames"]=[f.serialize() for f in self.frames if not frames or f in frames]
+           
+        return data
     @staticmethod
     def materialize(data):
         if not data:
@@ -375,9 +381,10 @@ class RenderFrame:
     def __init__(self, number = 0, command = ""):
         self.number = number
         self.time = 0
-        self.status = QUEUED
+        self.status = FRAME_QUEUED
         self.slave = None
         self.command = command
+        self.results = []   # List of filename of result files associated with this frame
 
     def statusText(self):
         return FRAME_STATUS_TEXT[self.status]
@@ -388,7 +395,8 @@ class RenderFrame:
                             "time": self.time,
                             "status": self.status,
                             "slave": None if not self.slave else self.slave.serialize(),
-                            "command": self.command
+                            "command": self.command,
+                            "results": self.results
                         }
 
     @staticmethod
@@ -402,5 +410,6 @@ class RenderFrame:
         frame.status = data["status"]
         frame.slave = RenderSlave.materialize(data["slave"])
         frame.command = data["command"]
+        frame.results = data["results"]
 
         return frame

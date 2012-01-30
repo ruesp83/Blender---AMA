@@ -112,10 +112,10 @@ def fillCommonJobSettings(job, job_name, netsettings):
     elif netsettings.job_type == "JOB_VCS":
         job.type = netrender.model.JOB_VCS
 
-def sendJob(conn, scene, anim = False):
+def sendJob(conn, scene, anim = False, can_save = True):
     netsettings = scene.network_render
     if netsettings.job_type == "JOB_BLENDER":
-        return sendJobBlender(conn, scene, anim)
+        return sendJobBlender(conn, scene, anim, can_save)
     elif netsettings.job_type == "JOB_VCS":
         return sendJobVCS(conn, scene, anim)
 
@@ -171,7 +171,7 @@ def sendJobVCS(conn, scene, anim = False):
 
     return job_id
 
-def sendJobBaking(conn, scene):
+def sendJobBaking(conn, scene, can_save = True):
     netsettings = scene.network_render
     job = netrender.model.RenderJob()
 
@@ -179,6 +179,9 @@ def sendJobBaking(conn, scene):
     
     if not os.path.exists(filename):
         raise RuntimeError("Current file path not defined\nSave your file before sending a job")
+
+    if can_save and netsettings.save_before_job:
+        bpy.ops.wm.save_mainfile(filepath=filename, check_existing=False)
     
     job.addFile(filename)
 
@@ -224,7 +227,7 @@ def sendJobBaking(conn, scene):
 
     for i, task in enumerate(tasks):
         job.addFrame(i + 1)
-        job.frames[-1].command = "|".join(task)
+        job.frames[-1].command = netrender.baking.taskToCommand(task)
         
     # try to send path first
     with ConnectionContext():
@@ -248,7 +251,7 @@ def sendJobBaking(conn, scene):
 
     return job_id
     
-def sendJobBlender(conn, scene, anim = False):
+def sendJobBlender(conn, scene, anim = False, can_save = True):
     netsettings = scene.network_render
     job = netrender.model.RenderJob()
 
@@ -259,10 +262,13 @@ def sendJobBlender(conn, scene, anim = False):
         job.addFrame(scene.frame_current)
 
     filename = bpy.data.filepath
-    
+
     if not os.path.exists(filename):
         raise RuntimeError("Current file path not defined\nSave your file before sending a job")
     
+    if can_save and netsettings.save_before_job:
+        bpy.ops.wm.save_mainfile(filepath=filename, check_existing=False)
+
     job.addFile(filename)
 
     job_name = netsettings.job_name
@@ -368,7 +374,10 @@ class NetworkRenderEngine(bpy.types.RenderEngine):
                          force = netsettings.use_master_force_upload,
                          path = bpy.path.abspath(netsettings.path),
                          update_stats = self.update_stats,
-                         test_break = self.test_break)
+                         test_break = self.test_break,
+                         use_ssl=netsettings.use_ssl,
+                         cert_path=netsettings.cert_path,
+                         key_path=netsettings.key_path)
 
 
     def render_slave(self, scene):
@@ -379,7 +388,7 @@ class NetworkRenderEngine(bpy.types.RenderEngine):
         self.update_stats("", "Network render client initiation")
 
 
-        conn = clientConnection(netsettings.server_address, netsettings.server_port)
+        conn = clientConnection(netsettings)
 
         if conn:
             # Sending file
@@ -401,7 +410,7 @@ class NetworkRenderEngine(bpy.types.RenderEngine):
 
             if response.status == http.client.NO_CONTENT:
                 new_job = True
-                netsettings.job_id = sendJob(conn, scene)
+                netsettings.job_id = sendJob(conn, scene, can_save = False)
                 job_id = netsettings.job_id
 
                 requestResult(conn, job_id, scene.frame_current)

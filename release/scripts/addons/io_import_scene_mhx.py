@@ -9,8 +9,8 @@
 #  but WITHOUT ANY WARRANTY; without even the implied warranty of
 #  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 #  GNU General Public License for more details.
-#
 #  You should have received a copy of the GNU General Public License
+#
 #  along with this program; if not, write to the Free Software Foundation,
 #  Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 #
@@ -26,7 +26,7 @@
 """
 Abstract
 MHX (MakeHuman eXchange format) importer for Blender 2.5x.
-Version 1.9.0
+Version 1.10.2
 
 This script should be distributed with Blender.
 If not, place it in the .blender/scripts/addons dir
@@ -39,9 +39,8 @@ Alternatively, run the script in the script editor (Alt-P), and access from the 
 bl_info = {
     'name': 'Import: MakeHuman (.mhx)',
     'author': 'Thomas Larsson',
-    'version': (1, 9, 1),
+    'version': (1, 10, 2),
     "blender": (2, 5, 9),
-    "api": 40335,
     'location': "File > Import > MakeHuman (.mhx)",
     'description': 'Import files in the MakeHuman eXchange format (.mhx)',
     'warning': '',
@@ -51,8 +50,8 @@ bl_info = {
     'category': 'Import-Export'}
 
 MAJOR_VERSION = 1
-MINOR_VERSION = 9
-SUB_VERSION = 0
+MINOR_VERSION = 10
+SUB_VERSION = 2
 BLENDER_VERSION = (2, 59, 2)
 
 #
@@ -113,68 +112,17 @@ T_Rigify = 0x1000
 T_Opcns = 0x2000
 T_Symm = 0x4000
 
-toggle = (T_EnforceVersion + T_Replace + T_Mesh + T_Armature + 
+toggle = (T_EnforceVersion + T_Mesh + T_Armature + 
         T_Face + T_Shape + T_Proxy + T_Clothes + T_Rigify)
-
-#
-#    setFlagsAndFloats(rigFlags):
-#
-#    Global floats
-#fFingerPanel = 0.0
-#fFingerIK = 0.0
-fNoStretch = 0.0
-
-#    rigLeg and rigArm flags
-T_Toes = 0x0001
-#T_GoboFoot = 0x0002
-
-#T_InvFoot = 0x0010
-#T_InvFootPT = 0x0020
-#T_InvFootNoPT = 0x0040
-
-#T_FingerPanel = 0x100
-#T_FingerRot = 0x0200
-#T_FingerIK = 0x0400
-
-
-#T_LocalFKIK = 0x8000
-
-#rigLeg = 0
-#rigArm = 0
-
-def setFlagsAndFloats():
-    '''
-    global toggle, rigLeg, rigArm
-
-    (footRig, fingerRig) = rigFlags
-    rigLeg = 0
-    if footRig == 'Reverse foot': 
-        rigLeg |= T_InvFoot
-        if toggle & T_PoleTar:
-            rigLeg |= T_InvFootPT
-        else:
-            rigLeg |= T_InvFootNoPT
-    elif footRig == 'Gobo': rigLeg |= T_GoboFoot        
-
-    rigArm = 0
-    if fingerRig == 'Panel': rigArm |= T_FingerPanel
-    elif fingerRig == 'Rotation': rigArm |= T_FingerRot
-    elif fingerRig == 'IK': rigArm |= T_FingerIK
-
-    toggle |= T_Panel
-    '''
-    global fNoStretch
-    if toggle&T_Stretch: fNoStretch == 0.0
-    else: fNoStretch = 1.0
-
-    return
-
 
 #
 #    Dictionaries
 #
 
-loadedData = {
+def initLoadedData():
+    global loadedData
+
+    loadedData = {
     'NONE' : {},
 
     'Object' : {},
@@ -207,7 +155,16 @@ loadedData = {
     'ObjectConstraints' : {},
     'ObjectModifiers' : {},
     'MaterialSlot' : {},
-}
+    }
+    return
+    
+def reinitGlobalData():
+    global loadedData
+    for key in [
+        'MeshTextureFaceLayer', 'MeshColorLayer', 'VertexGroup', 'ShapeKey',
+        'ParticleSystem', 'ObjectConstraints', 'ObjectModifiers', 'MaterialSlot']:
+        loadedData[key] = {}
+    return
 
 Plural = {
     'Object' : 'objects',
@@ -262,6 +219,7 @@ def readMhxFile(filePath):
     defaultScale = theScale
     One = 1.0/theScale
     warnedVersion = False
+    initLoadedData()
 
     fileName = os.path.expanduser(filePath)
     (shortName, ext) = os.path.splitext(fileName)
@@ -279,8 +237,6 @@ def readMhxFile(filePath):
     nErrors = 0
     comment = 0
     nesting = 0
-
-    setFlagsAndFloats()
 
     file= open(fileName, "rU")
     print( "Tokenizing" )
@@ -447,6 +403,7 @@ def parse(tokens):
         elif key == "Object":
             parseObject(val, sub)
         elif key == "Mesh":
+            reinitGlobalData()
             data = parseMesh(val, sub)
         elif key == "Armature":
             data = parseArmature(val, sub)
@@ -1456,8 +1413,11 @@ def parseVertexGroup(ob, me, args, tokens):
         return
 
     if (toggle & T_Armature) or (grpName in ['Eye_L', 'Eye_R', 'Gums', 'Head', 'Jaw', 'Left', 'Middle', 'Right', 'Scalp']):
-        group = ob.vertex_groups.new(grpName)
-        loadedData['VertexGroup'][grpName] = group
+        try:
+            group = loadedData['VertexGroup'][grpName]
+        except KeyError:
+            group = ob.vertex_groups.new(grpName)
+            loadedData['VertexGroup'][grpName] = group
         for (key, val, sub) in tokens:
             if key == 'wv':
                 group.add( [int(val[0])], float(val[1]), 'REPLACE' )
@@ -1497,7 +1457,7 @@ def parseShapeKey(ob, me, args, tokens):
     if invalid(args[2]):
         return
 
-    if lr == 'Sym' or toggle & T_Symm:
+    if lr == 'Sym': # or toggle & T_Symm:
         addShapeKey(ob, name, None, tokens)
     elif lr == 'LR':
         addShapeKey(ob, name+'_L', 'Left', tokens)
@@ -2065,10 +2025,18 @@ def deleteDiamonds(ob):
     bpy.ops.mesh.select_all(action='DESELECT')
     bpy.ops.object.mode_set(mode='OBJECT')
     me = ob.data
-    for f in me.faces:    
-        if f.material_index == 1:
-            for vn in f.vertices:
-                me.vertices[vn].select = True
+    invisioNum = -1
+    for mn,mat in enumerate(me.materials):
+        if "Invis" in mat.name:
+            invisioNum = mn
+            break
+    if invisioNum < 0:
+        print("WARNING: Nu Invisio material found. Cannot delete helper geometry")
+    else:        
+        for f in me.faces:    
+            if f.material_index >= invisioNum:
+                for vn in f.vertices:
+                    me.vertices[vn].select = True
     bpy.ops.object.mode_set(mode='EDIT')
     bpy.ops.mesh.delete(type='VERT')
     bpy.ops.object.mode_set(mode='OBJECT')
@@ -2332,6 +2300,7 @@ def clearScene():
     scn = bpy.context.scene
     for n in range(len(scn.layers)):
         scn.layers[n] = True
+    return scn
     print("clearScene %s %s" % (toggle & T_Replace, scn))
     if not toggle & T_Replace:
         return scn
@@ -2846,13 +2815,13 @@ MhxBoolProps = [
     ("mesh", "Mesh", "Use main mesh", T_Mesh),
     ("proxy", "Proxies", "Use proxies", T_Proxy),
     ("armature", "Armature", "Use armature", T_Armature),
-    ("replace", "Replace scene", "Replace scene", T_Replace),
+    #("replace", "Replace scene", "Replace scene", T_Replace),
     ("cage", "Cage", "Load mesh deform cage", T_Cage),
     ("clothes", "Clothes", "Include clothes", T_Clothes),
-    ("stretch", "Stretchy limbs", "Stretchy limbs", T_Stretch),
+    #("stretch", "Stretchy limbs", "Stretchy limbs", T_Stretch),
     ("face", "Face shapes", "Include facial shapekeys", T_Face),
     ("shape", "Body shapes", "Include body shapekeys", T_Shape),
-    ("symm", "Symmetric shapes", "Keep shapekeys symmetric", T_Symm),
+    #("symm", "Symmetric shapes", "Keep shapekeys symmetric", T_Symm),
     ("diamond", "Helper geometry", "Keep helper geometry", T_Diamond),
     ("rigify", "Rigify", "Create rigify control rig", T_Rigify),
 ]
@@ -3117,6 +3086,100 @@ VisemeList = [
 ]
 
 #
+#   makeVisemes(ob, scn):
+#   class VIEW3D_OT_MhxMakeVisemesButton(bpy.types.Operator):
+#
+
+def makeVisemes(ob, scn):
+    if ob.type != 'MESH':
+        print("Active object %s is not a mesh" % ob)
+        return
+    if not ob.data.shape_keys:
+        print("%s has no shapekeys" % ob)
+        return
+    adata = ob.data.shape_keys.animation_data
+    if not adata:
+        print("Shapekeys have not drivers")
+        return
+    try:
+        ob.data.shape_keys.key_blocks["VIS_Rest"]
+        print("Visemes already created")
+        return
+    except:
+        pass        
+    rig = ob.parent
+    scale = rig.data.bones['PFace'].length*0.2
+
+    boneShapes = {}
+    for fcu in adata.drivers:
+        name = fcu.data_path.split('"')[1]
+        for var in fcu.driver.variables:
+            if var.type == 'TRANSFORMS':
+                targ = var.targets[0]  
+                fmod = fcu.modifiers[0]
+                try:
+                    list = boneShapes[targ.bone_target]
+                except:
+                    list = []
+                    boneShapes[targ.bone_target] = list
+                list.append((targ.transform_type, fmod, ob.data.shape_keys.key_blocks[name]))
+            
+    verts = ob.data.vertices            
+    for (vis,bones) in bodyLanguageVisemes.items():
+        if vis in ['Blink', 'Unblink']:
+            continue
+        vkey = ob.shape_key_add(name="VIS_%s" % vis)  
+        print(vkey.name)
+        for n,v in enumerate(verts):
+            vkey.data[n].co = v.co
+        for (bone, xz) in bones:
+            try:
+                boneShapes[bone]
+                single = True
+            except:
+                single = False
+            if single:
+                addToVisShapeKey(boneShapes[bone], vkey, verts, xz, 1, scale)
+            else:
+                try:
+                    boneShapes[bone+"_L"]
+                    double = True
+                except:
+                    double = False
+                if double:
+                    addToVisShapeKey(boneShapes[bone+"_L"], vkey, verts, xz, 1, scale)
+                    #addToVisShapeKey(boneShapes[bone+"_R"], vkey, verts, xz, -1, scale)
+    print("Visemes made")                    
+    return
+    
+def addToVisShapeKey(shapes, vkey, verts, xz, sign, scale):
+    for (typ, fmod, skey) in shapes:
+        factor = fmod.coefficients[1]*scale
+        (x,z) = xz
+        if typ == 'LOC_X':
+            k = factor*sign*x
+        elif typ == 'LOC_Z':
+            k = factor*z
+        if k < skey.slider_min:
+            k = skey.slider_min
+        if k > skey.slider_max:
+            k = skey.slider_max
+        if abs(k) < 0.001:
+            continue
+        print("  %s %.3f %.3f %.3f %.3f" % (skey.name, factor, x, z, k))
+        for n,v in enumerate(verts):
+            vkey.data[n].co += k*(skey.data[n].co - v.co)
+    return            
+       
+class VIEW3D_OT_MhxMakeVisemesButton(bpy.types.Operator):
+    bl_idname = "mhx.make_visemes"
+    bl_label = "Generate viseme shapekeys"
+
+    def execute(self, context):
+        makeVisemes(context.object, context.scene)
+        return{'FINISHED'}    
+       
+#
 #    mohoVisemes
 #    magpieVisemes
 #
@@ -3328,6 +3391,8 @@ class MhxLipsyncPanel(bpy.types.Panel):
         row.operator("mhx.pose_load_moho")
         row.operator("mhx.pose_load_magpie")
         layout.operator("mhx.update")
+        layout.separator()
+        layout.operator("mhx.make_visemes")
         return
         
 #
@@ -3551,7 +3616,7 @@ MhxLayers = [
     (( 1,    'FK Spine', 'MhxFKSpine'),
      (17,    'IK Spine', 'MhxIKSpine')),
     ((13,    'Inv FK Spine', 'MhxInvFKSpine'),
-     (29,    'Inv IK Spine', 'MhxInvIKSpine')),
+     (16,    'Clothes', 'MhxClothes')),
     ('Left', 'Right'),
     (( 2,    'IK Arm', 'MhxIKArm'),
      (18,    'IK Arm', 'MhxIKArm')),

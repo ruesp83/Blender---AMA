@@ -3034,10 +3034,10 @@ static int sequencer_change_path_invoke(bContext *C, wmOperator *op, wmEvent *UN
 
 	/* set default display depending on seq type */
 	if(seq->type == SEQ_IMAGE) {
-		RNA_boolean_set(op->ptr, "filter_movie", 0);
+		RNA_boolean_set(op->ptr, "filter_movie", FALSE);
 	}
 	else {
-		RNA_boolean_set(op->ptr, "filter_image", 0);
+		RNA_boolean_set(op->ptr, "filter_image", FALSE);
 	}
 
 	WM_event_add_fileselect(C, op);
@@ -3060,5 +3060,5 @@ void SEQUENCER_OT_change_path(struct wmOperatorType *ot)
 	/* flags */
 	ot->flag= OPTYPE_REGISTER|OPTYPE_UNDO;
 
-	WM_operator_properties_filesel(ot, FOLDERFILE|IMAGEFILE|MOVIEFILE, FILE_SPECIAL, FILE_OPENFILE, WM_FILESEL_DIRECTORY|WM_FILESEL_RELPATH|WM_FILESEL_FILEPATH|WM_FILESEL_FILES);
+	WM_operator_properties_filesel(ot, FOLDERFILE|IMAGEFILE|MOVIEFILE, FILE_SPECIAL, FILE_OPENFILE, WM_FILESEL_DIRECTORY|WM_FILESEL_RELPATH|WM_FILESEL_FILEPATH|WM_FILESEL_FILES, FILE_DEFAULTDISPLAY);
 }

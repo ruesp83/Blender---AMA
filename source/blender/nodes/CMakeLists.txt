@@ -59,6 +59,7 @@ set(SRC
 	composite/nodes/node_composite_composite.c
 	composite/nodes/node_composite_crop.c
 	composite/nodes/node_composite_curves.c
+	composite/nodes/node_composite_doubleEdgeMask.c
 	composite/nodes/node_composite_defocus.c
 	composite/nodes/node_composite_diffMatte.c
 	composite/nodes/node_composite_dilate.c
@@ -114,6 +115,7 @@ set(SRC
 	shader/nodes/node_shader_curves.c
 	shader/nodes/node_shader_dynamic.c
 	shader/nodes/node_shader_gamma.c
+	shader/nodes/node_shader_brightness.c
 	shader/nodes/node_shader_geom.c
 	shader/nodes/node_shader_hueSatVal.c
 	shader/nodes/node_shader_invert.c

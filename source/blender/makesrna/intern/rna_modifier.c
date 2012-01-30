@@ -2223,7 +2223,7 @@ static void rna_def_modifier_explode(BlenderRNA *brna)
 
 	prop= RNA_def_property(srna, "particle_uv", PROP_STRING, PROP_NONE);
 	RNA_def_property_string_sdna(prop, NULL, "uvname");
-	RNA_def_property_string_maxlength(prop, 32);
+	RNA_def_property_string_maxlength(prop, MAX_CUSTOMDATA_LAYER_NAME);
 	RNA_def_property_ui_text(prop, "Particle UV", "UV map to change with particle age");
 	RNA_def_property_update(prop, 0, "rna_Modifier_update");
 }
@@ -3155,7 +3155,7 @@ static void rna_def_modifier_ocean(BlenderRNA *brna)
 	srna= RNA_def_struct(brna, "OceanModifier", "Modifier");
 	RNA_def_struct_ui_text(srna, "Ocean Modifier", "Simulate an ocean surface");
 	RNA_def_struct_sdna(srna, "OceanModifierData");
-	RNA_def_struct_ui_icon(srna, ICON_MOD_FLUIDSIM);
+	RNA_def_struct_ui_icon(srna, ICON_MOD_WAVE);
 	
 	/* General check if blender was built with OceanSim modifier support */
 	prop= RNA_def_property(srna, "is_build_enabled", PROP_BOOLEAN, PROP_NONE);

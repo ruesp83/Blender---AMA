@@ -30,11 +30,6 @@ VERSION = b"0.3"
 
 PATH_PREFIX = "/tmp/"
 
-QUEUED = 0
-DISPATCHED = 1
-DONE = 2
-ERROR = 3
-
 LAST_ADDRESS_TEST = 0
 ADDRESS_TEST_TIMEOUT = 30
 
@@ -75,7 +70,7 @@ def verify_address(netsettings, force=False):
         LAST_ADDRESS_TEST = time.time()
 
         try:
-            conn = clientConnection(netsettings.server_address, netsettings.server_port, scan = False, timeout = 1)
+            conn = clientConnection(netsettings, scan = False, timeout = 1)
         except:
             conn = None
 
@@ -125,25 +120,34 @@ class RENDER_PT_network_settings(NetRenderButtonsPanel, bpy.types.Panel):
             layout.operator("render.netclientstart", icon='PLAY')
 
         layout.prop(netsettings, "path")
+        
+        row = layout.row()
 
-        split = layout.split(percentage=0.7)
-
-        col = split.column()
-        col.label(text="Server Address:")
-        col.prop(netsettings, "server_address", text="")
+        split = layout.split(percentage=0.5)
 
         col = split.column()
-        col.label(text="Port:")
-        col.prop(netsettings, "server_port", text="")
+        col.prop(netsettings, "server_address", text="Address")
+
+        col = split.column()
+        row = col.row()
+        row.prop(netsettings, "server_port", text="Port")
+        row.prop(netsettings, "use_ssl", text="SSL")
 
         if netsettings.mode != "RENDER_MASTER":
             layout.operator("render.netclientscan", icon='FILE_REFRESH', text="")
             
         if not netrender.valid_address:
             layout.label(text="No master at specified address")
+        
+        
+        if netsettings.use_ssl and netsettings.mode == "RENDER_MASTER":
+            layout.prop(netsettings, "cert_path", text="Certificate")
+            layout.prop(netsettings, "key_path", text="Key")
 
         layout.operator("render.netclientweb", icon='QUESTION')
+        
 
+        
 class RENDER_PT_network_slave_settings(NetRenderButtonsPanel, bpy.types.Panel):
     bl_label = "Slave Settings"
     COMPAT_ENGINES = {'NET_RENDER'}
@@ -207,7 +211,7 @@ class RENDER_PT_network_job(NetRenderButtonsPanel, bpy.types.Panel):
         if netsettings.server_address != "[default]":
             layout.operator("render.netclientanim", icon='RENDER_ANIMATION')
             layout.operator("render.netclientsend", icon='FILE_BLEND')
-            #layout.operator("render.netclientsendbake", icon='PHYSICS')
+            layout.operator("render.netclientsendbake", icon='PHYSICS')
             layout.operator("render.netclientsendframe", icon='RENDER_STILL')
             if netsettings.job_id:
                 row = layout.row()
@@ -226,6 +230,11 @@ class RENDER_PT_network_job(NetRenderButtonsPanel, bpy.types.Panel):
         row = layout.row()
         row.prop(netsettings, "priority")
         row.prop(netsettings, "chunks")
+        
+        if netsettings.job_type == "JOB_BLENDER":
+            layout.prop(netsettings, "save_before_job")
+            
+        
 
 class RENDER_PT_network_job_vcs(NetRenderButtonsPanel, bpy.types.Panel):
     bl_label = "VCS Job Settings"
@@ -341,8 +350,8 @@ class RENDER_PT_network_jobs(NeedValidAddress, NetRenderButtonsPanel, bpy.types.
 
             layout.label(text="Name: %s" % job.name)
             layout.label(text="Length: %04i" % len(job))
-            layout.label(text="Done: %04i" % job.results[DONE])
-            layout.label(text="Error: %04i" % job.results[ERROR])
+            layout.label(text="Done: %04i" % job.results[FRAME_DONE])
+            layout.label(text="Error: %04i" % job.results[FRAME_ERROR])
 
 import bl_ui.properties_render as properties_render
 class RENDER_PT_network_output(NeedValidAddress, NetRenderButtonsPanel, bpy.types.Panel):
@@ -403,6 +412,22 @@ class NetRenderSettings(bpy.types.PropertyGroup):
                         name="Broadcast",
                         description="broadcast master server address on local network",
                         default = True)
+        NetRenderSettings.use_ssl = BoolProperty(
+                        name="use ssl",
+                        description="use ssl encryption for communication",
+                        default = False)
+        NetRenderSettings.cert_path = StringProperty(
+                        name="CertPath",
+                        description="Path to ssl certifcate",
+                        maxlen = 128,
+                        default = "",
+                        subtype='FILE_PATH')
+        NetRenderSettings.key_path = StringProperty(
+                        name="key",
+                        description="Path to ssl key file",
+                        maxlen = 128,
+                        default = "",
+                        subtype='FILE_PATH')
         
         NetRenderSettings.use_slave_clear = BoolProperty(
                         name="Clear on exit",
@@ -496,6 +521,11 @@ class NetRenderSettings(bpy.types.PropertyGroup):
                         maxlen = 128,
                         default = "")
         
+        NetRenderSettings.save_before_job = BoolProperty(
+                        name="Save Before Job",
+                        description="Save current file before sending a job",
+                        default = False)
+
         NetRenderSettings.chunks = IntProperty(
                         name="Chunks",
                         description="Number of frame to dispatch to each slave in one chunk",

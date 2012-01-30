@@ -45,16 +45,16 @@ JOB_STATUS_TEXT = {
 
 
 # Frames status
-QUEUED = 0
-DISPATCHED = 1
-DONE = 2
-ERROR = 3
+FRAME_QUEUED = 0
+FRAME_DISPATCHED = 1
+FRAME_DONE = 2
+FRAME_ERROR = 3
 
 FRAME_STATUS_TEXT = {
-        QUEUED: "Queued",
-        DISPATCHED: "Dispatched",
-        DONE: "Done",
-        ERROR: "Error"
+        FRAME_QUEUED: "Queued",
+        FRAME_DISPATCHED: "Dispatched",
+        FRAME_DONE: "Done",
+        FRAME_ERROR: "Error"
         }
 
 try:
@@ -186,8 +186,12 @@ def clientScan(report = None):
 
         return ("", 8000) # return default values
 
-def clientConnection(address, port, report = None, scan = True, timeout = 5):
-    if address == "[default]":
+def clientConnection(netsettings, report = None, scan = True, timeout = 5):
+    address = netsettings.server_address
+    port = netsettings.server_port
+    use_ssl = netsettings.use_ssl
+    
+    if address== "[default]":
 #            calling operator from python is fucked, scene isn't in context
 #            if bpy:
 #                bpy.ops.render.netclientscan()
@@ -198,13 +202,14 @@ def clientConnection(address, port, report = None, scan = True, timeout = 5):
         address, port = clientScan()
         if address == "":
             return None
-
+    conn = None
     try:
+        HTTPConnection = http.client.HTTPSConnection if use_ssl else http.client.HTTPConnection
         if platform.system() == "Darwin":
             with ConnectionContext(timeout):
-                conn = http.client.HTTPConnection(address, port)
+                conn = HTTPConnection(address, port)
         else:
-            conn = http.client.HTTPConnection(address, port, timeout = timeout)
+            conn = HTTPConnection(address, port, timeout = timeout)
 
         if conn:
             if clientVerifyVersion(conn):
@@ -243,6 +248,9 @@ def fileURL(job_id, file_index):
 
 def logURL(job_id, frame_number):
     return "/log_%s_%i.log" % (job_id, frame_number)
+
+def resultURL(job_id):
+    return "/result_%s.zip" % job_id
 
 def renderURL(job_id, frame_number):
     return "/render_%s_%i.exr" % (job_id, frame_number)

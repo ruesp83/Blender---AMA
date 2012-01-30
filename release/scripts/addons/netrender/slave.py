@@ -18,7 +18,7 @@
 
 import sys, os, platform, shutil
 import http, http.client, http.server
-import subprocess, time
+import subprocess, time, threading
 import json
 
 import bpy
@@ -118,8 +118,8 @@ def render_slave(engine, netsettings, threads):
     if not os.access(slave_path, os.W_OK):
         print("Slave working path ( %s ) is not writable" % netsettings.path)
         return
-
-    conn = clientConnection(netsettings.server_address, netsettings.server_port)
+    
+    conn = clientConnection(netsettings)
     
     if not conn:
         print("Connection failed, will try connecting again at most %i times" % MAX_CONNECT_TRY)
@@ -128,7 +128,7 @@ def render_slave(engine, netsettings, threads):
         for i in range(MAX_CONNECT_TRY):
             bisleep.sleep()
             
-            conn = clientConnection(netsettings.server_address, netsettings.server_port)
+            conn = clientConnection(netsettings)
             
             if conn or engine.test_break():
                 break
@@ -225,9 +225,7 @@ def render_slave(engine, netsettings, threads):
                 elif job.subtype == netrender.model.JOB_SUB_BAKING:
                     tasks = []
                     for frame in job.frames:
-                        i = frame.command.index("|")
-                        ri = frame.command.rindex("|")
-                        tasks.append((frame.command[:i], frame.command[i+1:ri], frame.command[ri+1:]))
+                        tasks.append(netrender.baking.commandToTask(frame.command))
                         
                     with NoErrorDialogContext():
                         process = netrender.baking.bake(job, tasks)
@@ -238,41 +236,79 @@ def render_slave(engine, netsettings, threads):
                         process = subprocess.Popen(command.split(" "), stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 
                 headers = {"slave-id":slave_id}
+                
+                results = []
 
-                cancelled = False
-                stdout = bytes()
-                run_t = time.time()
-                while not cancelled and process.poll() is None:
-                    stdout += process.stdout.read(1024)
-                    current_t = time.time()
-                    cancelled = engine.test_break()
-                    if current_t - run_t > CANCEL_POLL_SPEED:
+                line = ""
+                
+                class ProcessData:
+                    def __init__(self):
+                        self.lock = threading.Lock()
+                        self.stdout = bytes()
+                        self.cancelled = False
+                        self.start_time = time.time()
+                        self.last_time = time.time()
+                        
+                data = ProcessData()
+                
+                def run_process(process, data):
+                    while not data.cancelled and process.poll() is None:
+                        buf = process.stdout.read(1024)
+                        
+                        data.lock.acquire()
+                        data.stdout += buf
+                        data.lock.release()
+                        
+                process_thread = threading.Thread(target=run_process, args=(process, data))
+                
+                process_thread.start()
+                
+                while not data.cancelled and process_thread.is_alive():
+                    time.sleep(CANCEL_POLL_SPEED / 2)
+                    current_time = time.time()
+                    data.cancelled = engine.test_break()
+                    if current_time - data.last_time > CANCEL_POLL_SPEED:
+
+                        data.lock.acquire()
 
                         # update logs if needed
-                        if stdout:
+                        if data.stdout:
                             # (only need to update on one frame, they are linked
                             with ConnectionContext():
-                                conn.request("PUT", logURL(job.id, first_frame), stdout, headers=headers)
+                                conn.request("PUT", logURL(job.id, first_frame), data.stdout, headers=headers)
                             responseStatus(conn)
+                            
+                            stdout_text = str(data.stdout, encoding='utf8')
                             
                             # Also output on console
                             if netsettings.use_slave_output_log:
-                                print(str(stdout, encoding='utf8'), end="")
+                                print(stdout_text, end="")
+                                
+                            lines = stdout_text.split("\n")
+                            lines[0] = line + lines[0]
+                            line = lines.pop()
+                            if job.subtype == netrender.model.JOB_SUB_BAKING:
+                                results.extend(netrender.baking.resultsFromOuput(lines))
 
-                            stdout = bytes()
+                            data.stdout = bytes()
+                            
+                        data.lock.release()
 
-                        run_t = current_t
+                        data.last_time = current_time
                         if testCancel(conn, job.id, first_frame):
                             engine.update_stats("", "Job canceled by Master")
-                            cancelled = True
+                            data.cancelled = True
+                
+                process_thread.join()
+                del process_thread
 
                 if job.type == netrender.model.JOB_BLENDER:
                     netrender.repath.reset(job)
 
                 # read leftovers if needed
-                stdout += process.stdout.read()
+                data.stdout += process.stdout.read()
 
-                if cancelled:
+                if data.cancelled:
                     # kill process if needed
                     if process.poll() is None:
                         try:
@@ -282,19 +318,26 @@ def render_slave(engine, netsettings, threads):
                     continue # to next frame
 
                 # flush the rest of the logs
-                if stdout:
-                    # Also output on console
-                    if netsettings.use_slave_thumb:
-                        print(str(stdout, encoding='utf8'), end="")
+                if data.stdout:
+                    stdout_text = str(data.stdout, encoding='utf8')
                     
+                    # Also output on console
+                    if netsettings.use_slave_output_log:
+                        print(stdout_text, end="")
+                    
+                    lines = stdout_text.split("\n")
+                    lines[0] = line + lines[0]
+                    if job.subtype == netrender.model.JOB_SUB_BAKING:
+                        results.extend(netrender.baking.resultsFromOuput(lines))
+
                     # (only need to update on one frame, they are linked
                     with ConnectionContext():
-                        conn.request("PUT", logURL(job.id, first_frame), stdout, headers=headers)
+                        conn.request("PUT", logURL(job.id, first_frame), data.stdout, headers=headers)
                     
                     if responseStatus(conn) == http.client.NO_CONTENT:
                         continue
 
-                total_t = time.time() - start_t
+                total_t = time.time() - data.start_time
 
                 avg_t = total_t / len(job.frames)
 
@@ -306,7 +349,7 @@ def render_slave(engine, netsettings, threads):
 
 
                 if status == 0: # non zero status is error
-                    headers["job-result"] = str(DONE)
+                    headers["job-result"] = str(FRAME_DONE)
                     for frame in job.frames:
                         headers["job-frame"] = str(frame.number)
                         if job.hasRenderResult():
@@ -333,12 +376,21 @@ def render_slave(engine, netsettings, threads):
                                 continue
 
                         elif job.subtype == netrender.model.JOB_SUB_BAKING:
-                            # For now just announce results
-                            # TODO SEND ALL BAKING RESULTS
-                            with ConnectionContext():
-                                conn.request("PUT", "/render", headers=headers)
-                            if responseStatus(conn) == http.client.NO_CONTENT:
-                                continue
+                            index = job.frames.index(frame)
+                            
+                            frame_results = [result_filepath for task_index, result_filepath in results if task_index == index]
+                            
+                            for result_filepath in frame_results:
+                                result_path, result_filename = os.path.split(result_filepath)
+                                headers["result-filename"] = result_filename
+                                headers["job-finished"] = str(result_filepath == frame_results[-1])
+                                    
+                                f = open(result_filepath, 'rb')
+                                with ConnectionContext():
+                                    conn.request("PUT", "/result", f, headers=headers)
+                                f.close()
+                                if responseStatus(conn) == http.client.NO_CONTENT:
+                                    continue
                             
                         elif job.type == netrender.model.JOB_PROCESS:
                             with ConnectionContext():
@@ -346,7 +398,7 @@ def render_slave(engine, netsettings, threads):
                             if responseStatus(conn) == http.client.NO_CONTENT:
                                 continue
                 else:
-                    headers["job-result"] = str(ERROR)
+                    headers["job-result"] = str(FRAME_ERROR)
                     for frame in job.frames:
                         headers["job-frame"] = str(frame.number)
                         # send error result back to server

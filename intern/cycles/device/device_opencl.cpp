@@ -453,20 +453,6 @@ public:
 			clReleaseContext(cxContext);
 	}
 
-	bool support_full_kernel()
-	{
-		return false;
-	}
-
-	string description()
-	{
-		char name[1024];
-
-		clGetDeviceInfo(cdDevice, CL_DEVICE_NAME, sizeof(name), &name, NULL);
-
-		return string("OpenCL ") + name;
-	}
-
 	void mem_alloc(device_memory& mem, MemoryType type)
 	{
 		size_t size = mem.memory_size();
@@ -489,8 +475,11 @@ public:
 		opencl_assert(ciErr);
 	}
 
-	void mem_copy_from(device_memory& mem, size_t offset, size_t size)
+	void mem_copy_from(device_memory& mem, int y, int w, int h, int elem)
 	{
+		size_t offset = elem*y*w;
+		size_t size = elem*w*h;
+
 		ciErr = clEnqueueReadBuffer(cqCommandQueue, CL_MEM_PTR(mem.device_pointer), CL_TRUE, offset, size, (uchar*)mem.data_pointer + offset, 0, NULL, NULL);
 		opencl_assert(ciErr);
 	}
@@ -745,6 +734,9 @@ void device_opencl_info(vector<DeviceInfo>& devices)
 		info.description = string(name);
 		info.id = string_printf("OPENCL_%d", num);
 		info.num = num;
+		/* we don't know if it's used for display, but assume it is */
+		info.display_device = true;
+		info.advanced_shading = false;
 
 		devices.push_back(info);
 	}

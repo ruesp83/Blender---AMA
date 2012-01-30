@@ -51,6 +51,7 @@ public:
 	string id;
 	int num;
 	bool display_device;
+	bool advanced_shading;
 	vector<DeviceInfo> multi_devices;
 
 	DeviceInfo()
@@ -59,6 +60,7 @@ public:
 		id = "CPU";
 		num = 0;
 		display_device = false;
+		advanced_shading = true;
 	}
 };
 
@@ -101,17 +103,15 @@ protected:
 public:
 	virtual ~Device() {}
 
-	virtual bool support_full_kernel() = 0;
-
 	/* info */
-	virtual string description() = 0;
+	DeviceInfo info;
 	virtual const string& error_message() { return error_msg; }
 
 	/* regular memory */
 	virtual void mem_alloc(device_memory& mem, MemoryType type) = 0;
 	virtual void mem_copy_to(device_memory& mem) = 0;
 	virtual void mem_copy_from(device_memory& mem,
-		size_t offset, size_t size) = 0;
+		int y, int w, int h, int elem) = 0;
 	virtual void mem_zero(device_memory& mem) = 0;
 	virtual void mem_free(device_memory& mem) = 0;
 

@@ -117,13 +117,20 @@ class CLIP_PT_tools_marker(Panel):
         if settings.show_default_expanded:
             col = box.column()
             row = col.row(align=True)
-            label = bpy.types.CLIP_MT_tracking_settings_presets.bl_label
+            label = CLIP_MT_tracking_settings_presets.bl_label
             row.menu('CLIP_MT_tracking_settings_presets', text=label)
             row.operator("clip.tracking_settings_preset_add",
                          text="", icon='ZOOMIN')
             props = row.operator("clip.tracking_settings_preset_add",
                                  text="", icon='ZOOMOUT')
             props.remove_active = True
+
+            col.separator()
+
+            row = col.row(align=True)
+            row.prop(settings, "use_default_red_channel", text="R", toggle=True)
+            row.prop(settings, "use_default_green_channel", text="G", toggle=True)
+            row.prop(settings, "use_default_blue_channel", text="B", toggle=True)
 
             col.separator()
 
@@ -147,6 +154,9 @@ class CLIP_PT_tools_marker(Panel):
             col.label(text="Match:")
             col.prop(settings, "default_pattern_match", text="")
 
+            col.separator()
+            col.operator('clip.track_settings_as_default', text="Copy From Active Track")
+
 
 class CLIP_PT_tools_tracking(Panel):
     bl_space_type = 'CLIP_EDITOR'
@@ -162,17 +172,17 @@ class CLIP_PT_tools_tracking(Panel):
 
     def draw(self, context):
         layout = self.layout
-        # clip = context.space_data.clip  # UNUSED
 
         row = layout.row(align=True)
 
         props = row.operator("clip.track_markers", text="", icon='FRAME_PREV')
         props.backwards = True
         props = row.operator("clip.track_markers", text="",
-             icon='PLAY_REVERSE')
+                             icon='PLAY_REVERSE')
         props.backwards = True
         props.sequence = True
         props = row.operator("clip.track_markers", text="", icon='PLAY')
+        props.backwards = False
         props.sequence = True
         row.operator("clip.track_markers", text="", icon='FRAME_NEXT')
 
@@ -182,9 +192,7 @@ class CLIP_PT_tools_tracking(Panel):
 
         props = col.operator("clip.clear_track_path", text="Clear Before")
         props.action = 'UPTO'
-
-        props = col.operator("clip.clear_track_path", text="Clear")
-        props.action = 'ALL'
+        col.operator("clip.clear_track_path", text="Clear").action = 'ALL'
 
         layout.operator("clip.join_tracks", text="Join")
 
@@ -377,7 +385,7 @@ class CLIP_PT_objects(Panel):
 
     def draw(self, context):
         layout = self.layout
-        
+
         sc = context.space_data
         tracking = sc.clip.tracking
 
@@ -522,6 +530,17 @@ class CLIP_PT_display(Panel):
         layout = self.layout
         sc = context.space_data
 
+        row = layout.row(align=True)
+        sub = row.row()
+        sub.prop(sc, "show_red_channel", text="R", toggle=True)
+        sub.prop(sc, "show_green_channel", text="G", toggle=True)
+        sub.prop(sc, "show_blue_channel", text="B", toggle=True)
+
+        row.separator()
+
+        sub = row.row()
+        sub.prop(sc, "use_grayscale_preview", text="B/W", toggle=True)
+
         col = layout.column(align=True)
 
         col.prop(sc, "show_marker_pattern", text="Pattern")
@@ -549,6 +568,9 @@ class CLIP_PT_display(Panel):
             col.prop(sc, "show_stable", text="Stable")
 
         col.prop(sc, "lock_selection")
+
+        if sc.view == 'GRAPH':
+            col.prop(sc, "lock_time_cursor")
 
         clip = sc.clip
         if clip:
@@ -856,6 +878,10 @@ class CLIP_MT_track(Menu):
         layout.operator("clip.clean_tracks")
 
         layout.separator()
+        layout.operator("clip.copy_tracks")
+        layout.operator("clip.paste_tracks")
+
+        layout.separator()
         props = layout.operator("clip.track_markers",
             text="Track Frame Backwards")
         props.backwards = True
@@ -934,7 +960,8 @@ class CLIP_MT_select(Menu):
 
         layout.separator()
 
-        layout.operator("clip.select_all", text="Select/Deselect all")
+        props = layout.operator("clip.select_all", text="Select/Deselect all")
+        props.action = 'TOGGLE'
         layout.operator("clip.select_all", text="Inverse").action = 'INVERT'
 
         layout.menu("CLIP_MT_select_grouped")
@@ -959,7 +986,8 @@ class CLIP_MT_tracking_specials(Menu):
     def draw(self, context):
         layout = self.layout
 
-        props = layout.operator("clip.disable_markers", text="Enable Markers")
+        props = layout.operator("clip.disable_markers",
+                                text="Enable Markers")
         props.action = 'ENABLE'
 
         props = layout.operator("clip.disable_markers", text="Disable markers")
@@ -985,7 +1013,7 @@ class CLIP_MT_camera_presets(Menu):
     bl_label = "Camera Presets"
     preset_subdir = "tracking_camera"
     preset_operator = "script.execute_preset"
-    draw = bpy.types.Menu.draw_preset
+    draw = Menu.draw_preset
 
 
 class CLIP_MT_track_color_presets(Menu):
@@ -993,7 +1021,7 @@ class CLIP_MT_track_color_presets(Menu):
     bl_label = "Color Presets"
     preset_subdir = "tracking_track_color"
     preset_operator = "script.execute_preset"
-    draw = bpy.types.Menu.draw_preset
+    draw = Menu.draw_preset
 
 
 class CLIP_MT_tracking_settings_presets(Menu):
@@ -1001,7 +1029,7 @@ class CLIP_MT_tracking_settings_presets(Menu):
     bl_label = "Tracking Presets"
     preset_subdir = "tracking_settings"
     preset_operator = "script.execute_preset"
-    draw = bpy.types.Menu.draw_preset
+    draw = Menu.draw_preset
 
 
 class CLIP_MT_track_color_specials(Menu):
