@@ -1,0 +1,7 @@
+Bug da risolvere:
+* 1) Se ho allegato un gruppo, ed ho deselezionato Advanced Cloning, i cloni del gruppo si vedono.
+* 2) Se ho un Mid Cap, ed ho deselezionato Advanced Mid Cap, le copie dell'oggetto si vedono.
+* 3) Se attivo il randomize material, genera materiali casuali all'apertura e chiusura della scheda.
+* 4) Se attivo il rays direction e disattivo la scheda advanced cloning, la modalità rays è ancora attiva.
+* 5) Se cerca di attivare la casella rand object senza nessun dupli group, nella scheda advanced cloning, crash blender.
+6) Quando si aggiunge un mid cap e non è attiva la scheda, l'oggetto non viene visualizzato.

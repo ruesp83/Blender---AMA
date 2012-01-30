@@ -2,6 +2,27 @@ WORK IN PROGRESS:
     1. Array distributed on a curve.
 
 
+Advanced Modifier Array v0.5 beta4 new features and fixed bug (from v0.5.3.1) 30\01\2012:
+    1.  FIX: If I link a group and I unchecked the "Advanced Cloning", clones of the group are seen.
+    2.  FIX: If I have a Mid-Cap and I unchecked the "Advanced Mid-Cap", copies of the object 
+             are seen.
+    3.  FIX: If active the "Randomize Material" generates random materials, opening and closing 
+             the tab.
+    4.  FIX: If active the "Rays Direction" and off the tab "Advanced Cloning", the mode is still
+             active rays.
+    5.  FIX: If you turn the box "Rand Object" without any Dupli Group in the tab 
+             "Advanced Cloning", Blender crashes.
+    6:  FIX: Fixed issue UNDO.
+    7.  DEL: The button "Refresh Ad. Offset" has been deleted.
+    8.  UPD: Turn on all the default options "Randomize Transform".
+    9.  UPD: The advanced tab now have the ability to be activated and displayed.
+    10. UPD: New UI for the tab "Randomize Transform".
+    11. ADD: The changes are now in real time.
+    12. ADD: Added "Random Seed" to "Randomize Transform", "Advanced Cloning" and 
+             "Randomize Material".
+    13. ADD: Added for each "Random Seed" a button to create a random seed.
+
+
 Advanced Modifier Array v0.5 beta3.1 new features and fixed bug (from v0.5.3) 04\01\2012:
     1. ADD: Local Rotation: Rotation on its own axis.
 
@@ -89,8 +110,6 @@ TODO:
         - Dupli Group:
         - - Assign the material of the clone to "Dupli Group" inherent.
         - - Material at random also the "Dupli Group".
-        - Enter a button to the randomization of the materials. So it does not change the rand 
-          offset.
         - Associating a curve to the array.
 
     - MEDIA :
@@ -109,7 +128,8 @@ Video 14\12\2011:
 2)http://vimeo.com/16762503
 3)http://vimeo.com/20675851
 4)http://vimeo.com/28236738
-5 NEW)http://vimeo.com/33667212
+5)http://vimeo.com/33667212
+6)http://vimeo.com/34468992
 
 
 Builds 14\12\2011:

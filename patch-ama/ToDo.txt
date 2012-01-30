@@ -1,0 +1,3 @@
+ToDo:
+* 1) Seed per randomizzare il gruppo, i materiali e le trasformazioni.
+2) Memorizzare in una struttura temporanea i valori del seed (transformazione, gruppi e materiale), della locazione, rotazione e scala.

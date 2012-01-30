@@ -4759,7 +4759,7 @@ static int allow_render_dupli_instance(Render *UNUSED(re), DupliObject *dob, Obj
 	for(psys=obd->particlesystem.first; psys; psys=psys->next)
 		if(!ELEM5(psys->part->ren_as, PART_DRAW_BB, PART_DRAW_LINE, PART_DRAW_PATH, PART_DRAW_OB, PART_DRAW_GR))
 			return 0;
-	
+
 	/* don't allow lamp, animated duplis, or radio render */
 	return (render_object_type(obd->type) &&
 			(!(dob->type == OB_DUPLIGROUP) || !dob->animated));
@@ -4832,13 +4832,13 @@ static void add_group_render_dupli_obs(Render *re, Group *group, int nolamps, in
 	 * that were not created yet */
 	for(go= group->gobject.first; go; go= go->next) {
 		ob= go->ob;
-		
+
 		if(ob->flag & OB_DONE) {
 			if(ob->transflag & OB_RENDER_DUPLI) {
 				if(allow_render_object(re, ob, nolamps, onlyselected, actob)) {
 					init_render_object(re, ob, NULL, 0, timeoffset);
 					ob->transflag &= ~OB_RENDER_DUPLI;
-					
+
 					if(ob->dup_group)
 						add_group_render_dupli_obs(re, ob->dup_group, nolamps, onlyselected, actob, timeoffset, level+1);
 				}
@@ -4939,6 +4939,7 @@ static void database_init_objects(Render *re, unsigned int renderlay, int nolamp
 						ObjectRen *obr = NULL;
 						int psysindex;
 						float mat[4][4];
+
 						obi=NULL;
 
 						/* instances instead of the actual object are added in two cases, either

@@ -1597,6 +1597,11 @@ static void rna_def_modifier_array(BlenderRNA *brna)
 	RNA_def_property_ui_text(prop, "Advanced MidCap", "Settings of the mid cap in an array");
 	RNA_def_property_update(prop, 0, "rna_Modifier_update");
 
+	prop= RNA_def_property(srna, "dis_advanced_mid_cap", PROP_BOOLEAN, PROP_NONE);
+	RNA_def_property_boolean_sdna(prop, NULL, "displays", MOD_ARR_DIS_ADV_MID);
+	RNA_def_property_ui_text(prop, "Advanced MidCap", "Settings of the mid cap in an array");
+	RNA_def_property_update(prop, 0, "rna_Modifier_update");
+
 	prop= RNA_def_property(srna, "end_cap", PROP_POINTER, PROP_NONE);
 	RNA_def_property_ui_text(prop, "End Cap", "Mesh object to use as an end cap");
 	RNA_def_property_pointer_funcs(prop, NULL, "rna_ArrayModifier_end_cap_set", NULL, "rna_Mesh_object_poll");
@@ -1629,6 +1634,11 @@ static void rna_def_modifier_array(BlenderRNA *brna)
 	RNA_def_property_ui_text(prop, "Advanced", "Use Advanced Array");
 	RNA_def_property_update(prop, 0, "rna_Modifier_update");
 
+	prop= RNA_def_property(srna, "dis_advanced", PROP_BOOLEAN, PROP_NONE);
+	RNA_def_property_boolean_sdna(prop, NULL, "displays", MOD_ARR_DIS_ADV);
+	RNA_def_property_ui_text(prop, "Advanced", "Use Advanced Array");
+	RNA_def_property_update(prop, 0, "rna_Modifier_update");
+
 	prop= RNA_def_property(srna, "sign_p", PROP_BOOLEAN, PROP_TRANSLATION);
 	RNA_def_property_boolean_sdna(prop, NULL, "sign", MOD_ARR_SIGN_P);
 	RNA_def_property_ui_text(prop, "+", "Random Sign Between + and -");
@@ -1637,6 +1647,30 @@ static void rna_def_modifier_array(BlenderRNA *brna)
 	prop= RNA_def_property(srna, "sign_l", PROP_BOOLEAN, PROP_TRANSLATION);
 	RNA_def_property_boolean_sdna(prop, NULL, "sign", MOD_ARR_SIGN_L);
 	RNA_def_property_ui_text(prop, "-", "Random Sign Between + and -");
+	RNA_def_property_update(prop, 0, "rna_Modifier_update");
+
+	prop= RNA_def_property(srna, "seed_t", PROP_INT, PROP_UNSIGNED);
+	RNA_def_property_ui_range(prop, 1, 10000, 1, 0);
+	RNA_def_property_range(prop, 1, 10000);
+	RNA_def_property_int_sdna(prop, NULL, "seed[0]");
+	RNA_def_property_clear_flag(prop, PROP_ANIMATABLE);
+	RNA_def_property_ui_text(prop, "Random Seed", "");
+	RNA_def_property_update(prop, 0, "rna_Modifier_update");
+
+	prop= RNA_def_property(srna, "seed_g", PROP_INT, PROP_UNSIGNED);
+	RNA_def_property_ui_range(prop, 1, 10000, 1, 0);
+	RNA_def_property_range(prop, 1, 10000);
+	RNA_def_property_int_sdna(prop, NULL, "seed[1]");
+	RNA_def_property_clear_flag(prop, PROP_ANIMATABLE);
+	RNA_def_property_ui_text(prop, "Random Seed", "");
+	RNA_def_property_update(prop, 0, "rna_Modifier_update");
+
+	prop= RNA_def_property(srna, "seed_m", PROP_INT, PROP_UNSIGNED);
+	RNA_def_property_ui_range(prop, 1, 10000, 1, 0);
+	RNA_def_property_range(prop, 1, 10000);
+	RNA_def_property_int_sdna(prop, NULL, "seed[2]");
+	RNA_def_property_clear_flag(prop, PROP_ANIMATABLE);
+	RNA_def_property_ui_text(prop, "Random Seed", "");
 	RNA_def_property_update(prop, 0, "rna_Modifier_update");
 
    	prop= RNA_def_property(srna, "location_offset", PROP_FLOAT, PROP_TRANSLATION);
@@ -1658,6 +1692,21 @@ static void rna_def_modifier_array(BlenderRNA *brna)
 	RNA_def_property_ui_text(prop, "Scale Offset Displacement", "Add a scale offset to vertices or object");
 	RNA_def_property_update(prop, NC_OBJECT|ND_TRANSFORM, "rna_Modifier_update");
 
+	prop= RNA_def_property(srna, "lock_loc", PROP_BOOLEAN, PROP_NONE);
+	RNA_def_property_boolean_sdna(prop, NULL, "lock", MOD_ARR_LOCK_LOC);
+	RNA_def_property_ui_text(prop, "Lock location", "Lock location");
+	RNA_def_property_update(prop, 0, "rna_Modifier_update");
+
+	prop= RNA_def_property(srna, "lock_scale", PROP_BOOLEAN, PROP_NONE);
+	RNA_def_property_boolean_sdna(prop, NULL, "lock", MOD_ARR_LOCK_SCALE);
+	RNA_def_property_ui_text(prop, "Lock scale", "Lock scale");
+	RNA_def_property_update(prop, 0, "rna_Modifier_update");
+
+	prop= RNA_def_property(srna, "lock_rot", PROP_BOOLEAN, PROP_NONE);
+	RNA_def_property_boolean_sdna(prop, NULL, "lock", MOD_ARR_LOCK_ROT);
+	RNA_def_property_ui_text(prop, "Lock rotation", "Lock rotation");
+	RNA_def_property_update(prop, 0, "rna_Modifier_update");
+
 	prop= RNA_def_property(srna, "scale", PROP_FLOAT, PROP_XYZ);
 	RNA_def_property_float_sdna(prop, NULL, "scale_offset[0]");
 	RNA_def_property_range(prop, 0, 10);
@@ -1665,12 +1714,12 @@ static void rna_def_modifier_array(BlenderRNA *brna)
 	RNA_def_property_ui_text(prop, "Scale Offset Displacement", "Add a scale offset to vertices or object");
 	RNA_def_property_update(prop, NC_OBJECT|ND_TRANSFORM, "rna_Modifier_update");
 
-	prop= RNA_def_property(srna, "proportion", PROP_BOOLEAN, PROP_TRANSLATION);
+	prop= RNA_def_property(srna, "proportion", PROP_BOOLEAN, PROP_NONE);
 	RNA_def_property_boolean_sdna(prop, NULL, "flag_offset", MOD_ARR_PROP);
 	RNA_def_property_ui_text(prop, "Constrain Proportions", "Constrain Proportions");
 	RNA_def_property_update(prop, 0, "rna_Modifier_update");
 
-	prop= RNA_def_property(srna, "local_rot", PROP_BOOLEAN, PROP_TRANSLATION);
+	prop= RNA_def_property(srna, "local_rot", PROP_BOOLEAN, PROP_NONE);
 	RNA_def_property_boolean_sdna(prop, NULL, "flag_offset", MOD_ARR_LOCAL);
 	RNA_def_property_ui_text(prop, "Local Rotation Offset Displacement", "Add a local rotation offset to vertices or object");
 	RNA_def_property_update(prop, 0, "rna_Modifier_update");
@@ -1689,6 +1738,11 @@ static void rna_def_modifier_array(BlenderRNA *brna)
 
 	prop= RNA_def_property(srna, "use_advanced_clone", PROP_BOOLEAN, PROP_NONE);
 	RNA_def_property_boolean_sdna(prop, NULL, "mode", MOD_ARR_MOD_ADV_CLONE);
+	RNA_def_property_ui_text(prop, "Advanced Clone", "Set other types of Cloning");
+	RNA_def_property_update(prop, 0, "rna_Modifier_update");
+
+	prop= RNA_def_property(srna, "dis_advanced_clone", PROP_BOOLEAN, PROP_NONE);
+	RNA_def_property_boolean_sdna(prop, NULL, "displays", MOD_ARR_DIS_ADV_CLONE);
 	RNA_def_property_ui_text(prop, "Advanced Clone", "Set other types of Cloning");
 	RNA_def_property_update(prop, 0, "rna_Modifier_update");
 
@@ -1732,6 +1786,11 @@ static void rna_def_modifier_array(BlenderRNA *brna)
 
 	prop= RNA_def_property(srna, "use_advanced_material", PROP_BOOLEAN, PROP_NONE);
 	RNA_def_property_boolean_sdna(prop, NULL, "mode", MOD_ARR_MOD_ADV_MAT);
+	RNA_def_property_ui_text(prop, "Advanced Material", "Settings of the material in an array");
+	RNA_def_property_update(prop, 0, "rna_Modifier_update");
+
+	prop= RNA_def_property(srna, "dis_advanced_material", PROP_BOOLEAN, PROP_NONE);
+	RNA_def_property_boolean_sdna(prop, NULL, "displays", MOD_ARR_DIS_ADV_MAT);
 	RNA_def_property_ui_text(prop, "Advanced Material", "Settings of the material in an array");
 	RNA_def_property_update(prop, 0, "rna_Modifier_update");
 }

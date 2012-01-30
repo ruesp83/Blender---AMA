@@ -31,6 +31,7 @@
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 
 #include "MEM_guardedalloc.h"
 
@@ -48,6 +49,7 @@
 #include "BLI_path_util.h"
 #include "BLI_editVert.h"
 #include "BLI_utildefines.h"
+#include "BLI_rand.h"
 
 #include "BKE_animsys.h"
 #include "BKE_curve.h"
@@ -1673,22 +1675,27 @@ void OBJECT_OT_ocean_bake(wmOperatorType *ot)
 	RNA_def_boolean(ot->srna, "free", FALSE, "Free", "Free the bake, rather than generating it");
 }
 
+
 /****************** array rand operator *********************/
 
-static int array_poll(bContext *C)
-{
+static int array_poll(bContext *C) {
 	return edit_modifier_poll_generic(C, &RNA_ArrayModifier, 0);
 }
 
-static int array_rand_exec(bContext *C, wmOperator *op)
-{
+static int array_rand_exec(bContext *C, wmOperator *op) {
 	Object *ob = ED_object_active_context(C);
 	ArrayModifierData *amd = (ArrayModifierData *)edit_modifier_property_get(op, ob, eModifierType_Array);
 	
 	if (!amd)
 		return OPERATOR_CANCELLED;
-
-	amd->lock = 0;
+	
+	BLI_srandom(time(NULL)+1);
+	if (strcmp(op->idname, "OBJECT_OT_array_rand_seed_t") == 0)
+		amd->seed[0] = rand() % 10001;
+	if (strcmp(op->idname, "OBJECT_OT_array_rand_seed_g") == 0)
+		amd->seed[1] = rand() % 10001;
+	if (strcmp(op->idname, "OBJECT_OT_array_rand_seed_m") == 0)
+		amd->seed[2] = rand() % 10001;
 
 	DAG_id_tag_update(&ob->id, OB_RECALC_DATA);
 	WM_event_add_notifier(C, NC_OBJECT|ND_MODIFIER, ob);
@@ -1696,8 +1703,7 @@ static int array_rand_exec(bContext *C, wmOperator *op)
 	return OPERATOR_FINISHED;
 }
 
-static int array_rand_invoke(bContext *C, wmOperator *op, wmEvent *UNUSED(event))
-{
+static int array_rand_invoke(bContext *C, wmOperator *op, wmEvent *UNUSED(event)) {
 	if (edit_modifier_invoke_properties(C, op))
 		return array_rand_exec(C, op);
 	else
@@ -1705,17 +1711,44 @@ static int array_rand_invoke(bContext *C, wmOperator *op, wmEvent *UNUSED(event)
 }
 
 
-void OBJECT_OT_array_rand(wmOperatorType *ot)
-{
-	ot->name= "Array Refresh";
-	ot->description= "Refresh data in the Array modifier";
-	ot->idname= "OBJECT_OT_array_rand";
+void OBJECT_OT_array_rand_seed_t(wmOperatorType *ot) {
+	ot->name = "G";
+	ot->description = "Generates the Seed for the Randomize Transform";
+	ot->idname = "OBJECT_OT_array_rand_seed_t";
 
-	ot->poll= array_poll;
-	ot->invoke= array_rand_invoke;
-	ot->exec= array_rand_exec;
+	ot->poll = array_poll;
+	ot->invoke = array_rand_invoke;
+	ot->exec = array_rand_exec;
 	
 	/* flags */
-	//ot->flag= OPTYPE_REGISTER|OPTYPE_UNDO;
+	ot->flag = OPTYPE_REGISTER|OPTYPE_UNDO;
+	edit_modifier_properties(ot);
+}
+
+void OBJECT_OT_array_rand_seed_g(wmOperatorType *ot) {
+	ot->name = "G";
+	ot->description = "Generates the Seed for the Randomize Group";
+	ot->idname = "OBJECT_OT_array_rand_seed_g";
+
+	ot->poll = array_poll;
+	ot->invoke = array_rand_invoke;
+	ot->exec = array_rand_exec;
+	
+	/* flags */
+	ot->flag = OPTYPE_REGISTER|OPTYPE_UNDO;
+	edit_modifier_properties(ot);
+}
+
+void OBJECT_OT_array_rand_seed_m(wmOperatorType *ot) {
+	ot->name = "G";
+	ot->description = "Generates the Seed for the Randomize Material";
+	ot->idname = "OBJECT_OT_array_rand_seed_m";
+
+	ot->poll = array_poll;
+	ot->invoke = array_rand_invoke;
+	ot->exec = array_rand_exec;
+	
+	/* flags */
+	ot->flag = OPTYPE_REGISTER|OPTYPE_UNDO;
 	edit_modifier_properties(ot);
 }

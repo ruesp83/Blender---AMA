@@ -261,6 +261,12 @@ typedef struct ArrayModifierData {
 		  MOD_ARR_MERGE -> merge vertices in adjacent duplicates
 	*/
 	int flags;
+	/* The pseudo-random number generator is initialized using the argument passed as seed. 
+	 * seed[0] = transform
+	 * seed[1] = group
+	 * seed[2] = material
+	 */
+	int seed[3];
 	/* the number of duplicates to generate for MOD_ARR_FIXEDCOUNT */
 	int count;
 	/* the number of duplicates of Mid Cap and type of distribution */
@@ -279,8 +285,9 @@ typedef struct ArrayModifierData {
 	int rand_mat;
 	/* lock the noise offset */
 	int lock;
-	/* normal Mode-Advanced Mode */
+	/* Normal Mode - Advanced Mode - Advanced Material - Advanced MidCap - Advanced Cloning */
 	int mode;
+	int displays;
 	/* indicates how the modifier should be used */
 	int type;
 	/* direction Offset */
@@ -291,7 +298,6 @@ typedef struct ArrayModifierData {
 	int dist_cu;
 	/* ability to randomization of objects belonging to the group linked */
 	int rand_group;
-	//int pad1;
 } ArrayModifierData;
 
 /* ArrayModifierData->fit_type */
@@ -335,12 +341,22 @@ typedef struct ArrayModifierData {
 #define MOD_ARR_MOD_ADV_MID		(1<<3)
 #define MOD_ARR_MOD_ADV_CLONE	(1<<4)
 
+/* ArrayModifierData->displays */
+#define MOD_ARR_DIS_ADV			(1<<0)
+#define MOD_ARR_DIS_ADV_MAT		(1<<1)
+#define MOD_ARR_DIS_ADV_MID		(1<<3)
+#define MOD_ARR_DIS_ADV_CLONE	(1<<4)
+
 /* ArrayModifierData->sign */
 #define MOD_ARR_SIGN_P			(1<<0)
 #define MOD_ARR_SIGN_L			(1<<1)
 
 /* ArrayModifierData->lock */
-#define MOD_ARR_LOCK			(1<<0)
+#define MOD_ARR_LOCK			(4+8+16+32)
+#define MOD_ARR_LOCK_LOC		4
+#define MOD_ARR_LOCK_SCALE		8
+#define MOD_ARR_LOCK_ROT		16
+#define MOD_ARR_LOCK_MAT		32
 
 /* ArrayModifierData->flag_offset */
 #define MOD_ARR_PROP			(1<<0)

@@ -42,25 +42,31 @@ typedef struct IndexMapEntry {
 	/* the new vert index that this old vert index maps to */
 	int new;
 	/* -1 if this vert isn't merged, otherwise the old vert index it
-	* should be replaced with
-	*/
+	 * should be replaced with
+	 */
 	int merge;
 	/* 1 if this vert's first copy is merged with the last copy of its
-	* merge target, otherwise 0
-	*/
+	 * merge target, otherwise 0
+	 */
 	short merge_final;
 } IndexMapEntry;
 
 
 /* calculations is in local space of deformed object
-	   so we store in latmat transform from path coord inside object 
-	 */
+ * so we store in latmat transform from path coord inside object 
+ */
 typedef struct {
 	float dmin[3], dmax[3], dsize, dloc[3];
 	float curvespace[4][4], objectspace[4][4], objectspace3[3][3];
 	int no_rot_axis;
 } CurveDeform;
 
+typedef struct {
+	float loc[3];
+	float rot[3];
+	float scale[3];
+	int seed;
+} Temp;
 
 float vertarray_size(struct MVert *mvert, int numVerts, int axis);
 int test_index_face_maxvert(struct MFace *mface, struct CustomData *fdata, int mfindex, int nr, int maxvert);
@@ -71,7 +77,7 @@ int length_to_count(float length, const float offset[3]);
 float count_to_length(int count, const float offset[3]);
 float f_rand_max(float max);
 
-void array_offset(const float max_off[3], float rit[3], int prop, int sign);
+void array_offset(const float max_off[3], float rit[3], int prop, int sign, int seed);
 void init_mat_oc(const int start, const int end, int *vet_mc);
 void init_offset(const int start, const int end, struct ArrayModifierData *ar);
 void create_offset(const int n, const int totmat, struct ArrayModifierData *ar, struct Object *ob);

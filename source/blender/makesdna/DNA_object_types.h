@@ -289,7 +289,7 @@ typedef struct DupliObject {
 	int index;
 	float mat[4][4], omat[4][4];
 	float orco[3], uv[2];
-	
+
 	short type; /* from Object.transflag */
 	short pad1;
 	char no_draw, no_render, animated;

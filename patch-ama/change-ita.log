@@ -2,6 +2,28 @@ WORK IN PROGRESS:
     1. Array distribuito su una curva.
 
 
+Advanced Modifier Array v0.5 beta4 new features and fixed bug (from v0.5.3.1) 30\01\2012:
+    1.  FIX: Se allego un gruppo, ed ho deselezionato "Advanced Cloning", i cloni del gruppo 
+              si vedono.
+    2.  FIX: Se ho un Mid Cap, ed ho deselezionato "Advanced Mid Cap", le copie dell'oggetto si 
+             vedono.
+    3.  FIX: Se attivo il "Randomize Material", genera materiali casuali all'apertura e chiusura 
+             della scheda.
+    4.  FIX: Se attivo il "Rays Direction" e disattivo la scheda "Advanced Cloning", la modalità 
+             rays è ancora attiva.
+    5.  FIX: Se si cerca di attivare la casella "Rand Object" senza nessun Dupli Group nella scheda 
+             "Advanced Cloning", crash Blender.
+    6:  FIX: Risolto il problema dell'UNDO.
+    7.  DEL: Il tasto "Refresh Ad. Offset" è stato eliminato.
+    8.  UPD: Attivate di default tutte le opzioni di "Randomize Transform".
+    9.  UPD: Le schede avanzate ora hanno la possibilità di essere attivate e visualizzate.
+    10. UPD: Nuova UI per la scheda "Randomize Transform".
+    11. ADD: Le modifiche ora sono in real time.
+    12. ADD: Aggiunto "Random Seed" per "Randomize Transform", "Advanced Cloning" e 
+             "Randomize Material".
+    13. ADD: Aggiunto per ogni "Random Seed" un pulsante per creare un seed casuale.
+
+
 Advanced Modifier Array v0.5 beta3.1 new features and fixed bug (from v0.5.3) 04\01\2012:
     1. ADD: Rotazione Locale: Rotazione in base ai propri assi.
 
@@ -92,7 +114,6 @@ TODO:
         - Dupli Group:
         - - Associare il materiale del clone al "Dupli Group" inerente.
         - - Materiale random anche al "Dupli Group".
-        - Mettere un tasto per la randomizzazione dei materiali se no cambia anche Loc-Rot-Scale
         - Associare una curva all'array.
 
     - MEDIA :
@@ -101,7 +122,7 @@ TODO:
         - Associare una ramp color al modifier array per color gradient.
         - Mid Cap:
         - - Permettere di legarlo ai cloni (Merge Verts).
-		- - Distribuirli in base al "Rays".
+        - - Distribuirli in base al "Rays".
         - OB-CAP: Mantenere materiale originale per ogni Cap.
         - Creare i cloni con una forma ad aspirale.
         - MultiScatter
@@ -112,7 +133,8 @@ Video 14\12\2011:
 2)http://vimeo.com/16762503
 3)http://vimeo.com/20675851
 4)http://vimeo.com/28236738
-5 NEW)http://vimeo.com/33667212
+5)http://vimeo.com/33667212
+6)http://vimeo.com/34468992
 
 
 Builds 14\12\2011:

@@ -88,10 +88,11 @@ class DATA_PT_modifiers(ModifierButtonsPanel, Panel):
         layout.separator()
         split = layout.split()
         col = split.column()
-        col.prop(md, "use_constant_offset")
-        sub = col.column()
-        sub.active = md.use_constant_offset
-        sub.prop(md, "constant_offset_displace", text="")
+        if ((md.type_array != "PATH") or (md.fit_type != 'FIT_BETWEEN')):
+            col.prop(md, "use_constant_offset")
+            sub = col.column()
+            sub.active = md.use_constant_offset
+            sub.prop(md, "constant_offset_displace", text="")
 
         if (md.type_array == "REGULAR"):
             col.separator()
@@ -105,10 +106,11 @@ class DATA_PT_modifiers(ModifierButtonsPanel, Panel):
             col.prop(md, "all_curve")
 
         col = split.column()
-        col.prop(md, "use_relative_offset")
-        sub = col.column()
-        sub.active = md.use_relative_offset
-        sub.prop(md, "relative_offset_displace", text="")
+        if (md.type_array != "PATH") or (md.fit_type != 'FIT_BETWEEN'):
+            col.prop(md, "use_relative_offset")
+            sub = col.column()
+            sub.active = md.use_relative_offset
+            sub.prop(md, "relative_offset_displace", text="")
 
         if (md.type_array == "REGULAR"):
             col.separator()
@@ -131,13 +133,17 @@ class DATA_PT_modifiers(ModifierButtonsPanel, Panel):
             col = layout.column()
             box = col.box()
             row = box.row()
-            if md.use_advanced_mid_cap:
-                row.prop(md, "use_advanced_mid_cap", text="")
+            if md.dis_advanced_mid_cap:
+                row.prop(md, "dis_advanced_mid_cap", text="", icon="DOWNARROW_HLT", emboss=False)
             else:
-                row.prop(md, "use_advanced_mid_cap", text="")
-            row.label("Advanced Mid Cap")
-            if (md.use_advanced_mid_cap):
+                row.prop(md, "dis_advanced_mid_cap", text="", icon="RIGHTARROW", emboss=False)
+            row.prop(md, "use_advanced_mid_cap", text="Advanced Mid Cap")
+            if (md.dis_advanced_mid_cap):
                 col = box.column()
+                if md.use_advanced_mid_cap:
+                    col.active = True
+                else:
+                    col.active = False
                 row = col.row()
                 row.prop(md, "dist_mid_cap", expand=True)
                 if md.dist_mid_cap == 'CURVE':
@@ -155,37 +161,61 @@ class DATA_PT_modifiers(ModifierButtonsPanel, Panel):
         col = layout.column()
         box = col.box()
         row = box.row()
-        row.prop(md, "use_advanced", text="")
-        row.label("Randomize Transform")
-        if (md.use_advanced):
+        if md.dis_advanced:
+            row.prop(md, "dis_advanced", text="", icon="DOWNARROW_HLT", emboss=False)
+        else:
+            row.prop(md, "dis_advanced", text="", icon="RIGHTARROW", emboss=False)
+        row.prop(md, "use_advanced", text="Randomize Transform")
+        if (md.dis_advanced):
             col = box.column()
+            if md.use_advanced:
+                col.active = True
+            else:
+                col.active = False
             row = col.row()
-            row.label(text="Sign Offset:")
+            row = row.split(percentage=0.9)
+            row.prop(md, "seed_t")
+            row.operator("object.array_rand_seed_t")
+            row = col.row()
+            row.prop(md, "lock_loc", text="Location")
+            row.prop(md, "lock_rot", text="Rotation")
+            row.prop(md, "lock_scale", text="Scale")
+            row = col.row()
+            sub = row.row()
+            sub.active = md.lock_loc
+            sub.column().prop(md, "location_offset", text="")
+            row = row.row()
+            sub = row.row()
+            sub.active = md.lock_rot
+            sub.column().prop(md, "rotation_offset", text="")
+            sub = row.row()
+            sub.active = md.lock_scale
+            if (md.proportion):
+                sub.prop(md, "scale", text="")
+            else:
+                sub.column().prop(md, "scale_offset", text="")
+            row = col.row()
+            row.prop(md, "local_rot", text="Local Rotation")
+            row.prop(md, "proportion", text="Scale")
+            row = col.row()
+            row.label(text="Offset:")
             row.prop(md, "sign_p")
             row.prop(md, "sign_l")
-            off_box = col.row()
-            off_box.column().prop(md, "location_offset", text="Location")
-            off_box.column().prop(md, "rotation_offset", text="Rotation")
-            if (md.proportion):
-                sub_off_box = off_box.column()
-                sub_off_box.label(text="Scale:")
-                sub_off_box.column().prop(md, "scale", text="Scale")
-            else:
-                off_box.column().prop(md, "scale_offset", text="Scale")
-            row = col.row()
-            row.prop(md, "proportion", text="Scale")
-            row.prop(md, "local_rot", text="Local Rotation")
 
         col = layout.column()
         box = col.box()
         row = box.row()
-        if (md.use_advanced_clone):
-            row.prop(md, "use_advanced_clone", text="")
+        if (md.dis_advanced_clone):
+            row.prop(md, "dis_advanced_clone", text="", icon="DOWNARROW_HLT", emboss=False)
         else:
-            row.prop(md, "use_advanced_clone", text="")
-        row.label("Advanced Cloning")
-        if (md.use_advanced_clone):
+            row.prop(md, "dis_advanced_clone", text="", icon="RIGHTARROW", emboss=False)
+        row.prop(md, "use_advanced_clone", text="Advanced Cloning")
+        if (md.dis_advanced_clone):
             col = box.column()
+            if md.use_advanced_clone:
+                col.active = True
+            else:
+                col.active = False
             split = col.split()
             col = split.column()
             col.label(text="Dupli Group:")
@@ -193,6 +223,9 @@ class DATA_PT_modifiers(ModifierButtonsPanel, Panel):
             sub = col.column()
             sub.active = False if md.array_group is None else True
             sub.prop(md, "rand_group")
+            sub = sub.split(percentage=0.8)
+            sub.prop(md, "seed_g")
+            sub.operator("object.array_rand_seed_g")
             col = split.column()
             col.label(text="Rays Direction:")
             col.prop(md,"rays_dir", text="")
@@ -201,19 +234,27 @@ class DATA_PT_modifiers(ModifierButtonsPanel, Panel):
         col = layout.column()
         box = col.box()
         row = box.row()
-        if (md.use_advanced_material):
-            row.prop(md, "use_advanced_material", text="")
+        if (md.dis_advanced_material):
+            row.prop(md, "dis_advanced_material", text="", icon="DOWNARROW_HLT", emboss=False)
         else:
-            row.prop(md, "use_advanced_material", text="")
-        row.label("Randomize Material")
-        if (md.use_advanced_material):
+            row.prop(md, "dis_advanced_material", text="", icon="RIGHTARROW", emboss=False)
+        row.prop(md, "use_advanced_material", text="Randomize Material")
+        if (md.dis_advanced_material):
             col = box.column()
+            if md.use_advanced_material:
+                col.active = True
+            else:
+                col.active = False
             row = col.row()
             row.prop(md, "material", expand=True)
             row = col.row()
             if md.material == 'SEQUENCE' :
                 row.prop(md, "cont_mat")
             else:
+                row = row.split(percentage=0.9)
+                row.prop(md, "seed_m")
+                row.operator("object.array_rand_seed_m")
+                row = col.row()
                 col = row.column()
                 split = col.split()
                 col = split.column()
@@ -232,10 +273,6 @@ class DATA_PT_modifiers(ModifierButtonsPanel, Panel):
                 sub = col.column()
                 sub.active = False if md.end_cap is None else True
                 sub.prop(md, "rand_mat_ec")
-                
-
-        layout.separator()
-        layout.operator("object.array_rand", text="Refresh Ad. Offset")
 
     def BEVEL(self, layout, ob, md):
         split = layout.split()

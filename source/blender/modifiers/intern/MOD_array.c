@@ -79,15 +79,16 @@ static void initData(ModifierData *md)
 	amd->fit_type = MOD_ARR_FIXEDCOUNT;
 	amd->offset_type = MOD_ARR_OFF_RELATIVE;
 	amd->flags = 0;
-
+	amd->seed[0] = amd->seed[1] = amd->seed[2] = 0;
 	amd->type = MOD_ARR_MOD_NRM;
 	amd->mode = !MOD_ARR_MOD_ADV;
+	amd->displays = !MOD_ARR_DIS_ADV;
 	amd->loc_offset[0] = amd->loc_offset[1] = amd->loc_offset[2] = 0;
 	amd->rot_offset[0] = amd->rot_offset[1] = amd->rot_offset[2] = 0;
 	amd->scale_offset[0] = amd->scale_offset[1] = amd->scale_offset[2] = 1;
-	amd->sign = MOD_ARR_SIGN_P;
-	amd->lock = !MOD_ARR_LOCK;
-	amd->flag_offset = MOD_ARR_PROP;
+	amd->sign = MOD_ARR_SIGN_P + MOD_ARR_SIGN_L;
+	amd->lock = MOD_ARR_LOCK;
+	amd->flag_offset = MOD_ARR_PROP + MOD_ARR_LOCAL;
 	amd->rays = 1;
 	amd->rand_mat = MOD_ARR_MAT;
 	amd->mat_ob = MOD_ARR_AR_MAT_RND;
@@ -122,9 +123,10 @@ static void copyData(ModifierData *md, ModifierData *target)
 	tamd->fit_type = amd->fit_type;
 	tamd->offset_type = amd->offset_type;
 	tamd->flags = amd->flags;
-
+	copy_v3_v3_int(tamd->seed, amd->seed);
 	tamd->type = amd->type;
 	tamd->mode = amd->mode;
+	tamd->displays = amd->displays;
 	copy_v3_v3(tamd->loc_offset, amd->loc_offset);
 	copy_v3_v3(tamd->rot_offset, amd->rot_offset);
 	copy_v3_v3(tamd->scale_offset, amd->scale_offset);
@@ -218,7 +220,7 @@ static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 	float length = amd->length;
 	float alpha = 0, d_alp = 0, circle;
 	float f_o;
-	int i, j, flag;
+	int i, j;
 	int start, start_mc;
 	int count = amd->count;
 	int numVerts, numEdges, numFaces;
@@ -233,7 +235,7 @@ static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 	IndexMapEntry *indexMap;
 
 	EdgeHash *edges;
-	
+
 	/* need to avoid infinite recursion here */
 	if(amd->start_cap && amd->start_cap != ob)
 		start_cap = amd->start_cap->derivedFinal;
@@ -318,9 +320,15 @@ static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 			}
 		} 
 		else { /* amd->type & MOD_ARR_MOD_CURVE*/
-			offset[3][0] = offset[3][0] * (count - 1);
-			offset[3][1] = offset[3][1] * (count - 1);
-			offset[3][2] = offset[3][2] * (count - 1);
+			Curve *cu = amd->curve_ob->data;
+			nu = cu->nurb.first;
+			if (nu->bezt)
+				copy_v3_v3(offset[3], nu->bezt[nu->pntsu - 1].vec[1]);
+			else
+				copy_v3_v3(offset[3], nu->bp[nu->pntsu * nu->pntsv - 1].vec);
+			offset[3][0] = offset[3][0] / (count - 1);
+			offset[3][1] = offset[3][1] / (count - 1);
+			offset[3][2] = offset[3][2] / (count - 1);
 		}
 	}
 
@@ -364,7 +372,7 @@ static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 	finalVerts = dm->getNumVerts(dm) * count;
 	finalEdges = dm->getNumEdges(dm) * count;
 	finalFaces = dm->getNumFaces(dm) * count;
-	
+
 	if(start_cap) {
 		finalVerts += start_cap->getNumVerts(start_cap);
 		finalEdges += start_cap->getNumEdges(start_cap);
@@ -380,11 +388,10 @@ static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 		finalEdges += end_cap->getNumEdges(end_cap);
 		finalFaces += end_cap->getNumFaces(end_cap);
 	}
-	
+
 	result = CDDM_from_template(dm, finalVerts, finalEdges, finalFaces);
 	
-	flag = 0;
-	if ((amd->mode & MOD_ARR_MOD_ADV) || (amd->mode & MOD_ARR_MOD_ADV_MAT)){
+	if ((amd->mode & MOD_ARR_MOD_ADV) || (amd->mode & MOD_ARR_MOD_ADV_MAT)) {
 		start = 0;
 		start_mc = 0;
 		if (!amd->Mem_Ob)
@@ -392,13 +399,12 @@ static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 		else {
 			int dim = 0;
 			dim = MEM_allocN_len(amd->Mem_Ob) / sizeof(*amd->Mem_Ob);
-			if (dim < count) {
+			if (dim != count) {
 				amd->Mem_Ob = MEM_reallocN(amd->Mem_Ob, sizeof(*amd->Mem_Ob) * count);
-				start = dim;
-			}
-			else if (dim > count) {
-				amd->Mem_Ob = MEM_reallocN(amd->Mem_Ob, sizeof(*amd->Mem_Ob) * count);
-				start = amd->count_mc;
+				if (dim < count)
+					start = dim;
+				else if (dim > count)
+					start = amd->count;
 			}
 		}
 
@@ -407,33 +413,22 @@ static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 		else {
 			int dim = 0;
 			dim = MEM_allocN_len(amd->Mem_Mat_Ob.mid_cap) / sizeof(*amd->Mem_Mat_Ob.mid_cap);
-			if (dim < amd->count_mc) {
+			if (dim != amd->count_mc) {
 				amd->Mem_Mat_Ob.mid_cap = MEM_reallocN(amd->Mem_Mat_Ob.mid_cap, sizeof(*amd->Mem_Mat_Ob.mid_cap) * amd->count_mc);
-				start_mc = dim;
-			}
-			else if (dim > amd->count_mc) {
-				amd->Mem_Mat_Ob.mid_cap = MEM_reallocN(amd->Mem_Mat_Ob.mid_cap, sizeof(*amd->Mem_Mat_Ob.mid_cap) * amd->count_mc);
-				start_mc = amd->count_mc;
+				if (dim < amd->count_mc)
+					start_mc = dim;
+				else if (dim > amd->count_mc)
+					start_mc = amd->count_mc;
 			}
 		}
 		//Inizializzare i nuovi cloni creati
-		if (!amd->lock) {
-			if (amd->Mem_Mat_Ob.mid_cap) {
-				if (start_mc != amd->count_mc)
-					init_mat_oc(start_mc, amd->count_mc, amd->Mem_Mat_Ob.mid_cap);
-			}
-			if (start != count)
-				init_offset(start, count, amd);
-			create_offset(count, ob->totcol, amd, ob);
-			amd->lock = 1;
-			flag = 1;
-		}
-		else {
-			if ((start != 0) && (start != count)) // || (amd->mode & MOD_ARR_MOD_ADV_MAT))
-				init_offset(start, count, amd);
+		if (amd->Mem_Mat_Ob.mid_cap) {
 			if ((start_mc != 0) && (start_mc != amd->count_mc))
- 				init_mat_oc(start_mc, amd->count_mc, amd->Mem_Mat_Ob.mid_cap);
+				init_mat_oc(start_mc, amd->count_mc, amd->Mem_Mat_Ob.mid_cap);
 		}
+		if ((start != 0) && (start != count))
+			init_offset(start, count, amd);
+		create_offset(count, ob->totcol, amd, ob);
 	}
 	
 	f_o = count-1;
@@ -457,7 +452,7 @@ static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 		mid_offset[3][1] = mid_offset[3][1] / 2;
 		mid_offset[3][2] = mid_offset[3][2] / 2;
 		if (amd->mode & MOD_ARR_MOD_ADV) {
-			if (amd->Mem_Ob[0].transform == 1) {
+			if (amd->Mem_Ob[0].transform) {
 				float app[4][4];
 				unit_m4(app);
 				loc_eul_size_to_mat4(app, amd->Mem_Ob[0].loc, amd->Mem_Ob[0].rot, amd->Mem_Ob[0].scale);
@@ -483,13 +478,13 @@ static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 		indexMap[i].merge = -1; /* default to no merge */
 		indexMap[i].merge_final = 0; /* default to no merge */
 	}
-	
+
 	for (i = 0; i < maxVerts; i++) {
 		MVert *inMV;
 		MVert *mv = &mvert[numVerts];
 		MVert *mv2;
 		float co[3];
-		
+
 		inMV = &src_mvert[i];
 
 		DM_copy_vert_data(dm, result, i, numVerts, 1);
@@ -547,7 +542,8 @@ static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 				//si ottiene una spirale
 				mul_m4_v3(offset, co);
 				copy_v3_v3(mv2->co, co);*/
-				if (amd->rays>1) {
+					
+				if ((amd->mode & MOD_ARR_MOD_ADV_CLONE) && (amd->rays>1)) {
 					float ro[3];
 					unit_m4(rot);
 					if (amd->rays_dir == MOD_ARR_RAYS_X)
@@ -598,8 +594,15 @@ static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 							/* recalculates the offset of the clone */
 							copy_m4_m4(loc, offset);
 							mul_v3_fl(loc[3], j+1);
+							//unit_m4(loc);
+							//copy_v3_v3(loc[3], mv2->co);
 							/* calculates the new coordinates of the clone */
+							//mult_m4_m4m4(loc, loc, app);
+							
+							//print_m4("loc", loc);
+							//print_v3("fo", fo);
 							mul_m4_v3(loc, fo);
+							//print_v3("fo-r", fo);
 							copy_v3_v3(mv2->co, fo);
 						}
 						else {
@@ -612,8 +615,8 @@ static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 				}
 				
 				if ((amd->type & MOD_ARR_MOD_CURVE) && (amd->curve_ob)) {
-					if (amd->dist_cu & MOD_ARR_DIST_EVENLY){
-						if (i==0){
+					if (amd->dist_cu & MOD_ARR_DIST_EVENLY) {
+						/*if (i==0){
 							float fo[3];
 							float cent[3];
 							float loc[4];
@@ -636,12 +639,15 @@ static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 							copy_v3_v3(fo, mv2->co);
 							/*print_v3("cent", amd->Mem_Ob[j].cu_cent);
 							print_v4("loc", amd->Mem_Ob[j].cu_loc);*/
-							//add_v3_v3v3(fo, amd->Mem_Ob[j].cu_cent, amd->Mem_Ob[j].cu_loc);
-							copy_v3_v3(app[3], amd->Mem_Ob[j].cu_loc);
+							/* add_v3_v3v3(fo, amd->Mem_Ob[j].cu_cent, amd->Mem_Ob[j].cu_loc); */
+							/* copy_v3_v3(app[3], amd->Mem_Ob[j].cu_loc);
 							mul_m4_v3(app, fo);
 							print_v3("fo", fo);
 							copy_v3_v3(mv2->co, fo);
-						}
+						}*/
+					}
+					else { /* MOD_ARR_DIST_SEGMENT */
+					
 					}
 				}
 			}
@@ -789,11 +795,8 @@ static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 			numFaces++;
 
 			/*Rand Material*/
-			if ((flag = 1) && (amd->mode & MOD_ARR_MOD_ADV_MAT) && (amd->mat_ob & MOD_ARR_AR_MAT_RND) && (ob->totcol>1))
-			{
+			if ((amd->mode & MOD_ARR_MOD_ADV_MAT) && (amd->mat_ob & MOD_ARR_AR_MAT_RND) && (ob->totcol>1))
 					mf2->mat_nr = amd->Mem_Ob[j-1].id_mat;
-					flag = 0;
-			}
 			/* if the face has fewer than 3 vertices, don't create it */
 			if(test_index_face_maxvert(mf2, &result->faceData, numFaces-1, inMF.v4?4:3, numVerts) < 3) {
 				numFaces--;
@@ -811,7 +814,7 @@ static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 		int *origindex;
 		int *vert_map;
 		int capVerts, capEdges, capFaces;
-		
+
 		capVerts = start_cap->getNumVerts(start_cap);
 		capEdges = start_cap->getNumEdges(start_cap);
 		capFaces = start_cap->getNumFaces(start_cap);
@@ -867,7 +870,6 @@ static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 				numVerts++;
 			}
 		}
-
 		origindex = result->getEdgeDataArray(result, CD_ORIGINDEX);
 		for(i = 0; i < capEdges; i++) {
 			int v1, v2;
@@ -885,7 +887,6 @@ static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 				numEdges++;
 			}
 		}
-		
 		origindex = result->getFaceDataArray(result, CD_ORIGINDEX);
 		for(i = 0; i < capFaces; i++) {
 			DM_copy_face_data(start_cap, result, i, numFaces, 1);
@@ -924,7 +925,7 @@ static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 		int *origindex;
 		int *vert_map;
 		int capVerts, capEdges, capFaces;
-		int inc;
+		int inc, c_mc;
 
 		capVerts = mid_cap->getNumVerts(mid_cap);
 		capEdges = mid_cap->getNumEdges(mid_cap);
@@ -936,10 +937,19 @@ static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 		/*d_alp_md = 0;
 		if (amd->rays > 1)
 			alpha_md = (float)6.2831 / amd->rays;*/
+		if (amd->mode & MOD_ARR_MOD_ADV_MID)
+			c_mc = amd->count_mc;
+		else {
+			c_mc = 1;
+			copy_m4_m4(mid_offset, offset);
+			mid_offset[3][0] = mid_offset[3][0] / 2;
+			mid_offset[3][1] = mid_offset[3][1] / 2;
+			mid_offset[3][2] = mid_offset[3][2] / 2;
+		}
 
 		vert_map = MEM_callocN(sizeof(*vert_map) * capVerts,
 				"arrayModifier_doArray vert_map");
-		for(j=0; j < amd->count_mc; j++) {
+		for(j=0; j < c_mc; j++) {
 			
 			origindex = result->getVertDataArray(result, CD_ORIGINDEX);
 			for(i = 0; i < capVerts; i++) {
@@ -1045,13 +1055,13 @@ static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 				}*/
 				/********/
 				if (amd->mode & MOD_ARR_MOD_ADV) {
-					if (amd->Mem_Ob[j+1].transform == 1)
+					if (amd->Mem_Ob[j+1].transform)
 						copy_m4_m4(mid_offset, prec_mid);
 				}
 				mult_m4_m4m4(tmp_mat, offset, mid_offset);
 				copy_m4_m4(mid_offset, tmp_mat);
 				if (amd->mode & MOD_ARR_MOD_ADV) {
-					if (amd->Mem_Ob[j+1].transform == 1) {
+					if (amd->Mem_Ob[j+1].transform) {
 						float app[4][4];
 						unit_m4(app);
 						loc_eul_size_to_mat4(app, amd->Mem_Ob[j+1].loc, amd->Mem_Ob[j+1].rot, amd->Mem_Ob[j+1].scale);
@@ -1145,7 +1155,6 @@ static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 				numVerts++;
 			}
 		}
-
 		origindex = result->getEdgeDataArray(result, CD_ORIGINDEX);
 		for(i = 0; i < capEdges; i++) {
 			int v1, v2;
@@ -1163,7 +1172,6 @@ static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 				numEdges++;
 			}
 		}
-
 		origindex = result->getFaceDataArray(result, CD_ORIGINDEX);
 		for(i = 0; i < capFaces; i++) {
 			DM_copy_face_data(end_cap, result, i, numFaces, 1);
@@ -1222,9 +1230,15 @@ static DerivedMesh *applyModifier(ModifierData *md, Object *ob,
 	if(result != dm) {
 		CDDM_calc_normals(result);
 		
-		if(amd->arr_group!=NULL) {	
-			ob->transflag = OB_DUPLIARRAY;
-			ob->dup_group = amd->arr_group;
+		if(amd->arr_group!=NULL) {
+			if (amd->mode & MOD_ARR_MOD_ADV_CLONE) {
+				ob->transflag = OB_DUPLIARRAY;
+				ob->dup_group = amd->arr_group;
+			}
+			else {
+				ob->transflag = 0;
+				ob->dup_group = NULL;
+			}
 		}
 		else {
 			ob->transflag = 0;
