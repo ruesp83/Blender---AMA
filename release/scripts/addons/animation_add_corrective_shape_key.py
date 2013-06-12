@@ -22,7 +22,7 @@ bl_info = {
     'name': 'Corrective shape keys',
     'author': 'Ivo Grigull (loolarge), Tal Trachtman',
     'version': (1, 0),
-    "blender": (2, 5, 7),
+    "blender": (2, 57, 0),
     'location': 'Object Data > Shape Keys (Search: corrective) ',
     'description': 'Creates a corrective shape key for the current pose',
     "wiki_url": "http://wiki.blender.org/index.php/Extensions:2.6/Py/"
@@ -211,7 +211,7 @@ def func_object_duplicate_flatten_modifiers(scene, obj):
 
 
 class object_duplicate_flatten_modifiers(bpy.types.Operator):
-    '''Duplicates the selected object with modifiers applied'''
+    """Duplicates the selected object with modifiers applied"""
 
     bl_idname = "object.object_duplicate_flatten_modifiers"
     bl_label = "Duplicate and apply all"
@@ -224,7 +224,7 @@ class object_duplicate_flatten_modifiers(bpy.types.Operator):
         scene = context.scene
         obj_act = context.active_object
 
-        new_object = func_object_duplicate_flatten_modifiers(obj_act, scene)
+        new_object = func_object_duplicate_flatten_modifiers(scene, obj_act)
 
         # setup the context
         bpy.ops.object.select_all(action='DESELECT')

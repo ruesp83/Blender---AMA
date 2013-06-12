@@ -1,0 +1,1682 @@
+Index: release/scripts/startup/bl_ui/properties_data_modifier.py
+===================================================================
+--- release/scripts/startup/bl_ui/properties_data_modifier.py	(revisione 39559)
++++ release/scripts/startup/bl_ui/properties_data_modifier.py	(copia locale)
+@@ -81,10 +81,10 @@
+             layout.prop(md, "curve")
+ 
+         layout.separator()
+-
+         split = layout.split()
+ 
+         col = split.column()
++        col.prop(md,"rays")
+         col.prop(md, "use_constant_offset")
+         sub = col.column()
+         sub.active = md.use_constant_offset
+@@ -99,6 +99,7 @@
+         sub.prop(md, "merge_threshold", text="Distance")
+ 
+         col = split.column()
++        col.prop(md,"rays_dir")
+         col.prop(md, "use_relative_offset")
+         sub = col.column()
+         sub.active = md.use_relative_offset
+@@ -110,12 +111,78 @@
+         sub = col.column()
+         sub.active = md.use_object_offset
+         sub.prop(md, "offset_object", text="")
+-
++        sub.prop(md, "use_between_offset")
+         layout.separator()
+ 
+         layout.prop(md, "start_cap")
++        layout.prop(md, "mid_cap")
+         layout.prop(md, "end_cap")
++        layout.separator()
+ 
++        if md.fit_type == 'FIT_CURVE':
++            col = layout.column()
++            row = col.box().row()
++            if md.use_advanced_curve:
++                row.prop(md, "use_advanced_curve",
++                    icon="DOWNARROW_HLT", text="", emboss=False)
++            else:
++                row.prop(md, "use_advanced_curve",
++                    icon="RIGHTARROW", text="", emboss=False)
++            row.label("Advanced Curve")
++            if (md.use_advanced_curve):
++                col = col.box().column()
++                sub_split = col.split()
++                col = sub_split.column()
++                col.prop(md, "all_curve")
++                col = sub_split.column()
++                col.prop(md, "for_segment")
++
++        col = layout.column()
++        row = col.box().row()
++        if md.use_advanced_material:
++            row.prop(md, "use_advanced_material",
++                icon="DOWNARROW_HLT", text="", emboss=False)
++        else:
++            row.prop(md, "use_advanced_material",
++                icon="RIGHTARROW", text="", emboss=False)
++        row.label("Advanced Material")
++        if (md.use_advanced_material):
++            col = col.box().column()
++            row = col.row()
++            row.prop(md, "material", icon='MATERIAL')
++
++        col = layout.column()
++        row = col.box().row()
++        row.prop(md, "use_advanced", text="")
++        row.label("Advanced Noise")
++        if (md.use_advanced):
++            col = col.box().column()
++            row = col.row()
++            row.label(text="Sign Offset:")
++            row.prop(md, "sign_p")
++            row.prop(md, "sign_l")
++            off_box = col.row()
++            off_box.column().prop(md, "location_offset", text="Location")
++            off_box.column().prop(md, "rotation_offset", text="Rotation")
++            off_box2 = off_box.split().column()
++            off_box2.column().prop(md, "proportion", text="Scale")
++            if (md.proportion):
++                off_box2.column().prop(md, "scale", text="")
++            else:
++                off_box2.column().prop(md, "scale_offset", text="")
++            col.separator()
++            row = col.row()
++            row.prop(md, "array_group")
++            act = row.row()
++            if md.array_group is None :
++                act.active = False
++            else:
++                act.active = True
++            act.prop(md, "rand_group")
++            col = col.column()
++            col.separator()
++            col.operator("object.array_rand", text="Refresh Ad. Offset")
++
+     def BEVEL(self, layout, ob, md):
+         split = layout.split()
+ 
+Index: source/blender/blenkernel/BKE_ama.h
+===================================================================
+--- source/blender/blenkernel/BKE_ama.h	(revisione 0)
++++ source/blender/blenkernel/BKE_ama.h	(revisione 0)
+@@ -0,0 +1,51 @@
++/*
++ * ***** BEGIN GPL LICENSE BLOCK *****
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * as published by the Free Software Foundation; either version 2
++ * of the License, or (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software Foundation,
++ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
++ *
++ * The Original Code is Copyright (C) Blender Foundation.
++ * All rights reserved.
++ *
++ * The Original Code is: all of this file.
++ *
++ * Contributor(s): none yet.
++ *
++ * ***** END GPL LICENSE BLOCK *****
++ */
++#ifndef BKE_AMA_H
++#define BKE_AMA_H
++
++/** \file BKE_ama.h
++ *  \ingroup bke
++ */
++
++struct ArrayModifierData;
++struct Object;
++struct Scene;
++struct MVert;
++
++
++float length_fitcurve(struct ArrayModifierData *amd, struct Scene *scene);
++int length_to_count(float length, const float offset[3]);
++float count_to_length(int count, const float offset[3]);
++float f_rand_max(float max);
++void array_scale_offset(const float max_off[3], float rit[3],int prop);
++void array_offset(const float max_off[3], float rit[3],int sign);
++void init_offset(const int start, const int end, struct ArrayModifierData *ar);
++void create_offset(const int n, const int totmat, struct ArrayModifierData *ar, struct Object *ob);
++void array_to_curve(struct Scene *scene, struct Object *cuOb, struct Object *target, float (*vertexCos)[3], int numVerts);
++
++#endif
++
+Index: source/blender/blenkernel/CMakeLists.txt
+===================================================================
+--- source/blender/blenkernel/CMakeLists.txt	(revisione 39559)
++++ source/blender/blenkernel/CMakeLists.txt	(copia locale)
+@@ -73,6 +73,7 @@
+ 	intern/CCGSubSurf.c
+ 	intern/DerivedMesh.c
+ 	intern/action.c
++	intern/ama.c
+ 	intern/anim.c
+ 	intern/anim_sys.c
+ 	intern/armature.c
+@@ -152,6 +153,7 @@
+ 	
+ 	BKE_DerivedMesh.h
+ 	BKE_action.h
++	BKE_ama.h
+ 	BKE_anim.h
+ 	BKE_animsys.h
+ 	BKE_armature.h
+Index: source/blender/blenkernel/intern/ama.c
+===================================================================
+--- source/blender/blenkernel/intern/ama.c	(revisione 0)
++++ source/blender/blenkernel/intern/ama.c	(revisione 0)
+@@ -0,0 +1,413 @@
++/*
++ * $Id: ama.c 36773 2011-08-13 13:46:00Z ruesp83 $
++ *
++ * ***** BEGIN GPL LICENSE BLOCK *****
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * as published by the Free Software Foundation; either version 2
++ * of the License, or (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software Foundation,
++ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
++ *
++ * The Original Code is Copyright (C) Blender Foundation.
++ * All rights reserved.
++ *
++ * The Original Code is: all of this file.
++ *
++ * Contributor(s): Fabio Russo
++ *
++ * ***** END GPL LICENSE BLOCK *****
++ */
++
++/** \file blender/blenkernel/intern/ama.c
++ *  \ingroup bke
++ */
++
++#include "BLI_math.h"
++#include "BLI_utildefines.h"
++#include "BLI_rand.h"
++#include "BLI_listbase.h"
++#include "DNA_group_types.h"
++#include "DNA_object_types.h"
++#include "DNA_curve_types.h"
++#include "DNA_modifier_types.h"
++#include "DNA_meshdata_types.h"
++#include "DNA_scene_types.h"
++#include "BKE_object.h"
++#include "BKE_displist.h"
++#include "BKE_ama.h"
++#include "BKE_anim.h"
++
++
++float length_fitcurve(ArrayModifierData *amd, struct Scene *scene)
++{
++	float length = 0;
++
++	Curve *cu = amd->curve_ob->data;
++	if(cu) {
++		float tmp_mat[3][3];
++		float scale;
++			
++		object_to_mat3(amd->curve_ob, tmp_mat);
++		scale = mat3_to_scale(tmp_mat);
++
++		if(!cu->path) {
++			cu->flag |= CU_PATH; // needed for path & bevlist
++			makeDispListCurveTypes(scene, amd->curve_ob, 0);
++		}
++		if(cu->path)
++			length = scale*cu->path->totdist;
++	}
++	return length;
++}
++
++int length_to_count(float length, const float offset[3])
++{
++	int count = 0;
++
++	float dist = sqrt(dot_v3v3(offset, offset));
++
++	if(dist > 1e-6f)
++		/* this gives length = first copy start to last copy end
++		add a tiny offset for floating point rounding errors */
++		count = (length + 1e-6f) / dist;
++	else
++		/* if the offset has no translation, just make one copy */
++		count = 1;
++	return count;
++}
++
++float count_to_length(int count, const float offset[3])
++{
++	float length = 0;
++	float dist = sqrt(dot_v3v3(offset, offset));
++
++	if(dist > 1e-6f)
++		/* this gives length = first copy start to last copy end
++		add a tiny offset for floating point rounding errors */
++		//count = (length + 1e-6f) / dist;
++		length = count * dist - 1e-6f;
++	else
++		/* if the offset has no translation, just make one copy */
++		length = 1;
++	return length;
++}
++
++//generates a psuedo-random float between 0.0 and max
++float f_rand_max(float max)
++{
++	return BLI_frand()*max;
++}
++
++void array_scale_offset(const float max_off[3], float rit[3],int prop)
++{
++	//TODO:far valere anche valori meno di uno,
++	//così si possono ottenere oggetti anche più piccoli dell'originale
++		
++	rit[0] = f_rand_max(max_off[0]);
++	rit[0] = 1+rit[0];
++	
++	if (!prop)
++	{
++		rit[1] = f_rand_max(max_off[1]);
++		rit[1] = 1+rit[1];
++		
++		rit[2] = f_rand_max(max_off[2]);
++		rit[2] = 1+rit[2];
++	}
++	else
++	{
++		rit[1] = rit[0];
++		rit[2] = rit[0];
++	}
++}
++
++void array_offset(const float max_off[3], float rit[3],int sign)
++{	
++	int j;
++	
++	rit[0] = f_rand_max(max_off[0]);
++	if (sign & MOD_ARR_SIGN_L)
++	{
++		if (sign & MOD_ARR_SIGN_P)
++		{
++			j = BLI_rand() % 2;
++			if (j == 0)
++				rit[0] = rit[0]*(-1);
++		}
++		else
++			rit[0] = rit[0]*(-1);
++	}
++		
++	rit[1] = f_rand_max(max_off[1]); 
++	if (sign & MOD_ARR_SIGN_L)
++	{
++		if (sign & MOD_ARR_SIGN_P)
++		{
++			j = BLI_rand() % 2;
++			if (j == 0)
++				rit[1] = rit[1]*(-1);
++		}
++		else
++			rit[1] = rit[1]*(-1);
++	}
++
++	rit[2] = f_rand_max(max_off[2]);
++	if (sign & MOD_ARR_SIGN_L)
++	{
++		if (sign & MOD_ARR_SIGN_P)
++		{
++			j = BLI_rand() % 2;
++			if (j == 0)
++				rit[2] = rit[2]*(-1);
++		}
++		else
++			rit[2] = rit[2]*(-1);
++	}
++}
++
++void init_offset(const int start, const int end, ArrayModifierData *ar)
++{
++	int i;
++
++	for (i=start; i< end; i++)
++	{
++		unit_m4(ar->Mem_Ob[i].location);
++		ar->Mem_Ob[i].id_mat = 1;
++		ar->Mem_Ob[i].transform = 0;
++		ar->Mem_Ob[i].rand_group_obj = 0;
++	}
++}
++
++void create_offset(const int n, const int totmat, ArrayModifierData *ar, Object *ob)
++{
++	float loc[3];
++	float rot[3];
++	float rotAxis[3];
++	float scale[3];
++	int i;
++	Group *group;
++
++	if(ob->dup_group!=NULL)
++		group= ob->dup_group;
++
++	scale[0]=scale[1]=scale[2]=1;
++
++	for (i=0; i < n-1; i++)
++	{
++		if ((ar->rot_offset[0]!=0) || (ar->rot_offset[1]!=0) || (ar->rot_offset[2]!=0))
++		{
++			array_offset(ar->rot_offset, rot, ar->sign);
++			ar->Mem_Ob[i].transform=1;
++		}
++		if ((ar->scale_offset[0]!=0) || (ar->scale_offset[1]!=0) || (ar->scale_offset[2]!=0))
++		{
++			array_scale_offset(ar->scale_offset, scale, ar->proportion);
++			ar->Mem_Ob[i].transform=1;
++		}
++		if ((ar->loc_offset[0]!=0) || (ar->loc_offset[1]!=0) || (ar->loc_offset[2]!=0))
++		{
++			array_offset(ar->loc_offset, loc, ar->sign);
++			ar->Mem_Ob[i].transform=1;
++		}
++		if (ar->Mem_Ob[i].transform)
++		{
++			loc_eul_size_to_mat4(ar->Mem_Ob[i].location, loc, rot, scale);
++		}
++		if (ar->rnd_mat && (totmat>1))
++		{
++			ar->Mem_Ob[i].id_mat = BLI_rand() % totmat;
++		}
++		if (ar->rand_group & MOD_ARR_RAND_GROUP)
++		{
++			ar->Mem_Ob[i].rand_group_obj = BLI_rand() % BLI_countlist(&group->gobject);
++			ar->Mem_Ob[i].rand_group_obj++;
++		}
++	}
++}
++
++/* calculations is in local space of deformed object
++	   so we store in latmat transform from path coord inside object 
++	 */
++typedef struct {
++	float dmin[3], dmax[3], dsize, dloc[3];
++	float curvespace[4][4], objectspace[4][4], objectspace3[3][3];
++	int no_rot_axis;
++} CurveDeform;
++
++static void init_curve_deform(Object *par, Object *ob, CurveDeform *cd, int dloc)
++{
++	invert_m4_m4(ob->imat, ob->obmat);
++	mul_m4_m4m4(cd->objectspace, par->obmat, ob->imat);
++	invert_m4_m4(cd->curvespace, cd->objectspace);
++	copy_m3_m4(cd->objectspace3, cd->objectspace);
++	
++	// offset vector for 'no smear'
++	if(dloc) {
++		invert_m4_m4(par->imat, par->obmat);
++		mul_v3_m4v3(cd->dloc, par->imat, ob->obmat[3]);
++	}
++	else {
++		cd->dloc[0]=cd->dloc[1]=cd->dloc[2]= 0.0f;
++	}
++
++	cd->no_rot_axis= 0;
++}
++
++/* this makes sure we can extend for non-cyclic. *vec needs 4 items! */
++static int where_on_path_deform(Object *ob, float ctime, float *vec, float *dir, float *quat, float *radius)	/* returns OK */
++{
++	Curve *cu= ob->data;
++	BevList *bl;
++	float ctime1;
++	int cycl=0;
++	
++	/* test for cyclic */
++	bl= cu->bev.first;
++	if (!bl->nr) return 0;
++	if(bl && bl->poly> -1) cycl= 1;
++
++	if(cycl==0) {
++		ctime1= CLAMPIS(ctime, 0.0f, 1.0f);
++	}
++	else ctime1= ctime;
++	
++	/* vec needs 4 items */
++	if(where_on_path(ob, ctime1, vec, dir, quat, radius, NULL)) {
++		
++		if(cycl==0) {
++			Path *path= cu->path;
++			float dvec[3];
++			
++			if(ctime < 0.0f) {
++				sub_v3_v3v3(dvec, path->data[1].vec, path->data[0].vec);
++				mul_v3_fl(dvec, ctime*(float)path->len);
++				add_v3_v3(vec, dvec);
++				if(quat) copy_qt_qt(quat, path->data[0].quat);
++				if(radius) *radius= path->data[0].radius;
++			}
++			else if(ctime > 1.0f) {
++				sub_v3_v3v3(dvec, path->data[path->len-1].vec, path->data[path->len-2].vec);
++				mul_v3_fl(dvec, (ctime-1.0f)*(float)path->len);
++				add_v3_v3(vec, dvec);
++				if(quat) copy_qt_qt(quat, path->data[path->len-1].quat);
++				if(radius) *radius= path->data[path->len-1].radius;
++				/* weight - not used but could be added */
++			}
++		}
++		return 1;
++	}
++	return 0;
++}
++
++	/* for each point, rotate & translate to curve */
++	/* use path, since it has constant distances */
++	/* co: local coord, result local too */
++	/* returns quaternion for rotation, using cd->no_rot_axis */
++	/* axis is using another define!!! */
++static int calc_curve_deform(Scene *scene, Object *par, float *co, CurveDeform *cd, float *quatp)
++{
++	Curve *cu= par->data;
++	float fac, loc[4], dir[3], new_quat[4], radius;
++	
++	/* to be sure, mostly after file load */
++	if(cu->path==NULL) {
++		makeDispListCurveTypes(scene, par, 0);
++		if(cu->path==NULL) return 0;	// happens on append...
++	}
++	fac=0;
++	if( where_on_path_deform(par, fac, loc, dir, new_quat, &radius)) {	/* returns OK */
++		float quat[4], cent[3];
++
++		if(cd->no_rot_axis) {	/* set by caller */
++
++			/* this is not exactly the same as 2.4x, since the axis is having rotation removed rather than
++			 * changing the axis before calculating the tilt but serves much the same purpose */
++			float dir_flat[3]={0,0,0}, q[4];
++			copy_v3_v3(dir_flat, dir);
++			dir_flat[cd->no_rot_axis-1]= 0.0f;
++
++			normalize_v3(dir);
++			normalize_v3(dir_flat);
++
++			rotation_between_vecs_to_quat(q, dir, dir_flat); /* Could this be done faster? */
++
++			mul_qt_qtqt(new_quat, q, new_quat);
++		}
++
++
++		/* Logic for 'cent' orientation *
++		 *
++		 * The way 'co' is copied to 'cent' may seem to have no meaning, but it does.
++		 *
++		 * Use a curve modifier to stretch a cube out, color each side RGB, positive side light, negative dark.
++		 * view with X up (default), from the angle that you can see 3 faces RGB colors (light), anti-clockwise
++		 * Notice X,Y,Z Up all have light colors and each ordered CCW.
++		 *
++		 * Now for Neg Up XYZ, the colors are all dark, and ordered clockwise - Campbell
++		 *
++		 * note: moved functions into quat_apply_track/vec_apply_track
++		 * */
++		copy_qt_qt(quat, new_quat);
++		copy_v3_v3(cent, co);
++
++		/* zero the axis which is not used,
++		 * the big block of text above now applies to these 3 lines */
++		//quat_apply_track(quat, axis-1, (axis==1 || axis==3) ? 1:0); /* up flag is a dummy, set so no rotation is done */
++		//vec_apply_track(cent, axis-1);
++		//cent[axis < 4 ? axis-1 : axis-4]= 0.0f;
++
++
++		/* scale if enabled */
++		if(cu->flag & CU_PATH_RADIUS)
++			mul_v3_fl(cent, radius);
++		
++		/* local rotation */
++		normalize_qt(quat);
++		mul_qt_v3(quat, cent);
++
++		/* translation */
++		add_v3_v3v3(co, cent, loc);
++
++		if(quatp)
++			copy_qt_qt(quatp, quat);
++
++		return 1;
++	}
++	return 0;
++}
++
++void array_to_curve(Scene *scene, Object *cuOb, Object *target, float (*vertexCos)[3], int numVerts)
++{
++	Curve *cu;
++	int a, flag;
++	CurveDeform cd;
++	int use_vgroups;
++		
++	if(cuOb->type != OB_CURVE)
++		return;
++
++	cu = cuOb->data;
++	flag = cu->flag;
++	cu->flag |= (CU_PATH|CU_FOLLOW); // needed for path & bevlist
++
++	init_curve_deform(cuOb, target, &cd, (cu->flag & CU_STRETCH)==0);
++
++	for(a = 0; a < numVerts; a++) {
++		mul_m4_v3(cd.curvespace, vertexCos[a]);
++	}
++	
++	for(a = 0; a < numVerts; a++) {
++		calc_curve_deform(scene, cuOb, vertexCos[a], &cd, NULL);
++		mul_m4_v3(cd.objectspace, vertexCos[a]);
++	}
++	cu->flag = flag;
++}
+Index: source/blender/blenkernel/intern/anim.c
+===================================================================
+--- source/blender/blenkernel/intern/anim.c	(revisione 39559)
++++ source/blender/blenkernel/intern/anim.c	(copia locale)
+@@ -35,6 +35,7 @@
+ 
+ 
+ #include <stdio.h>
++#include <time.h>
+ #include <math.h>
+ #include <string.h>
+ 
+@@ -51,6 +52,7 @@
+ #include "DNA_group_types.h"
+ #include "DNA_key_types.h"
+ #include "DNA_meshdata_types.h"
++#include "DNA_modifier_types.h"
+ #include "DNA_scene_types.h"
+ #include "DNA_vfont_types.h"
+ 
+@@ -751,6 +753,137 @@
+ 	}
+ }
+ 
++static void group_arrayduplilist(ListBase *lb, Scene *scene, Object *ob, int level, int animated)
++{
++	DupliObject *dob;
++	Group *group;
++	GroupObject *go;
++	float mat[4][4], tmat[4][4], offset[4][4], rot[4][4];
++	ModifierData *md;
++	int i, cont_rnd;
++	float d_alp, alpha;
++	
++	if(ob->dup_group==NULL) return;
++		group= ob->dup_group;
++	
++	/* simple preventing of too deep nested groups */
++	if(level>MAX_DUPLI_RECUR) return;
++	
++	/* handles animated groups, and */
++	/* we need to check update for objects that are not in scene... */
++	group_handle_recalc_and_update(scene, ob, group);
++	animated= animated || group_is_animated(ob, group);
++
++	for(md=ob->modifiers.first; md; md=md->next) {
++		if(md->type == eModifierType_Array) {
++			if (md->mode&eModifierMode_Realtime || md->mode&eModifierMode_Render){
++				ArrayModifierData *amd = (ArrayModifierData*) md;
++
++				d_alp=0;
++				if (amd->rays > 1)
++					alpha = (float)6.2831 / amd->rays;
++				copy_m4_m4(offset, amd->delta);
++					
++				for (i = 0; i < amd->count-1; i++)
++				{
++					cont_rnd = 0;
++					for(go= group->gobject.first; go; go= go->next) 
++					{
++						cont_rnd++;
++						/* note, if you check on layer here, render goes wrong... it still deforms verts and uses parent imat */
++						if(go->ob!=ob)
++						{
++							if (amd->rand_group & MOD_ARR_RAND_GROUP)
++							{
++								if ((amd->Mem_Ob[i].rand_group_obj != 0) && (amd->Mem_Ob[i].rand_group_obj != cont_rnd))
++									continue;
++							}
++							/* Group Dupli Offset, should apply after everything else */
++							if (group->dupli_ofs[0] || group->dupli_ofs[1] || group->dupli_ofs[2]) {
++								copy_m4_m4(tmat, go->ob->obmat);
++								sub_v3_v3v3(tmat[3], tmat[3], group->dupli_ofs);
++								mul_m4_m4m4(mat, tmat, ob->obmat);
++							} else {
++								mul_m4_m4m4(mat, go->ob->obmat, ob->obmat);
++							}
++						
++							copy_m4_m4(tmat, mat);
++							if (amd->rays>1)
++							{
++								unit_m4(rot);
++								if (amd->rays_dir == MOD_ARR_RAYS_X)
++									rotate_m4(rot,'X',d_alp);
++								else if (amd->rays_dir == MOD_ARR_RAYS_Y)
++									rotate_m4(rot,'Y',d_alp);
++								else
++									rotate_m4(rot,'Z',d_alp);
++								if (d_alp == 0){
++									mul_m4_m4m4(mat, offset, tmat);
++
++									copy_m4_m4(tmat, mat);
++									mul_m4_m4m4(mat, rot, tmat);
++								}
++								else{
++									mul_m4_m4m4(mat, offset, tmat);
++
++									copy_m4_m4(tmat, mat);
++									mul_m4_m4m4(mat, rot, tmat);
++								}
++							}
++							else
++							{
++								mul_m4_m4m4(mat, offset, tmat);
++							}
++							//Noise
++							if (amd->mode & MOD_ARR_MOD_ADV)
++							{
++								if (amd->Mem_Ob[i].transform == 1)
++								{
++									copy_m4_m4(tmat, mat);
++									mul_m4_m4m4(mat, amd->Mem_Ob[i].location, tmat);
++								}
++							}
++						
++							dob = new_dupli_object(lb, go->ob, mat, ob->lay, 0, OB_DUPLIARRAY, animated);
++								
++							if (!(md->mode&eModifierMode_Render))
++								dob->no_render = 1;
++							else 
++								dob->no_render = 0;
++							/* check the group instance and object layers match, also that the object visible flags are ok. */
++							if(((dob->origlay & group->layer)==0 ||
++								(G.rendering==0 && dob->ob->restrictflag & OB_RESTRICT_VIEW) ||
++								(G.rendering && dob->ob->restrictflag & OB_RESTRICT_RENDER)) || 
++								!(md->mode&eModifierMode_Realtime) || (!(md->mode&eModifierMode_Editmode) && (ob->mode == OB_MODE_EDIT)))
++							{
++								dob->no_draw= 1;
++							}
++							else {
++								dob->no_draw= 0;
++							}
++							if(go->ob->transflag & OB_DUPLI) {
++								copy_m4_m4(dob->ob->obmat, dob->mat);
++								object_duplilist_recursive(&group->id, scene, go->ob, lb, ob->obmat, level+1, animated);
++								copy_m4_m4(dob->ob->obmat, dob->omat);
++							}
++						}
++					}
++					//Increment for rays
++					if (amd->rays>1)
++					{
++						d_alp = d_alp + alpha;
++						if (d_alp>6.2831)
++							d_alp=0;
++					}
++					//Offset for clone group
++					if (d_alp == 0)
++						mul_m4_m4m4(offset, offset, amd->delta);
++				}
++			}
++		}
++	}
++}
++
+ static void frames_duplilist(ListBase *lb, Scene *scene, Object *ob, int level, int animated)
+ {
+ 	extern int enable_cu_speed;	/* object.c */
+@@ -1595,6 +1728,15 @@
+ 				if(dob->type == OB_DUPLIGROUP)
+ 					copy_m4_m4(dob->ob->obmat, dob->mat);
+ 		}
++	} else if(ob->transflag & OB_DUPLIARRAY) {
++		DupliObject *dob;
++
++		group_arrayduplilist(duplilist, scene, ob, level+1, animated);
++		if (level==0) {
++			for(dob= duplilist->first; dob; dob= dob->next)
++				if(dob->type == OB_DUPLIARRAY)
++					copy_m4_m4(dob->ob->obmat, dob->mat);
++		}
+ 	}
+ }
+ 
+Index: source/blender/blenloader/intern/readfile.c
+===================================================================
+--- source/blender/blenloader/intern/readfile.c	(revisione 39559)
++++ source/blender/blenloader/intern/readfile.c	(copia locale)
+@@ -3886,6 +3886,15 @@
+ 				}
+ 			}
+ 
++			{
++				ArrayModifierData *amd = (ArrayModifierData *)modifiers_findByType(ob, eModifierType_Array);
++				
++				if(amd) 
++				{
++					amd->arr_group = newlibadr(fd, ob->id.lib, amd->arr_group);
++				}
++			}
++			
+ 			/* texture field */
+ 			if(ob->pd)
+ 				lib_link_partdeflect(fd, &ob->id, ob->pd);
+@@ -4157,6 +4166,11 @@
+ 			if(tmd->curfalloff)
+ 				direct_link_curvemapping(fd, tmd->curfalloff);
+ 		}
++		else if (md->type==eModifierType_Array) {
++			ArrayModifierData *amd = (ArrayModifierData*) md;
++
++			amd->Mem_Ob = newdataadr(fd, amd->Mem_Ob);
++		}
+ 	}
+ }
+ 
+Index: source/blender/blenloader/intern/writefile.c
+===================================================================
+--- source/blender/blenloader/intern/writefile.c	(revisione 39559)
++++ source/blender/blenloader/intern/writefile.c	(copia locale)
+@@ -1306,6 +1306,11 @@
+ 				write_curvemapping(wd, tmd->curfalloff);
+ 			}
+ 		}
++		else if (md->type==eModifierType_Array) {
++			ArrayModifierData *amd = (ArrayModifierData*) md;
++			
++			writestruct(wd, DATA, "ArrayChangeObject", amd->count, amd->Mem_Ob);
++		}
+ 	}
+ }
+ 
+Index: source/blender/editors/object/object_intern.h
+===================================================================
+--- source/blender/editors/object/object_intern.h	(revisione 39559)
++++ source/blender/editors/object/object_intern.h	(copia locale)
+@@ -160,6 +160,7 @@
+ void OBJECT_OT_multires_external_pack(struct wmOperatorType *ot);
+ void OBJECT_OT_meshdeform_bind(struct wmOperatorType *ot);
+ void OBJECT_OT_explode_refresh(struct wmOperatorType *ot);
++void OBJECT_OT_array_rand(struct wmOperatorType *ot);
+ 
+ /* object_constraint.c */
+ void OBJECT_OT_constraint_add(struct wmOperatorType *ot);
+Index: source/blender/editors/object/object_modifier.c
+===================================================================
+--- source/blender/editors/object/object_modifier.c	(revisione 39559)
++++ source/blender/editors/object/object_modifier.c	(copia locale)
+@@ -203,6 +203,10 @@
+ 	else if(md->type == eModifierType_Smoke) {
+ 		ob->dt = OB_TEXTURE;
+ 	}
++	else if(md->type == eModifierType_Array) {
++		ob->transflag = 0;
++		ob->dup_group = NULL;
++	}
+ 	else if(md->type == eModifierType_Multires) {
+ 		int ok= 1;
+ 		Mesh *me= ob->data;
+@@ -1404,3 +1408,49 @@
+ 	edit_modifier_properties(ot);
+ }
+ 
++/****************** array rand operator *********************/
++
++static int array_poll(bContext *C)
++{
++	return edit_modifier_poll_generic(C, &RNA_ArrayModifier, 0);
++}
++
++static int array_rand_exec(bContext *C, wmOperator *op)
++{
++	Object *ob = ED_object_active_context(C);
++	ArrayModifierData *amd = (ArrayModifierData *)edit_modifier_property_get(op, ob, eModifierType_Array);
++	
++	if (!amd)
++		return OPERATOR_CANCELLED;
++
++	amd->lock = 0;
++
++	DAG_id_tag_update(&ob->id, OB_RECALC_DATA);
++	WM_event_add_notifier(C, NC_OBJECT|ND_MODIFIER, ob);
++	
++	return OPERATOR_FINISHED;
++}
++
++static int array_rand_invoke(bContext *C, wmOperator *op, wmEvent *UNUSED(event))
++{
++	if (edit_modifier_invoke_properties(C, op))
++		return array_rand_exec(C, op);
++	else
++		return OPERATOR_CANCELLED;
++}
++
++
++void OBJECT_OT_array_rand(wmOperatorType *ot)
++{
++	ot->name= "Array Refresh";
++	ot->description= "Refresh data in the Array modifier";
++	ot->idname= "OBJECT_OT_array_rand";
++
++	ot->poll= array_poll;
++	ot->invoke= array_rand_invoke;
++	ot->exec= array_rand_exec;
++	
++	/* flags */
++	//ot->flag= OPTYPE_REGISTER|OPTYPE_UNDO;
++	edit_modifier_properties(ot);
++}
+Index: source/blender/editors/object/object_ops.c
+===================================================================
+--- source/blender/editors/object/object_ops.c	(revisione 39559)
++++ source/blender/editors/object/object_ops.c	(copia locale)
+@@ -143,7 +143,8 @@
+ 	WM_operatortype_append(OBJECT_OT_multires_external_pack);
+ 	WM_operatortype_append(OBJECT_OT_meshdeform_bind);
+ 	WM_operatortype_append(OBJECT_OT_explode_refresh);
+-	
++	WM_operatortype_append(OBJECT_OT_array_rand);
++
+ 	WM_operatortype_append(OBJECT_OT_constraint_add);
+ 	WM_operatortype_append(OBJECT_OT_constraint_add_with_targets);
+ 	WM_operatortype_append(POSE_OT_constraint_add);
+Index: source/blender/makesdna/DNA_modifier_types.h
+===================================================================
+--- source/blender/makesdna/DNA_modifier_types.h	(revisione 39559)
++++ source/blender/makesdna/DNA_modifier_types.h	(copia locale)
+@@ -173,11 +173,24 @@
+ /* Mask Modifier -> flag */
+ #define MOD_MASK_INV			(1<<0)
+ 
++
++typedef struct ArrayChangeObject {
++	float location[4][4];
++	/*0 not modified
++	  1 modified
++	*/
++	int transform;
++	int id_mat;
++	int rand_group_obj;
++} ArrayChangeObject;
++
+ typedef struct ArrayModifierData {
+ 	ModifierData modifier;
+ 
+ 	/* the object with which to cap the start of the array  */
+ 	struct Object *start_cap;
++	/* the object with which to cap the mid of the array  */
++	struct Object *mid_cap;
+ 	/* the object with which to cap the end of the array  */
+ 	struct Object *end_cap;
+ 	/* the curve object to use for MOD_ARR_FITCURVE */
+@@ -192,6 +205,7 @@
+ 	   1 means the duplicates are 1 object-width apart
+ 	*/
+ 	float scale[3];
++	float delta[4][4];
+ 	/* the length over which to distribute the duplicates */
+ 	float length;
+ 	/* the limit below which to merge vertices in adjacent duplicates */
+@@ -215,6 +229,26 @@
+ 	int flags;
+ 	/* the number of duplicates to generate for MOD_ARR_FIXEDCOUNT */
+ 	int count;
++	/*Normal Mode-Advanced Mode*/
++	int mode;
++	/*Direction Offset*/
++	int sign;
++	/* min and max limit */	
++	//float limit[2];			
++	float loc_offset[3];
++	float rot_offset[3];
++	float scale_offset[3];
++	//Lock the noise offset
++	int lock;
++	struct ArrayChangeObject *Mem_Ob;
++	
++	int proportion;
++	int rays;
++	int rays_dir;
++	int rnd_mat;
++	struct Group *arr_group;
++	int rand_group;
++	int distribution;
+ } ArrayModifierData;
+ 
+ /* ArrayModifierData->fit_type */
+@@ -226,11 +260,42 @@
+ #define MOD_ARR_OFF_CONST    (1<<0)
+ #define MOD_ARR_OFF_RELATIVE (1<<1)
+ #define MOD_ARR_OFF_OBJ      (1<<2)
++#define MOD_ARR_OFF_BETW     (1<<3)
+ 
+ /* ArrayModifierData->flags */
+-#define MOD_ARR_MERGE      (1<<0)
+-#define MOD_ARR_MERGEFINAL (1<<1)
++#define MOD_ARR_MERGE      	(1<<0)
++#define MOD_ARR_MERGEFINAL 	(1<<1)
+ 
++/* ArrayModifierData->mode */
++#define MOD_ARR_MOD_ADV			(1<<0)
++#define MOD_ARR_MOD_ADV_MAT		(1<<1)
++#define MOD_ARR_MOD_ADV_CURVE	(1<<2)
++
++/* ArrayModifierData->sign */
++#define MOD_ARR_SIGN_P		(1<<0)
++#define MOD_ARR_SIGN_L		(1<<1)
++
++/* ArrayModifierData->mode */
++#define MOD_ARR_LOCK		(1<<0)
++
++/* ArrayModifierData->proportion */
++#define MOD_ARR_PROP		(1<<0)
++
++/* ArrayModifierData->rnd_mat */
++#define MOD_ARR_MAT			(1<<0)
++
++/* ArrayModifierData->rays_dir */
++#define MOD_ARR_RAYS_X 0
++#define MOD_ARR_RAYS_Y 1
++#define MOD_ARR_RAYS_Z 2
++
++/* ArrayModifierData->rand_group */
++#define MOD_ARR_RAND_GROUP    (1<<0)
++
++/* ArrayModifierData->distribution */
++#define MOD_ARR_DIST_EVENLY    (1<<0)
++#define MOD_ARR_DIST_SEGMENT   (1<<1)
++
+ typedef struct MirrorModifierData {
+ 	ModifierData modifier;
+ 
+Index: source/blender/makesdna/DNA_object_types.h
+===================================================================
+--- source/blender/makesdna/DNA_object_types.h	(revisione 39559)
++++ source/blender/makesdna/DNA_object_types.h	(copia locale)
+@@ -285,9 +285,10 @@
+ 	struct DupliObject *next, *prev;
+ 	struct Object *ob;
+ 	unsigned int origlay;
+-	int index, no_draw, type, animated;
++	int index, no_draw, no_render, type, animated;
+ 	float mat[4][4], omat[4][4];
+ 	float orco[3], uv[2];
++	int pad;
+ } DupliObject;
+ 
+ /* **************** OBJECT ********************* */
+@@ -328,7 +329,7 @@
+ /*#define OB_OFFS_LOCAL		1*/ /*UNUSED*/
+ /* #define OB_QUAT				2 */ /* never used, free flag */
+ #define OB_NEG_SCALE		4
+-#define OB_DUPLI			(8+16+256+512+2048)
++#define OB_DUPLI			(8+16+256+512+2048+4096)
+ #define OB_DUPLIFRAMES		8
+ #define OB_DUPLIVERTS		16
+ #define OB_DUPLIROT			32
+@@ -338,8 +339,9 @@
+ #define OB_DUPLIFACES		512
+ #define OB_DUPLIFACES_SCALE	1024
+ #define OB_DUPLIPARTS		2048
+-#define OB_RENDER_DUPLI		4096
+-#define OB_NO_CONSTRAINTS	8192 /* runtime constraints disable */
++#define OB_DUPLIARRAY		4096
++#define OB_RENDER_DUPLI		8192
++#define OB_NO_CONSTRAINTS	16384
+ 
+ /* (short) ipoflag */
+ 	// XXX depreceated - old animation system crap
+Index: source/blender/makesrna/intern/rna_modifier.c
+===================================================================
+--- source/blender/makesrna/intern/rna_modifier.c	(revisione 39559)
++++ source/blender/makesrna/intern/rna_modifier.c	(copia locale)
+@@ -523,6 +523,11 @@
+ 	modifier_object_set(ptr->id.data, &((ArrayModifierData*)ptr->data)->start_cap, OB_MESH, value);
+ }
+ 
++static void rna_ArrayModifier_mid_cap_set(PointerRNA *ptr, PointerRNA value)
++{
++	modifier_object_set(ptr->id.data, &((ArrayModifierData*)ptr->data)->mid_cap, OB_MESH, value);
++}
++
+ static void rna_ArrayModifier_curve_set(PointerRNA *ptr, PointerRNA value)
+ {
+ 	modifier_object_set(ptr->id.data, &((ArrayModifierData*)ptr->data)->curve_ob, OB_CURVE, value);
+@@ -1293,6 +1298,12 @@
+ 		{MOD_ARR_FITCURVE, "FIT_CURVE", 0, "Fit Curve", "Fit the duplicated objects to a curve"},
+ 		{0, NULL, 0, NULL, NULL}};
+ 
++	static EnumPropertyItem prop_rays_dir_items[] = {
++		{MOD_ARR_RAYS_X, "X", 0, "X", "Rays Direction X"},
++		{MOD_ARR_RAYS_Y, "Y", 0, "Y", "Rays Direction Y"},
++		{MOD_ARR_RAYS_Z, "Z", 0, "Z", "Rays Direction Z"},
++		{0, NULL, 0, NULL, NULL}};
++
+ 	srna= RNA_def_struct(brna, "ArrayModifier", "Modifier");
+ 	RNA_def_struct_ui_text(srna, "Array Modifier", "Array duplication modifier");
+ 	RNA_def_struct_sdna(srna, "ArrayModifierData");
+@@ -1375,6 +1386,11 @@
+ 	RNA_def_property_flag(prop, PROP_EDITABLE|PROP_ID_SELF_CHECK);
+ 	RNA_def_property_update(prop, 0, "rna_Modifier_dependency_update");
+ 	
++	prop= RNA_def_property(srna, "use_between_offset", PROP_BOOLEAN, PROP_NONE);
++	RNA_def_property_boolean_sdna(prop, NULL, "offset_type", MOD_ARR_OFF_BETW);
++	RNA_def_property_ui_text(prop, "Between Offset", "Number of duplicates between two objects");
++	RNA_def_property_update(prop, 0, "rna_Modifier_update");
++
+ 	/* Caps */
+ 	prop= RNA_def_property(srna, "start_cap", PROP_POINTER, PROP_NONE);
+ 	RNA_def_property_ui_text(prop, "Start Cap", "Mesh object to use as a start cap");
+@@ -1382,11 +1398,112 @@
+ 	RNA_def_property_flag(prop, PROP_EDITABLE|PROP_ID_SELF_CHECK);
+ 	RNA_def_property_update(prop, 0, "rna_Modifier_update");
+ 
++	prop= RNA_def_property(srna, "mid_cap", PROP_POINTER, PROP_NONE);
++	RNA_def_property_ui_text(prop, "Mid Cap", "Mesh object to use as a mid cap");
++	RNA_def_property_pointer_funcs(prop, NULL, "rna_ArrayModifier_mid_cap_set", NULL, "rna_Mesh_object_poll");
++	RNA_def_property_flag(prop, PROP_EDITABLE|PROP_ID_SELF_CHECK);
++	RNA_def_property_update(prop, 0, "rna_Modifier_update");
++
+ 	prop= RNA_def_property(srna, "end_cap", PROP_POINTER, PROP_NONE);
+ 	RNA_def_property_ui_text(prop, "End Cap", "Mesh object to use as an end cap");
+ 	RNA_def_property_pointer_funcs(prop, NULL, "rna_ArrayModifier_end_cap_set", NULL, "rna_Mesh_object_poll");
+ 	RNA_def_property_flag(prop, PROP_EDITABLE|PROP_ID_SELF_CHECK);
+ 	RNA_def_property_update(prop, 0, "rna_Modifier_dependency_update");
++
++	/* Advanced parameters */
++	prop= RNA_def_property(srna, "use_advanced", PROP_BOOLEAN, PROP_NONE);
++	RNA_def_property_boolean_sdna(prop, NULL, "mode", MOD_ARR_MOD_ADV);
++	RNA_def_property_ui_text(prop, "Advanced", "Use Advanced Array");
++	RNA_def_property_update(prop, 0, "rna_Modifier_update");
++
++	prop= RNA_def_property(srna, "sign_p", PROP_BOOLEAN, PROP_TRANSLATION);
++	RNA_def_property_boolean_sdna(prop, NULL, "sign", MOD_ARR_SIGN_P);
++	RNA_def_property_ui_text(prop, "+", "Random Sign Between + and -");
++	RNA_def_property_update(prop, 0, "rna_Modifier_update");
++
++	prop= RNA_def_property(srna, "sign_l", PROP_BOOLEAN, PROP_TRANSLATION);
++	RNA_def_property_boolean_sdna(prop, NULL, "sign", MOD_ARR_SIGN_L);
++	RNA_def_property_ui_text(prop, "-", "Random Sign Between + and -");
++	RNA_def_property_update(prop, 0, "rna_Modifier_update");
++
++   	prop= RNA_def_property(srna, "location_offset", PROP_FLOAT, PROP_TRANSLATION);
++	RNA_def_property_float_sdna(prop, NULL, "loc_offset");
++	RNA_def_property_range(prop, 0, FLT_MAX);
++	RNA_def_property_ui_range(prop, 0, FLT_MAX, 1, 5);
++	RNA_def_property_ui_text(prop, "Location Offset Displacement", "Add a location offset to vertices or object");
++	RNA_def_property_update(prop, NC_OBJECT|ND_TRANSFORM, "rna_Modifier_update");
++	
++	prop= RNA_def_property(srna, "rotation_offset", PROP_FLOAT,  PROP_EULER);
++	RNA_def_property_float_sdna(prop, NULL, "rot_offset");
++	RNA_def_property_ui_text(prop, "Rotation Offset Displacement", "Add a rotation offset to vertices or object");
++	RNA_def_property_update(prop, NC_OBJECT|ND_TRANSFORM, "rna_Modifier_update");
++	
++	prop= RNA_def_property(srna, "scale_offset", PROP_FLOAT, PROP_XYZ);
++	RNA_def_property_float_sdna(prop, NULL, "scale_offset");
++	RNA_def_property_range(prop, 0, 10);
++	RNA_def_property_ui_range(prop, 0, 10, 1,5);
++	RNA_def_property_ui_text(prop, "Scale Offset Displacement", "Add a scale offset to vertices or object");
++	RNA_def_property_update(prop, NC_OBJECT|ND_TRANSFORM, "rna_Modifier_update");
++
++	prop= RNA_def_property(srna, "scale", PROP_FLOAT, PROP_NONE);
++	RNA_def_property_float_sdna(prop, NULL, "scale_offset[0]");
++	RNA_def_property_range(prop, 0, FLT_MAX);
++	RNA_def_property_ui_range(prop, 0, FLT_MAX, 1, 5);
++	RNA_def_property_ui_text(prop, "Scale Offset Displacement", "Add a scale offset to vertices or object");
++	RNA_def_property_update(prop, NC_OBJECT|ND_TRANSFORM, "rna_Modifier_update");
++
++	prop= RNA_def_property(srna, "proportion", PROP_BOOLEAN, PROP_TRANSLATION);
++	RNA_def_property_boolean_sdna(prop, NULL, "proportion", MOD_ARR_SIGN_P);
++	RNA_def_property_ui_text(prop, "Constrain Proportions", "Constrain Proportions");
++	RNA_def_property_update(prop, 0, "rna_Modifier_update");
++
++	prop= RNA_def_property(srna, "rays", PROP_INT, PROP_NONE);
++	RNA_def_property_range(prop, 1, 365);
++	RNA_def_property_ui_range(prop, 1, 365, 1,0);
++	RNA_def_property_ui_text(prop, "Rays", "Rays");
++	RNA_def_property_update(prop, 0, "rna_Modifier_update");
++
++	prop= RNA_def_property(srna, "material", PROP_BOOLEAN, PROP_TRANSLATION);
++	RNA_def_property_boolean_sdna(prop, NULL, "rnd_mat", MOD_ARR_MAT);
++	RNA_def_property_ui_text(prop, "Rand Material", "Use in the random material for Array");
++	RNA_def_property_update(prop, 0, "rna_Modifier_update");
++
++	prop= RNA_def_property(srna, "rays_dir", PROP_ENUM, PROP_NONE);
++	RNA_def_property_enum_items(prop, prop_rays_dir_items);
++	RNA_def_property_ui_text(prop, "Rays Direction", "");
++	RNA_def_property_update(prop, 0, "rna_Modifier_update");
++
++	prop= RNA_def_property(srna, "array_group", PROP_POINTER, PROP_NONE);
++	RNA_def_property_pointer_sdna(prop, NULL, "arr_group");
++	RNA_def_property_struct_type(prop, "Group");
++	RNA_def_property_flag(prop, PROP_EDITABLE);
++	RNA_def_property_ui_text(prop, "Dupli Group", "Show Group");
++	RNA_def_property_update(prop, 0, "rna_Modifier_update");
++
++	prop= RNA_def_property(srna, "rand_group", PROP_BOOLEAN, PROP_TRANSLATION);
++	RNA_def_property_boolean_sdna(prop, NULL, "rand_group", MOD_ARR_RAND_GROUP);
++	RNA_def_property_ui_text(prop, "Rand Object", "Object random group");
++	RNA_def_property_update(prop, 0, "rna_Modifier_update");
++
++	prop= RNA_def_property(srna, "use_advanced_curve", PROP_BOOLEAN, PROP_NONE);
++	RNA_def_property_boolean_sdna(prop, NULL, "mode", MOD_ARR_MOD_ADV_CURVE);
++	RNA_def_property_ui_text(prop, "Advanced Curve", "Using a curve in an array");
++	RNA_def_property_update(prop, 0, "rna_Modifier_update");
++
++	prop= RNA_def_property(srna, "all_curve", PROP_BOOLEAN, PROP_TRANSLATION);
++	RNA_def_property_boolean_sdna(prop, NULL, "distribution", MOD_ARR_DIST_EVENLY);
++	RNA_def_property_ui_text(prop, "Spread Evenly", "Spread evenly on a curve");
++	RNA_def_property_update(prop, 0, "rna_Modifier_update");
++
++	prop= RNA_def_property(srna, "for_segment", PROP_BOOLEAN, PROP_TRANSLATION);
++	RNA_def_property_boolean_sdna(prop, NULL, "distribution", MOD_ARR_DIST_SEGMENT);
++	RNA_def_property_ui_text(prop, "For Segment", "Spread evenly for all segments");
++	RNA_def_property_update(prop, 0, "rna_Modifier_update");
++
++	prop= RNA_def_property(srna, "use_advanced_material", PROP_BOOLEAN, PROP_NONE);
++	RNA_def_property_boolean_sdna(prop, NULL, "mode", MOD_ARR_MOD_ADV_MAT);
++	RNA_def_property_ui_text(prop, "Advanced Material", "Settings of the material in an array");
++	RNA_def_property_update(prop, 0, "rna_Modifier_update");
+ }
+ 
+ static void rna_def_modifier_edgesplit(BlenderRNA *brna)
+Index: source/blender/modifiers/intern/MOD_array.c
+===================================================================
+--- source/blender/modifiers/intern/MOD_array.c	(revisione 39559)
++++ source/blender/modifiers/intern/MOD_array.c	(copia locale)
+@@ -37,6 +37,8 @@
+ 
+ /* Array modifier: duplicates the object multiple times along an axis */
+ 
++#include <time.h>
++#include <math.h>
+ #include "MEM_guardedalloc.h"
+ 
+ #include "BLI_math.h"
+@@ -45,6 +47,7 @@
+ #include "BLI_edgehash.h"
+ 
+ #include "DNA_curve_types.h"
++#include "DNA_group_types.h"
+ #include "DNA_meshdata_types.h"
+ #include "DNA_object_types.h"
+ 
+@@ -53,9 +56,12 @@
+ #include "BKE_mesh.h"
+ #include "BKE_modifier.h"
+ #include "BKE_object.h"
++#include "BKE_anim.h"
+ 
++//#include "BLI_rand.h"
++
+ #include "depsgraph_private.h"
+-
++#include "BKE_ama.h"
+ #include "MOD_util.h"
+ 
+ static void initData(ModifierData *md)
+@@ -65,7 +71,7 @@
+ 	/* default to 2 duplicates distributed along the x-axis by an
+ 	offset of 1 object-width
+ 	*/
+-	amd->start_cap = amd->end_cap = amd->curve_ob = amd->offset_ob = NULL;
++	amd->start_cap = amd->mid_cap = amd->end_cap = amd->curve_ob = amd->offset_ob = NULL;
+ 	amd->count = 2;
+ 	amd->offset[0] = amd->offset[1] = amd->offset[2] = 0;
+ 	amd->scale[0] = 1;
+@@ -75,6 +81,20 @@
+ 	amd->fit_type = MOD_ARR_FIXEDCOUNT;
+ 	amd->offset_type = MOD_ARR_OFF_RELATIVE;
+ 	amd->flags = 0;
++
++	amd->mode = !MOD_ARR_MOD_ADV;
++	amd->loc_offset[0] = amd->loc_offset[1] = amd->loc_offset[2] = 0;
++	amd->rot_offset[0] = amd->rot_offset[1] = amd->rot_offset[2] = 0;
++	amd->scale_offset[0] = amd->scale_offset[1] = amd->scale_offset[2] = 0;
++	amd->sign = MOD_ARR_SIGN_P;
++	amd->lock = !MOD_ARR_LOCK;
++	amd->proportion = MOD_ARR_PROP;
++	amd->rays = 1;
++	amd->rnd_mat = !MOD_ARR_MAT;
++	amd->rays_dir = MOD_ARR_RAYS_X;
++	amd->arr_group = NULL;
++	amd->rand_group = !MOD_ARR_RAND_GROUP;
++	amd->distribution = MOD_ARR_DIST_EVENLY;
+ }
+ 
+ static void copyData(ModifierData *md, ModifierData *target)
+@@ -83,6 +103,7 @@
+ 	ArrayModifierData *tamd = (ArrayModifierData*) target;
+ 
+ 	tamd->start_cap = amd->start_cap;
++	tamd->mid_cap = amd->mid_cap;
+ 	tamd->end_cap = amd->end_cap;
+ 	tamd->curve_ob = amd->curve_ob;
+ 	tamd->offset_ob = amd->offset_ob;
+@@ -94,6 +115,21 @@
+ 	tamd->fit_type = amd->fit_type;
+ 	tamd->offset_type = amd->offset_type;
+ 	tamd->flags = amd->flags;
++
++	tamd->mode = amd->mode;
++	copy_v3_v3(tamd->loc_offset, amd->loc_offset);
++	copy_v3_v3(tamd->rot_offset, amd->rot_offset);
++	copy_v3_v3(tamd->scale_offset, amd->scale_offset);
++	tamd->sign = amd->sign;	
++	tamd->lock = amd->lock;
++	tamd->proportion = amd->proportion;
++	tamd->rays = amd->rays;
++	tamd->Mem_Ob = MEM_dupallocN(amd->Mem_Ob);
++	tamd->rnd_mat = amd->rnd_mat;
++	tamd->rays_dir = amd->rays_dir;
++	tamd->arr_group = amd->arr_group;
++	tamd->rand_group = amd->rand_group;
++	tamd->distribution = amd->distribution;
+ }
+ 
+ static void foreachObjectLink(
+@@ -104,6 +140,7 @@
+ 	ArrayModifierData *amd = (ArrayModifierData*) md;
+ 
+ 	walk(userData, ob, &amd->start_cap);
++	walk(userData, ob, &amd->mid_cap);
+ 	walk(userData, ob, &amd->end_cap);
+ 	walk(userData, ob, &amd->curve_ob);
+ 	walk(userData, ob, &amd->offset_ob);
+@@ -120,6 +157,12 @@
+ 		dag_add_relation(forest, curNode, obNode,
+ 				 DAG_RL_DATA_DATA | DAG_RL_OB_DATA, "Array Modifier");
+ 	}
++	if (amd->mid_cap) {
++		DagNode *curNode = dag_get_node(forest, amd->mid_cap);
++
++		dag_add_relation(forest, curNode, obNode,
++				 DAG_RL_DATA_DATA | DAG_RL_OB_DATA, "Array Modifier");
++	}
+ 	if (amd->end_cap) {
+ 		DagNode *curNode = dag_get_node(forest, amd->end_cap);
+ 
+@@ -226,11 +269,14 @@
+ 	   int initFlags)
+ {
+ 	int i, j;
++	int dim, start;
+ 	/* offset matrix */
+ 	float offset[4][4];
+ 	float final_offset[4][4];
+ 	float tmp_mat[4][4];
+ 	float length = amd->length;
++	float alpha, d_alp, circle;
++	float f_o;
+ 	int count = amd->count;
+ 	int numVerts, numEdges, numFaces;
+ 	int maxVerts, maxEdges, maxFaces;
+@@ -243,7 +289,7 @@
+ 	IndexMapEntry *indexMap;
+ 
+ 	EdgeHash *edges;
+-
++	
+ 	/* need to avoid infinite recursion here */
+ 	if(amd->start_cap && amd->start_cap != ob)
+ 		start_cap = amd->start_cap->derivedFinal;
+@@ -277,42 +323,31 @@
+ 			unit_m4(obinv);
+ 
+ 		mul_serie_m4(result_mat, offset,
+-				 obinv, amd->offset_ob->obmat,
+-	 NULL, NULL, NULL, NULL, NULL);
++					obinv, amd->offset_ob->obmat,
++					NULL, NULL, NULL, NULL, NULL);
+ 		copy_m4_m4(offset, result_mat);
+ 	}
+ 
++	if ((amd->offset_type & MOD_ARR_OFF_BETW) && (amd->offset_ob)) {
++			float dist = sqrt(dot_v3v3(amd->offset_ob->obmat[3], amd->offset_ob->obmat[3]));
++			offset[3][0] = amd->offset_ob->obmat[3][0] / (count - 1);
++			offset[3][1] = amd->offset_ob->obmat[3][1] / (count - 1);
++			offset[3][2] = amd->offset_ob->obmat[3][2] / (count - 1);
++	}
+ 	if(amd->fit_type == MOD_ARR_FITCURVE && amd->curve_ob) {
+-		Curve *cu = amd->curve_ob->data;
+-		if(cu) {
+-			float tmp_mat[3][3];
+-			float scale;
+-			
+-			object_to_mat3(amd->curve_ob, tmp_mat);
+-			scale = mat3_to_scale(tmp_mat);
+-				
+-			if(!cu->path) {
+-				cu->flag |= CU_PATH; // needed for path & bevlist
+-				makeDispListCurveTypes(scene, amd->curve_ob, 0);
+-			}
+-			if(cu->path)
+-				length = scale*cu->path->totdist;
+-		}
++		length = length_fitcurve(amd, scene);
+ 	}
+ 
+ 	/* calculate the maximum number of copies which will fit within the
+ 	prescribed length */
+ 	if(amd->fit_type == MOD_ARR_FITLENGTH
+ 		  || amd->fit_type == MOD_ARR_FITCURVE) {
+-		float dist = sqrt(dot_v3v3(offset[3], offset[3]));
+-
+-		if(dist > 1e-6f)
+-			/* this gives length = first copy start to last copy end
+-			add a tiny offset for floating point rounding errors */
+-			count = (length + 1e-6f) / dist;
+-		else
+-			/* if the offset has no translation, just make one copy */
+-			count = 1;
++		/*if ((amd->fit_type == MOD_ARR_FITLENGTH) && (count>2)){
++			amd->length = count_to_length(count, offset[3]);
++			length = amd->length;
++		}*/
++		count = length_to_count(length, offset[3]);
++		amd->count = count;
+ 	}
+ 
+ 	if(count < 1)
+@@ -336,14 +371,45 @@
+ 	}
+ 	result = CDDM_from_template(dm, finalVerts, finalEdges, finalFaces);
+ 
++	if (amd->mode & MOD_ARR_MOD_ADV){
++		start = 0;
++		if (!amd->Mem_Ob)
++			amd->Mem_Ob = MEM_callocN(sizeof(*amd->Mem_Ob) * (count), "Mem_Ob");
++		else {
++			dim = MEM_allocN_len(amd->Mem_Ob) / sizeof(*amd->Mem_Ob);
++			if ( dim < (count) ) {
++				amd->Mem_Ob = MEM_reallocN(amd->Mem_Ob, sizeof(*amd->Mem_Ob) * (count));
++				start = dim;
++			}
++		}
++		
++		//Inizializzare i nuovi cloni creati
++		if (!amd->lock) {
++			init_offset(start, count, amd);
++			create_offset(count, ob->totcol, amd, ob);
++			amd->lock = 1;
++		}
++		else 
++			if (start!=0)
++				init_offset(start, count, amd);
++	}
++
++	f_o = count-1;
++
++	if (amd->rays>1) {
++		alpha = (float)6.2831 / amd->rays;
++		circle = (float)(count - 1) / amd->rays;
++		f_o = ceil(circle);
++	}
++
+ 	/* calculate the offset matrix of the final copy (for merging) */
+ 	unit_m4(final_offset);
+-
+-	for(j=0; j < count - 1; j++) {
++	for(j=0; j < f_o; j++) {
+ 		mul_m4_m4m4(tmp_mat, final_offset, offset);
+ 		copy_m4_m4(final_offset, tmp_mat);
+ 	}
+ 
++	copy_m4_m4(amd->delta, offset);
+ 	numVerts = numEdges = numFaces = 0;
+ 	mvert = CDDM_get_verts(result);
+ 
+@@ -402,15 +468,68 @@
+ 
+ 		/* if no merging, generate copies of this vert */
+ 		if(indexMap[i].merge < 0) {
++			if (amd->rays>1)
++				d_alp=0;
++
+ 			for(j=0; j < count - 1; j++) {
++				float rot[4][4];
+ 				mv2 = &mvert[numVerts];
+ 
+ 				DM_copy_vert_data(result, result, numVerts - 1, numVerts, 1);
+ 				*mv2 = *mv;
+ 				numVerts++;
++				/*//Aggiungendo questa parte ed eliminando 1) e 2) 
++				//si ottiene una spirale
++				mul_m4_v3(offset, co);
++				copy_v3_v3(mv2->co, co);*/
++				if (amd->rays>1)
++				{
++					float ro[3];
++					unit_m4(rot);
++					if (amd->rays_dir == MOD_ARR_RAYS_X)
++						rotate_m4(rot,'X',d_alp);
++					else if (amd->rays_dir == MOD_ARR_RAYS_Y)
++						rotate_m4(rot,'Y',d_alp);
++					else
++						rotate_m4(rot,'Z',d_alp);
++					if (d_alp == 0){
++						/*1)*/
++						mul_m4_v3(offset, co);
++						copy_v3_v3(mv2->co, co);
++						/******/
++						copy_v3_v3(ro, mv2->co);
++						mul_m4_v3(rot, ro);
++						copy_v3_v3(mv2->co, ro);
++					}
++					else{
++						copy_v3_v3(ro,co);
++						mul_m4_v3(rot, ro);
++						copy_v3_v3(mv2->co, ro);
++					}
++					d_alp = d_alp + alpha;
++					if (d_alp>6.2831)
++						d_alp=0;
++				}
++				else
++				{
++					/*2)*/
++					mul_m4_v3(offset, co);
++					copy_v3_v3(mv2->co, co);
++					/******/
++				}
+ 
+-				mul_m4_v3(offset, co);
+-				copy_v3_v3(mv2->co, co);
++				if (amd->mode & MOD_ARR_MOD_ADV)
++				{	
++					if (amd->Mem_Ob[j].transform)
++					{
++						float fo[3];
++												
++						copy_v3_v3(fo, mv2->co);
++						mul_m4_v3(amd->Mem_Ob[j].location, fo);
++						copy_v3_v3(mv2->co, fo);
++						
++					}
++				}
+ 			}
+ 		} else if(indexMap[i].merge != i && indexMap[i].merge_final) {
+ 			/* if this vert is not merging with itself, and it is merging
+@@ -555,6 +674,11 @@
+ 
+ 			numFaces++;
+ 
++			/*Rand Material*/
++			if (amd->rnd_mat && (ob->totcol>1))
++			{
++				mf2->mat_nr = amd->Mem_Ob[j-1].id_mat;
++			}
+ 			/* if the face has fewer than 3 vertices, don't create it */
+ 			if(test_index_face_maxvert(mf2, &result->faceData, numFaces-1, inMF.v4?4:3, numVerts) < 3) {
+ 				numFaces--;
+@@ -765,6 +889,16 @@
+ 		end_cap->release(end_cap);
+ 	}
+ 
++	if(amd->fit_type == MOD_ARR_FITCURVE && amd->curve_ob) {
++		if (amd->distribution == MOD_ARR_DIST_EVENLY){
++			float (*cos)[3] = MEM_mallocN(sizeof(*cos)*numVerts, "vertex_array_to_curve");
++	
++			for (i=0; i<numVerts; i++)
++				VECCOPY(cos[i], mvert[i].co);
++			array_to_curve(scene, amd->curve_ob, ob, cos, numVerts);
++		}
++	}
++
+ 	BLI_edgehash_free(edges, NULL);
+ 	MEM_freeN(indexMap);
+ 
+@@ -785,9 +919,20 @@
+ 
+ 	result = arrayModifier_doArray(amd, md->scene, ob, dm, 0);
+ 
+-	if(result != dm)
++	if(result != dm) {
+ 		CDDM_calc_normals(result);
+-
++		
++		if(amd->arr_group!=NULL)
++		{	
++			ob->transflag = OB_DUPLIARRAY;
++			ob->dup_group = amd->arr_group;
++		}
++		else
++		{
++			ob->transflag = 0;
++			ob->dup_group = NULL;
++		}
++	}
+ 	return result;
+ }
+ 
+@@ -798,6 +943,16 @@
+ 	return applyModifier(md, ob, dm, 0, 1);
+ }
+ 
++static void freeData(ModifierData *md)
++{
++	ArrayModifierData *amd = (ArrayModifierData*) md;
++	
++	if (amd) 
++	{
++		if (amd->Mem_Ob)
++			MEM_freeN(amd->Mem_Ob);
++	}
++}
+ 
+ ModifierTypeInfo modifierType_Array = {
+ 	/* name */              "Array",
+@@ -819,12 +974,11 @@
+ 	/* applyModifierEM */   applyModifierEM,
+ 	/* initData */          initData,
+ 	/* requiredDataMask */  NULL,
+-	/* freeData */          NULL,
++	/* freeData */          freeData,
+ 	/* isDisabled */        NULL,
+ 	/* updateDepgraph */    updateDepgraph,
+ 	/* dependsOnTime */     NULL,
+ 	/* dependsOnNormals */	NULL,
+ 	/* foreachObjectLink */ foreachObjectLink,
+ 	/* foreachIDLink */     NULL,
+-	/* foreachTexLink */    NULL,
+ };
+Index: source/blender/render/intern/source/convertblender.c
+===================================================================
+--- source/blender/render/intern/source/convertblender.c	(revisione 39559)
++++ source/blender/render/intern/source/convertblender.c	(copia locale)
+@@ -4707,7 +4707,8 @@
+ 	/* override not showing object when duplis are used with particles */
+ 	if(ob->transflag & OB_DUPLIPARTS)
+ 		; /* let particle system(s) handle showing vs. not showing */
+-	else if((ob->transflag & OB_DUPLI) && !(ob->transflag & OB_DUPLIFRAMES))
++	else if((ob->transflag & OB_DUPLI) && !(ob->transflag & OB_DUPLIFRAMES) && 
++			!(ob->transflag & OB_DUPLIARRAY))
+ 		return 0;
+ 	
+ 	/* don't add non-basic meta objects, ends up having renderobjects with no geometry */
+@@ -4744,7 +4745,7 @@
+ 	for(psys=obd->particlesystem.first; psys; psys=psys->next)
+ 		if(!ELEM5(psys->part->ren_as, PART_DRAW_BB, PART_DRAW_LINE, PART_DRAW_PATH, PART_DRAW_OB, PART_DRAW_GR))
+ 			return 0;
+-
++	
+ 	/* don't allow lamp, animated duplis, or radio render */
+ 	return (render_object_type(obd->type) &&
+ 			(!(dob->type == OB_DUPLIGROUP) || !dob->animated));
+@@ -4811,17 +4812,19 @@
+ 	/* simple preventing of too deep nested groups */
+ 	if(level>MAX_DUPLI_RECUR) return;
+ 
++	//if((ob->transflag == OB_DUPLIARRAY) && dob->no_render)
++	//	return;
+ 	/* recursively go into dupligroups to find objects with OB_RENDER_DUPLI
+ 	 * that were not created yet */
+ 	for(go= group->gobject.first; go; go= go->next) {
+ 		ob= go->ob;
+-
++		
+ 		if(ob->flag & OB_DONE) {
+ 			if(ob->transflag & OB_RENDER_DUPLI) {
+ 				if(allow_render_object(re, ob, nolamps, onlyselected, actob)) {
+ 					init_render_object(re, ob, NULL, 0, timeoffset, vectorlay);
+ 					ob->transflag &= ~OB_RENDER_DUPLI;
+-
++					
+ 					if(ob->dup_group)
+ 						add_group_render_dupli_obs(re, ob->dup_group, nolamps, onlyselected, actob, timeoffset, vectorlay, level+1);
+ 				}
+@@ -4894,10 +4897,14 @@
+ 					Object *obd= dob->ob;
+ 					
+ 					copy_m4_m4(obd->obmat, dob->mat);
+-
++					
++					if(!(obd->transflag & OB_DUPLIARRAY) && dob->no_render)
++						continue;
++					
+ 					/* group duplis need to set ob matrices correct, for deform. so no_draw is part handled */
+-					if(!(obd->transflag & OB_RENDER_DUPLI) && dob->no_draw)
+-						continue;
++					if (obd->transflag & OB_DUPLIARRAY)
++						if(!(obd->transflag & OB_RENDER_DUPLI) && dob->no_draw)
++							continue;
+ 
+ 					if(obd->restrictflag & OB_RESTRICT_RENDER)
+ 						continue;
+@@ -4913,7 +4920,6 @@
+ 						ObjectRen *obr = NULL;
+ 						int psysindex;
+ 						float mat[4][4];
+-
+ 						obi=NULL;
+ 
+ 						/* instances instead of the actual object are added in two cases, either

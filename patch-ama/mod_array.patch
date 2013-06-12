@@ -1,0 +1,206 @@
+@@ -324,10 +618,136 @@
+ 				BM_elem_index_set(h, i); /* set_dirty */
+ 				i++;
+ 			}
++<<<<<<< .mine
++		/* if no merging, generate copies of this vert */
++		if(indexMap[i].merge < 0) {
++			if (amd->rays>1)
++				d_alp=0;
+ 
++			for(j=0; j < count - 1; j++) {
++				float rot[4][4];
++				mv2 = &mvert[numVerts];
++
++				DM_copy_vert_data(result, result, numVerts - 1, numVerts, 1);
++				*mv2 = *mv;
++				numVerts++;
++				/*//Aggiungendo questa parte ed eliminando 1) e 2) 
++				//si ottiene una spirale
++				mul_m4_v3(offset, co);
++				copy_v3_v3(mv2->co, co);*/
++					
++				if ((amd->mode & MOD_ARR_MOD_ADV_CLONE) && (amd->rays>1)) {
++					float ro[3];
++					unit_m4(rot);
++					if (amd->rays_dir == MOD_ARR_RAYS_X)
++						rotate_m4(rot,'X',d_alp);
++					else if (amd->rays_dir == MOD_ARR_RAYS_Y)
++						rotate_m4(rot,'Y',d_alp);
++					else
++						rotate_m4(rot,'Z',d_alp);
++					if (d_alp == 0){
++						/*1)*/
++						mul_m4_v3(offset, co);
++						copy_v3_v3(mv2->co, co);
++						/******/
++						copy_v3_v3(ro, mv2->co);
++						mul_m4_v3(rot, ro);
++						copy_v3_v3(mv2->co, ro);
++					}
++					else {
++						copy_v3_v3(ro,co);
++						mul_m4_v3(rot, ro);
++						copy_v3_v3(mv2->co, ro);
++					}
++					d_alp = d_alp + alpha;
++					if (d_alp>6.2831)
++						d_alp=0;
++				}
++				else {
++					/*2)*/
++					mul_m4_v3(offset, co);
++					copy_v3_v3(mv2->co, co);
++					/******/
++				}
++
++				if (amd->mode & MOD_ARR_MOD_ADV) {	
++					if (amd->Mem_Ob[j].transform) {
++						float fo[3];
++						float app[4][4];
++						unit_m4(app);
++
++						if (amd->flag_offset & MOD_ARR_LOCAL) {
++							float loc[4][4];
++
++							/* copy of the original coordinates */
++							copy_v3_v3(fo, mv->co);
++							copy_v3_v3(app[3], fo);
++							loc_eul_size_to_mat4(app, amd->Mem_Ob[j].loc, amd->Mem_Ob[j].rot, amd->Mem_Ob[j].scale);
++							mul_m4_v3(app, fo);
++							/* recalculates the offset of the clone */
++							copy_m4_m4(loc, offset);
++							mul_v3_fl(loc[3], j+1);
++							//unit_m4(loc);
++							//copy_v3_v3(loc[3], mv2->co);
++							/* calculates the new coordinates of the clone */
++							//mult_m4_m4m4(loc, loc, app);
++							
++							//print_m4("loc", loc);
++							//print_v3("fo", fo);
++							mul_m4_v3(loc, fo);
++							//print_v3("fo-r", fo);
++							copy_v3_v3(mv2->co, fo);
++						}
++						else {
++							loc_eul_size_to_mat4(app, amd->Mem_Ob[j].loc, amd->Mem_Ob[j].rot, amd->Mem_Ob[j].scale);
++							copy_v3_v3(fo, mv2->co);
++							mul_m4_v3(app, fo);
++							copy_v3_v3(mv2->co, fo);
++						}
++					}
++				}
++				
++				if ((amd->type & MOD_ARR_MOD_CURVE) && (amd->curve_ob)) {
++					if (amd->dist_cu & MOD_ARR_DIST_EVENLY) {
++						/*if (i==0){
++							float fo[3];
++							float cent[3];
++							float loc[4];
++							float app[4][4];
++
++							unit_m4(app);
++							copy_v3_v3(fo, mv2->co);
++							array_to_curve(scene, amd->curve_ob, ob, fo, loc, cent);
++							copy_v3_v3(amd->Mem_Ob[j].cu_cent, cent);
++							copy_v4_v4(amd->Mem_Ob[j].cu_loc, loc);
++							copy_v3_v3(app[3], amd->Mem_Ob[j].cu_loc);
++							mul_m4_v3(app, fo);
++							//add_v3_v3v3(fo, cent, loc);
++							copy_v3_v3(mv2->co, fo);
++						}
++						else {
++							float fo[3];
++							float app[4][4];
++							unit_m4(app);
++							copy_v3_v3(fo, mv2->co);
++							/*print_v3("cent", amd->Mem_Ob[j].cu_cent);
++							print_v4("loc", amd->Mem_Ob[j].cu_loc);*/
++							/* add_v3_v3v3(fo, amd->Mem_Ob[j].cu_cent, amd->Mem_Ob[j].cu_loc); */
++							/* copy_v3_v3(app[3], amd->Mem_Ob[j].cu_loc);
++							mul_m4_v3(app, fo);
++							print_v3("fo", fo);
++							copy_v3_v3(mv2->co, fo);
++						}*/
++					}
++					else { /* MOD_ARR_DIST_SEGMENT */
++					
++					}
++				}
++=======
+ 			BMO_ITER(h, &oiter, em->bm, &op, "newout", BM_ALL) {
+ 				BM_elem_index_set(h, i); /* set_dirty */
+ 				i++;
++>>>>>>> .r44274
+ 			}
+ 			/* above loops over all, so set all to dirty, if this is somehow
+ 			 * setting valid values, this line can be remvoed - campbell */
+@@ -365,20 +785,106 @@
+ 		#undef E
+ 		#undef _E
+ 
++<<<<<<< .mine
++		dm->getFace(dm, i, &inMF);
++
++		DM_copy_face_data(dm, result, i, numFaces, 1);
++		*mf = inMF;
++
++		mf->v1 = indexMap[inMF.v1].new;
++		mf->v2 = indexMap[inMF.v2].new;
++		mf->v3 = indexMap[inMF.v3].new;
++		if(inMF.v4)
++			mf->v4 = indexMap[inMF.v4].new;
++
++		/* if vertices are to be merged with the final copies of their
++			  * merge targets, calculate that final copy
++		*/
++		if(indexMap[inMF.v1].merge_final)
++			mf->v1 = calc_mapping(indexMap, indexMap[inMF.v1].merge, count-1);
++		if(indexMap[inMF.v2].merge_final)
++			mf->v2 = calc_mapping(indexMap, indexMap[inMF.v2].merge, count-1);
++		if(indexMap[inMF.v3].merge_final)
++			mf->v3 = calc_mapping(indexMap, indexMap[inMF.v3].merge, count-1);
++		if(inMF.v4 && indexMap[inMF.v4].merge_final)
++			mf->v4 = calc_mapping(indexMap, indexMap[inMF.v4].merge, count-1);
++
++		if(test_index_face_maxvert(mf, &result->faceData, numFaces, inMF.v4?4:3, numVerts) < 3)
++			continue;
++
++		numFaces++;
++
++		/* if the face has fewer than 3 vertices, don't create it */
++		if(mf->v3 == 0 || (mf->v1 && (mf->v1 == mf->v3 || mf->v1 == mf->v4))) {
++			numFaces--;
++			DM_free_face_data(result, numFaces, 1);
++		}
++
++		for(j = 1; j < count; j++)
++		{
++			MFace *mf2 = &mface[numFaces];
++
++			DM_copy_face_data(dm, result, i, numFaces, 1);
++			*mf2 = *mf;
++
++			mf2->v1 = calc_mapping(indexMap, inMF.v1, j);
++			mf2->v2 = calc_mapping(indexMap, inMF.v2, j);
++			mf2->v3 = calc_mapping(indexMap, inMF.v3, j);
++			if (inMF.v4)
++				mf2->v4 = calc_mapping(indexMap, inMF.v4, j);
++
++			numFaces++;
++
++			/*Rand Material*/
++			if ((amd->mode & MOD_ARR_MOD_ADV_MAT) && (amd->mat_ob & MOD_ARR_AR_MAT_RND) && (ob->totcol>1))
++					mf2->mat_nr = amd->Mem_Ob[j-1].id_mat;
++			/* if the face has fewer than 3 vertices, don't create it */
++			if(test_index_face_maxvert(mf2, &result->faceData, numFaces-1, inMF.v4?4:3, numVerts) < 3) {
++				numFaces--;
++				DM_free_face_data(result, numFaces, 1);
++			}
++		}
++=======
+ 		BMO_op_finish(em->bm, &oldop);
+ 		oldop = op;
++>>>>>>> .r44274
+ 	}
+ 

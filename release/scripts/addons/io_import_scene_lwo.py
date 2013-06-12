@@ -20,12 +20,12 @@ bl_info= {
     "name": "Import LightWave Objects",
     "author": "Ken Nign (Ken9)",
     "version": (1, 2),
-    "blender": (2, 5, 7),
+    "blender": (2, 57, 0),
     "location": "File > Import > LightWave Object (.lwo)",
     "description": "Imports a LWO file including any UV, Morph and Color maps. "\
         "Can convert Skelegons to an Armature.",
     "warning": "",
-    "wiki_url": "http://wiki.blender.org/index.php/Extensions:2.5/Py/"\
+    "wiki_url": "http://wiki.blender.org/index.php/Extensions:2.6/Py/"\
         "Scripts/Import-Export/LightWave_Object",
     "tracker_url": "https://projects.blender.org/tracker/index.php?"\
         "func=detail&aid=23623",
@@ -68,7 +68,7 @@ import chunk
 
 import bpy
 import mathutils
-from mathutils.geometry import tesselate_polygon
+from mathutils.geometry import tessellate_polygon
 
 
 class _obj_layer(object):
@@ -153,7 +153,7 @@ def load_lwo(filename,
              ADD_SUBD_MOD=True,
              LOAD_HIDDEN=False,
              SKEL_TO_ARM=True):
-    '''Read the LWO file, hand off to version specific function.'''
+    """Read the LWO file, hand off to version specific function."""
     name, ext= os.path.splitext(os.path.basename(filename))
     file= open(filename, 'rb')
 
@@ -189,7 +189,7 @@ def load_lwo(filename,
 
 
 def read_lwo2(file, filename, layers, surfs, tags, add_subd_mod, load_hidden, skel_to_arm):
-    '''Read version 2 file, LW 6+.'''
+    """Read version 2 file, LW 6+."""
     handle_layer= True
     last_pols_count= 0
     just_read_bones= False
@@ -275,7 +275,7 @@ def read_lwo2(file, filename, layers, surfs, tags, add_subd_mod, load_hidden, sk
 
 
 def read_lwob(file, filename, layers, surfs, tags, add_subd_mod):
-    '''Read version 1 file, LW < 6.'''
+    """Read version 1 file, LW < 6."""
     last_pols_count= 0
     print("Importing LWO: " + filename + "\nLWO v1 Format")
 
@@ -317,7 +317,7 @@ def read_lwob(file, filename, layers, surfs, tags, add_subd_mod):
 
 
 def read_lwostring(raw_name):
-    '''Parse a zero-padded string.'''
+    """Parse a zero-padded string."""
 
     i = raw_name.find(b'\0')
     name_len = i + 1
@@ -334,7 +334,7 @@ def read_lwostring(raw_name):
 
 
 def read_vx(pointdata):
-    '''Read a variable-length index.'''
+    """Read a variable-length index."""
     if pointdata[0] != 255:
         index= pointdata[0]*256 + pointdata[1]
         size= 2
@@ -346,7 +346,7 @@ def read_vx(pointdata):
 
 
 def read_tags(tag_bytes, object_tags):
-    '''Read the object's Tags chunk.'''
+    """Read the object's Tags chunk."""
     offset= 0
     chunk_len= len(tag_bytes)
 
@@ -357,7 +357,7 @@ def read_tags(tag_bytes, object_tags):
 
 
 def read_layr(layr_bytes, object_layers, load_hidden):
-    '''Read the object's layer data.'''
+    """Read the object's layer data."""
     new_layr= _obj_layer()
     new_layr.index, flags= struct.unpack(">HH", layr_bytes[0:4])
 
@@ -386,7 +386,7 @@ def read_layr(layr_bytes, object_layers, load_hidden):
 
 
 def read_layr_5(layr_bytes, object_layers):
-    '''Read the object's layer data.'''
+    """Read the object's layer data."""
     # XXX: Need to check what these two exactly mean for a LWOB/LWLO file.
     new_layr= _obj_layer()
     new_layr.index, flags= struct.unpack(">HH", layr_bytes[0:4])
@@ -405,7 +405,7 @@ def read_layr_5(layr_bytes, object_layers):
 
 
 def read_pnts(pnt_bytes, object_layers):
-    '''Read the layer's points.'''
+    """Read the layer's points."""
     print("\tReading Layer ("+object_layers[-1].name+") Points")
     offset= 0
     chunk_len= len(pnt_bytes)
@@ -422,7 +422,7 @@ def read_pnts(pnt_bytes, object_layers):
 
 
 def read_weightmap(weight_bytes, object_layers):
-    '''Read a weight map's values.'''
+    """Read a weight map's values."""
     chunk_len= len(weight_bytes)
     offset= 2
     name, name_len= read_lwostring(weight_bytes[offset:])
@@ -440,7 +440,7 @@ def read_weightmap(weight_bytes, object_layers):
 
 
 def read_morph(morph_bytes, object_layers, is_abs):
-    '''Read an endomorph's relative or absolute displacement values.'''
+    """Read an endomorph's relative or absolute displacement values."""
     chunk_len= len(morph_bytes)
     offset= 2
     name, name_len= read_lwostring(morph_bytes[offset:])
@@ -464,7 +464,7 @@ def read_morph(morph_bytes, object_layers, is_abs):
 
 
 def read_colmap(col_bytes, object_layers):
-    '''Read the RGB or RGBA color map.'''
+    """Read the RGB or RGBA color map."""
     chunk_len= len(col_bytes)
     dia,= struct.unpack(">H", col_bytes[0:2])
     offset= 2
@@ -497,7 +497,7 @@ def read_colmap(col_bytes, object_layers):
 
 
 def read_color_vmad(col_bytes, object_layers, last_pols_count):
-    '''Read the Discontinous (per-polygon) RGB values.'''
+    """Read the Discontinous (per-polygon) RGB values."""
     chunk_len= len(col_bytes)
     dia,= struct.unpack(">H", col_bytes[0:2])
     offset= 2
@@ -546,7 +546,7 @@ def read_color_vmad(col_bytes, object_layers, last_pols_count):
 
 
 def read_uvmap(uv_bytes, object_layers):
-    '''Read the simple UV coord values.'''
+    """Read the simple UV coord values."""
     chunk_len= len(uv_bytes)
     offset= 2
     name, name_len= read_lwostring(uv_bytes[offset:])
@@ -570,7 +570,7 @@ def read_uvmap(uv_bytes, object_layers):
 
 
 def read_uv_vmad(uv_bytes, object_layers, last_pols_count):
-    '''Read the Discontinous (per-polygon) uv values.'''
+    """Read the Discontinous (per-polygon) uv values."""
     chunk_len= len(uv_bytes)
     offset= 2
     name, name_len= read_lwostring(uv_bytes[offset:])
@@ -602,7 +602,7 @@ def read_uv_vmad(uv_bytes, object_layers, last_pols_count):
 
 
 def read_weight_vmad(ew_bytes, object_layers):
-    '''Read the VMAD Weight values.'''
+    """Read the VMAD Weight values."""
     chunk_len= len(ew_bytes)
     offset= 2
     name, name_len= read_lwostring(ew_bytes[offset:])
@@ -613,7 +613,7 @@ def read_weight_vmad(ew_bytes, object_layers):
     # Some info: LW stores a face's points in a clock-wize order (with the
     # normal pointing at you). This gives edges a 'direction' which is used
     # when it comes to storing CC edge weight values. The weight is given
-    # to the point preceeding the edge that the weight belongs to.
+    # to the point preceding the edge that the weight belongs to.
     while offset < chunk_len:
         pnt_id, pnt_id_len = read_vx(ew_bytes[offset:offset+4])
         offset+= pnt_id_len
@@ -639,7 +639,7 @@ def read_weight_vmad(ew_bytes, object_layers):
         
 
 def read_pols(pol_bytes, object_layers):
-    '''Read the layer's polygons, each one is just a list of point indexes.'''
+    """Read the layer's polygons, each one is just a list of point indexes."""
     print("\tReading Layer ("+object_layers[-1].name+") Polygons")
     offset= 0
     pols_count = len(pol_bytes)
@@ -660,10 +660,10 @@ def read_pols(pol_bytes, object_layers):
 
 
 def read_pols_5(pol_bytes, object_layers):
-    '''
+    """
     Read the polygons, each one is just a list of point indexes.
     But it also includes the surface index.
-    '''
+    """
     print("\tReading Layer ("+object_layers[-1].name+") Polygons")
     offset= 0
     chunk_len= len(pol_bytes)
@@ -692,7 +692,7 @@ def read_pols_5(pol_bytes, object_layers):
 
 
 def read_bones(bone_bytes, object_layers):
-    '''Read the layer's skelegons.'''
+    """Read the layer's skelegons."""
     print("\tReading Layer ("+object_layers[-1].name+") Bones")
     offset= 0
     bones_count = len(bone_bytes)
@@ -710,7 +710,7 @@ def read_bones(bone_bytes, object_layers):
 
 
 def read_bone_tags(tag_bytes, object_layers, object_tags, type):
-    '''Read the bone name or roll tags.'''
+    """Read the bone name or roll tags."""
     offset= 0
     chunk_len= len(tag_bytes)
 
@@ -730,7 +730,7 @@ def read_bone_tags(tag_bytes, object_layers, object_tags, type):
 
 
 def read_surf_tags(tag_bytes, object_layers, last_pols_count):
-    '''Read the list of PolyIDs and tag indexes.'''
+    """Read the list of PolyIDs and tag indexes."""
     print("\tReading Layer ("+object_layers[-1].name+") Surface Assignments")
     offset= 0
     chunk_len= len(tag_bytes)
@@ -748,7 +748,7 @@ def read_surf_tags(tag_bytes, object_layers, last_pols_count):
 
 
 def read_surf(surf_bytes, object_surfs):
-    '''Read the object's surface data.'''
+    """Read the object's surface data."""
     if len(object_surfs) == 0:
         print("Reading Object Surfaces")
 
@@ -816,7 +816,7 @@ def read_surf(surf_bytes, object_surfs):
 
 
 def read_surf_5(surf_bytes, object_surfs):
-    '''Read the object's surface data.'''
+    """Read the object's surface data."""
     if len(object_surfs) == 0:
         print("Reading Object Surfaces")
 
@@ -875,7 +875,7 @@ def read_surf_5(surf_bytes, object_surfs):
 
 
 def create_mappack(data, map_name, map_type):
-    '''Match the map data to faces.'''
+    """Match the map data to faces."""
     pack= {}
 
     def color_pointmap(map):
@@ -943,7 +943,7 @@ def create_mappack(data, map_name, map_type):
 
 
 def build_armature(layer_data, bones):
-    '''Build an armature from the skelegon data in the mesh.'''
+    """Build an armature from the skelegon data in the mesh."""
     print("Building Armature")
 
     # New Armatures include a default bone, remove it.
@@ -980,7 +980,7 @@ def build_armature(layer_data, bones):
 
 
 def build_objects(object_layers, object_surfs, object_tags, object_name, add_subd_mod, skel_to_arm):
-    '''Using the gathered data, create the objects.'''
+    """Using the gathered data, create the objects."""
     ob_dict= {}  # Used for the parenting setup.
     print("Adding %d Materials" % len(object_surfs))
 
@@ -1019,7 +1019,7 @@ def build_objects(object_layers, object_surfs, object_tags, object_name, add_sub
     for layer_data in object_layers:
         me= bpy.data.meshes.new(layer_data.name)
         me.vertices.add(len(layer_data.pnts))
-        me.faces.add(len(layer_data.pols))
+        me.tessfaces.add(len(layer_data.pols))
         # for vi in range(len(layer_data.pnts)):
         #     me.vertices[vi].co= layer_data.pnts[vi]
 
@@ -1038,7 +1038,7 @@ def build_objects(object_layers, object_surfs, object_tags, object_name, add_sub
             vlen= len(fpol)
             if vlen == 3 or vlen == 4:
                 for i in range(vlen):
-                    me.faces[fi].vertices_raw[i]= fpol[i]
+                    me.tessfaces[fi].vertices_raw[i]= fpol[i]
             elif vlen == 2:
                 edges.append(fi)
             elif vlen != 1:
@@ -1058,8 +1058,8 @@ def build_objects(object_layers, object_surfs, object_tags, object_name, add_sub
                 me.materials.append(object_surfs[object_tags[surf_key]].bl_mat)
 
                 for fi in layer_data.surf_tags[surf_key]:
-                    me.faces[fi].material_index= mat_slot
-                    me.faces[fi].use_smooth= object_surfs[object_tags[surf_key]].smooth
+                    me.tessfaces[fi].material_index= mat_slot
+                    me.tessfaces[fi].use_smooth= object_surfs[object_tags[surf_key]].smooth
 
                 mat_slot+=1
 
@@ -1088,8 +1088,9 @@ def build_objects(object_layers, object_surfs, object_tags, object_name, add_sub
             print("Adding %d Vertex Color Maps" % len(layer_data.colmaps))
             for cmap_key in layer_data.colmaps:
                 map_pack= create_mappack(layer_data, cmap_key, "COLOR")
-                vcol= me.vertex_colors.new(cmap_key)
-                if not vcol:
+                me.vertex_colors.new(cmap_key)
+                vcol= me.tessface_vertex_colors[-1]
+                if not vcol or not vcol.data:
                     break
                 for fi in map_pack:
                     if fi > len(vcol.data):
@@ -1109,8 +1110,9 @@ def build_objects(object_layers, object_surfs, object_tags, object_name, add_sub
             print("Adding %d UV Textures" % len(layer_data.uvmaps))
             for uvmap_key in layer_data.uvmaps:
                 map_pack= create_mappack(layer_data, uvmap_key, "UV")
-                uvm= me.uv_textures.new(uvmap_key)
-                if not uvm:
+                me.uv_textures.new(name=uvmap_key)
+                uvm= me.tessface_uv_textures[-1]
+                if not uvm or not uvm.data:
                     break
                 for fi in map_pack:
                     if fi > len(uvm.data):
@@ -1128,20 +1130,20 @@ def build_objects(object_layers, object_surfs, object_tags, object_name, add_sub
         # Now add the NGons.
         if len(ngons) > 0:
             for ng_key in ngons:
-                face_offset= len(me.faces)
+                face_offset= len(me.tessfaces)
                 ng= ngons[ng_key]
                 v_locs= []
                 for vi in range(len(ng)):
                     v_locs.append(mathutils.Vector(layer_data.pnts[ngons[ng_key][vi]]))
-                tris= tesselate_polygon([v_locs])
-                me.faces.add(len(tris))
+                tris= tessellate_polygon([v_locs])
+                me.tessfaces.add(len(tris))
                 for tri in tris:
-                    face= me.faces[face_offset]
+                    face= me.tessfaces[face_offset]
                     face.vertices_raw[0]= ng[tri[0]]
                     face.vertices_raw[1]= ng[tri[1]]
                     face.vertices_raw[2]= ng[tri[2]]
-                    face.material_index= me.faces[ng_key].material_index
-                    face.use_smooth= me.faces[ng_key].use_smooth
+                    face.material_index= me.tessfaces[ng_key].material_index
+                    face.use_smooth= me.tessfaces[ng_key].use_smooth
                     face_offset+= 1
 
         # FaceIDs are no longer a concern, so now update the mesh.
@@ -1212,7 +1214,7 @@ from bpy.props import StringProperty, BoolProperty
 
 
 class IMPORT_OT_lwo(bpy.types.Operator):
-    '''Import LWO Operator.'''
+    """Import LWO Operator"""
     bl_idname= "import_scene.lwo"
     bl_label= "Import LWO"
     bl_description= "Import a LightWave Object file"

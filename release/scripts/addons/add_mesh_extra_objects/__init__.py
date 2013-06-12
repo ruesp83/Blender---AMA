@@ -22,11 +22,11 @@ bl_info = {
     "name": "Extra Objects",
     "author": "Multiple Authors",
     "version": (0, 3),
-    "blender": (2, 6, 1),
+    "blender": (2, 63, 0),
     "location": "View3D > Add > Mesh > Extra Objects",
     "description": "Add extra object types",
     "warning": "",
-    "wiki_url": "http://wiki.blender.org/index.php/Extensions:2.5/Py/"\
+    "wiki_url": "http://wiki.blender.org/index.php/Extensions:2.6/Py/"\
         "Scripts/Add_Mesh/Add_Extra",
     "tracker_url": "http://projects.blender.org/tracker/index.php?"\
         "func=detail&aid=22457",
@@ -43,6 +43,9 @@ if "bpy" in locals():
     imp.reload(add_mesh_polysphere)
     imp.reload(add_mesh_supertoroid)
     imp.reload(add_mesh_pyramid)
+    imp.reload(add_mesh_torusknot)
+    imp.reload(add_mesh_honeycomb)
+    imp.reload(add_mesh_teapot)
 else:
     from . import add_mesh_extra_objects
     from . import add_mesh_twisted_torus
@@ -52,6 +55,9 @@ else:
     from . import add_mesh_polysphere
     from . import add_mesh_supertoroid
     from . import add_mesh_pyramid
+    from . import add_mesh_torusknot
+    from . import add_mesh_honeycomb
+    from . import add_mesh_teapot
 import bpy
 
 
@@ -67,14 +73,8 @@ class INFO_MT_mesh_extras_add(bpy.types.Menu):
         layout.menu("INFO_MT_mesh_gears_add", text="Gears")
         layout.menu("INFO_MT_mesh_math_add", text="Math Function")
         layout.menu("INFO_MT_mesh_basic_add", text="Basic Objects")
-        layout.operator("mesh.primitive_twisted_torus_add",
-            text="Twisted Torus")
-        layout.operator("mesh.primitive_polysphere_add",
-            text="Polysphere")
-        layout.operator("mesh.primitive_supertoroid_add",
-            text="Supertoroid")
-        layout.operator("mesh.primitive_steppyramid_add",
-            text="Pyramid")
+        layout.menu("INFO_MT_mesh_torus_add", text="Torus Objects")
+        layout.menu("INFO_MT_mesh_misc_add", text="Misc Objects")
 
 class INFO_MT_mesh_gemstones_add(bpy.types.Menu):
     # Define the "Gemstones" menu
@@ -131,7 +131,38 @@ class INFO_MT_mesh_basic_add(bpy.types.Menu):
             text="Star")
         layout.operator("mesh.primitive_trapezohedron_add",
             text="Trapezohedron")
+        layout.operator("mesh.primitive_polysphere_add",
+            text="Polysphere")
+			
+class INFO_MT_mesh_torus_add(bpy.types.Menu):
+    # Define the "Simple Objects" menu
+    bl_idname = "INFO_MT_mesh_torus_add"
+    bl_label = "Torus Objects"
 
+    def draw(self, context):
+        layout = self.layout
+        layout.operator_context = 'INVOKE_REGION_WIN'
+        layout.operator("mesh.primitive_twisted_torus_add",
+            text="Twisted Torus")
+        layout.operator("mesh.primitive_supertoroid_add",
+            text="Supertoroid")
+        layout.operator("mesh.primitive_torusknot_add",
+            text="Torus Knot")
+
+class INFO_MT_mesh_misc_add(bpy.types.Menu):
+    # Define the "Simple Objects" menu
+    bl_idname = "INFO_MT_mesh_misc_add"
+    bl_label = "Misc Objects"
+
+    def draw(self, context):
+        layout = self.layout
+        layout.operator_context = 'INVOKE_REGION_WIN'
+        layout.operator("mesh.primitive_steppyramid_add",
+            text="Step Pyramid")
+        layout.operator("mesh.honeycomb_add",
+            text="Honeycomb")
+        layout.operator("mesh.primitive_teapot_add",
+            text="Teapot+")
 # Register all operators and panels
 
 # Define "Extras" menu

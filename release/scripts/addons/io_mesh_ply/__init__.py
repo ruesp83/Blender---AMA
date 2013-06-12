@@ -21,11 +21,11 @@
 bl_info = {
     "name": "Stanford PLY format",
     "author": "Bruce Merry, Campbell Barton",
-    "blender": (2, 5, 7),
+    "blender": (2, 57, 0),
     "location": "File > Import-Export",
     "description": "Import-Export PLY mesh data withs UV's and vertex colors",
     "warning": "",
-    "wiki_url": "http://wiki.blender.org/index.php/Extensions:2.5/Py/"
+    "wiki_url": "http://wiki.blender.org/index.php/Extensions:2.6/Py/"
                 "Scripts/Import-Export/Stanford_PLY",
     "tracker_url": "",
     "support": 'OFFICIAL',
@@ -46,12 +46,20 @@ if "bpy" in locals():
 
 import os
 import bpy
-from bpy.props import CollectionProperty, StringProperty, BoolProperty
-from bpy_extras.io_utils import ImportHelper, ExportHelper
+from bpy.props import (CollectionProperty,
+                       StringProperty,
+                       BoolProperty,
+                       EnumProperty,
+                       FloatProperty,
+                       )
+from bpy_extras.io_utils import (ImportHelper,
+                                 ExportHelper,
+                                 axis_conversion,
+                                 )
 
 
 class ImportPLY(bpy.types.Operator, ImportHelper):
-    '''Load a PLY geometry file'''
+    """Load a PLY geometry file"""
     bl_idname = "import_mesh.ply"
     bl_label = "Import PLY"
     bl_options = {'UNDO'}
@@ -81,22 +89,25 @@ class ImportPLY(bpy.types.Operator, ImportHelper):
 
 
 class ExportPLY(bpy.types.Operator, ExportHelper):
-    '''Export a single object as a stanford PLY with normals, ''' \
-    '''colours and texture coordinates'''
+    """Export a single object as a Stanford PLY with normals, """ \
+    """colors and texture coordinates"""
     bl_idname = "export_mesh.ply"
     bl_label = "Export PLY"
 
     filename_ext = ".ply"
     filter_glob = StringProperty(default="*.ply", options={'HIDDEN'})
 
-    use_modifiers = BoolProperty(
+    use_mesh_modifiers = BoolProperty(
             name="Apply Modifiers",
             description="Apply Modifiers to the exported mesh",
             default=True,
             )
     use_normals = BoolProperty(
             name="Normals",
-            description="Export Normals for smooth and hard shaded faces",
+            description="Export Normals for smooth and "
+                        "hard shaded faces "
+                        "(hard shaded faces will be exported "
+                        "as individual faces)",
             default=True,
             )
     use_uv_coords = BoolProperty(
@@ -106,29 +117,76 @@ class ExportPLY(bpy.types.Operator, ExportHelper):
             )
     use_colors = BoolProperty(
             name="Vertex Colors",
-            description="Exort the active vertex color layer",
-            default=True)
+            description="Export the active vertex color layer",
+            default=True,
+            )
+
+    axis_forward = EnumProperty(
+            name="Forward",
+            items=(('X', "X Forward", ""),
+                   ('Y', "Y Forward", ""),
+                   ('Z', "Z Forward", ""),
+                   ('-X', "-X Forward", ""),
+                   ('-Y', "-Y Forward", ""),
+                   ('-Z', "-Z Forward", ""),
+                   ),
+            default='Y',
+            )
+    axis_up = EnumProperty(
+            name="Up",
+            items=(('X', "X Up", ""),
+                   ('Y', "Y Up", ""),
+                   ('Z', "Z Up", ""),
+                   ('-X', "-X Up", ""),
+                   ('-Y', "-Y Up", ""),
+                   ('-Z', "-Z Up", ""),
+                   ),
+            default='Z',
+            )
+    global_scale = FloatProperty(
+            name="Scale",
+            min=0.01, max=1000.0,
+            default=1.0,
+            )
 
     @classmethod
     def poll(cls, context):
         return context.active_object != None
 
     def execute(self, context):
+        from . import export_ply
+
+        from mathutils import Matrix
+
+        keywords = self.as_keywords(ignore=("axis_forward",
+                                            "axis_up",
+                                            "global_scale",
+                                            "check_existing",
+                                            "filter_glob",
+                                            ))
+        global_matrix = axis_conversion(to_forward=self.axis_forward,
+                                        to_up=self.axis_up,
+                                        ).to_4x4() * Matrix.Scale(self.global_scale, 4)
+        keywords["global_matrix"] = global_matrix
+
         filepath = self.filepath
         filepath = bpy.path.ensure_ext(filepath, self.filename_ext)
-        from . import export_ply
-        keywords = self.as_keywords(ignore=("check_existing", "filter_glob"))
+
         return export_ply.save(self, context, **keywords)
 
     def draw(self, context):
         layout = self.layout
 
         row = layout.row()
-        row.prop(self, "use_modifiers")
+        row.prop(self, "use_mesh_modifiers")
         row.prop(self, "use_normals")
         row = layout.row()
         row.prop(self, "use_uv_coords")
         row.prop(self, "use_colors")
+
+        layout.prop(self, "axis_forward")
+        layout.prop(self, "axis_up")
+        layout.prop(self, "global_scale")
 
 
 def menu_func_import(self, context):

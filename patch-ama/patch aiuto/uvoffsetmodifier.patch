@@ -1,0 +1,439 @@
+Index: release/scripts/startup/bl_ui/properties_data_modifier.py
+===================================================================
+--- release/scripts/startup/bl_ui/properties_data_modifier.py	(wersja 43930)
++++ release/scripts/startup/bl_ui/properties_data_modifier.py	(kopia robocza)
+@@ -941,5 +941,27 @@
+         layout.separator()
+         self.vertex_weight_mask(layout, ob, md)
+ 
++        # pkowal
++    def UV_OFFSET(self, layout, ob, md):
++        split = layout.split()
++        col = split.column()
++        col.label(text="Target:")
++        col.prop(md, "target", text="")
++
++        col = split.column()
++        col.label(text="Bone:")
++        if md.target.type == 'ARMATURE':
++            col.prop_search(md, "subtarget", md.target.data, "bones", text="")
++
++        split = layout.split()
++
++        col = split.column()
++        col.label(text="Vertex Group:")
++        col.prop_search(md, "vertex_group", ob, "vertex_groups", text="")
++
++        col = split.column()
++        col.label(text="UV Map:")
++        col.prop_search(md, "uv_layer", ob.data, "uv_textures", text="")
++
+ if __name__ == "__main__":  # only for live edit.
+     bpy.utils.register_module(__name__)
+Index: source/blender/modifiers/intern/MOD_uvoffset.c
+===================================================================
+--- source/blender/modifiers/intern/MOD_uvoffset.c	(wersja 0)
++++ source/blender/modifiers/intern/MOD_uvoffset.c	(wersja 0)
+@@ -0,0 +1,217 @@
++/*
++ * ***** BEGIN GPL LICENSE BLOCK *****
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * as published by the Free Software Foundation; either version 2
++ * of the License, or (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software  Foundation,
++ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
++ *
++ * The Original Code is Copyright (C) 2005 by the Blender Foundation.
++ * All rights reserved.
++ *
++ * Contributor(s): Pawel Kowal
++ *
++ * ***** END GPL LICENSE BLOCK *****
++ *
++ */
++
++/** \file blender/modifiers/intern/MOD_uvoffset.c
++ *  \ingroup modifiers
++ */
++
++
++#include <string.h>
++
++#include "DNA_action_types.h"
++#include "DNA_meshdata_types.h"
++#include "DNA_object_types.h"
++
++#include "BLI_string.h"
++#include "BLI_utildefines.h"
++
++#include "BKE_action.h"
++#include "BKE_cdderivedmesh.h"
++#include "BKE_deform.h"
++#include "BKE_modifier.h"
++
++#include "depsgraph_private.h"
++
++#include "MOD_util.h"
++
++
++static void initData(ModifierData *md)
++{
++	UVOffsetModifierData *umd = (UVOffsetModifierData*) md;
++	umd->target = NULL;
++}
++
++static void copyData(ModifierData *md, ModifierData *target)
++{
++	UVOffsetModifierData *umd  = (UVOffsetModifierData*)md;
++	UVOffsetModifierData *tumd = (UVOffsetModifierData*)target;
++
++	tumd->target = umd->target;
++	BLI_strncpy(tumd->subtarget, umd->subtarget, sizeof(tumd->subtarget));
++	BLI_strncpy(tumd->vgroup_name, umd->vgroup_name, sizeof(tumd->vgroup_name));
++	BLI_strncpy(tumd->uvlayer_name, umd->uvlayer_name, sizeof(umd->uvlayer_name));
++}
++
++static CustomDataMask requiredDataMask(Object *UNUSED(ob), ModifierData *md)
++{
++	UVOffsetModifierData *umd = (UVOffsetModifierData *)md;
++	CustomDataMask dataMask = 0;
++
++	/* ask for vertexgroups if we need them */
++	if(umd->vgroup_name[0])
++		dataMask |= CD_MASK_MDEFORMVERT;
++
++	return dataMask;
++}
++
++/* no target, no deform */
++static int isDisabled(ModifierData *md, int UNUSED(useRenderParams))
++{
++	UVOffsetModifierData *umd = (UVOffsetModifierData*) md;
++	return !umd->target;
++}
++
++static DerivedMesh *uvoffsetModifier_do(UVOffsetModifierData *umd, Object *ob, DerivedMesh *dm)
++{
++	int i, numFaces;
++	MTFace *tface;
++	MFace *mface, *mf;
++	MDeformVert *dvert;
++	int defgrp_index;
++	char uvname[MAX_CUSTOMDATA_LAYER_NAME];
++	float weight = 1.0f;
++	float u = 0.0f;
++	float v = 0.0f;
++	bPoseChannel *pchan = get_pose_channel(umd->target->pose, umd->subtarget);;
++
++	if (!umd->target) return dm;
++	if(!CustomData_has_layer(&dm->faceData, CD_MTFACE)) return dm;
++
++	// why use umd->subtarget[0]? get_pose_channel returns something if subtarget is empty?
++	if (umd->subtarget[0] && pchan) {
++		u = pchan->loc[0];//chan_mat[3][0];
++		v = pchan->loc[1];//chan_mat[3][1];
++	}
++	else {
++		u = umd->target->loc[0];
++		v = umd->target->loc[1];
++	}
++
++	CustomData_validate_layer_name(&dm->faceData, CD_MTFACE, umd->uvlayer_name, uvname);
++	numFaces = dm->getNumFaces(dm);
++	tface = CustomData_duplicate_referenced_layer_named(&dm->faceData, CD_MTFACE, uvname, numFaces);
++	mface = dm->getFaceArray(dm);
++	modifier_get_vgroup(ob, dm, umd->vgroup_name, &dvert, &defgrp_index);
++
++	for(i = 0, mf = mface; i < numFaces; ++i, ++mf, ++tface) {
++		/* apply transformed coords as UVs */
++		if (dvert) {
++			weight = defvert_find_weight(dvert + mf->v1, defgrp_index);
++		}
++		else weight = 1.0f;
++		tface->uv[0][0] += u * weight;
++		tface->uv[0][1] += v * weight;
++		if (dvert) {
++			weight = defvert_find_weight(dvert + mf->v2, defgrp_index);
++		} else weight = 1.0f;
++		tface->uv[1][0] += u * weight;
++		tface->uv[1][1] += v * weight;
++		if (dvert) {
++			weight = defvert_find_weight(dvert + mf->v3, defgrp_index);
++		} else weight = 1.0f;
++		tface->uv[2][0] += u * weight;
++		tface->uv[2][1] += v * weight;
++		if (mf->v4) {
++			if (dvert) {
++				weight = defvert_find_weight(dvert + mf->v4, defgrp_index);
++			} else weight = 1.0f;
++			tface->uv[3][0] += u * weight;
++			tface->uv[3][1] += v * weight;
++		}
++	}
++	return dm;
++}
++
++static DerivedMesh *applyModifier(ModifierData *md, Object *ob,
++						DerivedMesh *derivedData,
++						int UNUSED(useRenderParams),
++						int UNUSED(isFinalCalc))
++{
++	DerivedMesh *result;
++	UVOffsetModifierData *umd = (UVOffsetModifierData*) md;
++
++	result = uvoffsetModifier_do(umd, ob, derivedData);
++
++	return result;
++}
++
++static DerivedMesh *applyModifierEM(ModifierData *md, Object *ob,
++						struct EditMesh *UNUSED(editData),
++						DerivedMesh *derivedData)
++{
++	return applyModifier(md, ob, derivedData, 0, 1);
++}
++
++static void foreachObjectLink(ModifierData *md, Object *ob, ObjectWalkFunc walk, void *userData)
++{
++	UVOffsetModifierData *umd = (UVOffsetModifierData*) md;
++
++	walk(userData, ob, &umd->target);
++}
++
++static void updateDepgraph(ModifierData *md, DagForest *forest,
++						struct Scene *UNUSED(scene),
++						Object *UNUSED(ob),
++						DagNode *obNode)
++{
++	UVOffsetModifierData *umd = (UVOffsetModifierData*) md;
++
++	if (umd->target) {
++		DagNode *curNode = dag_get_node(forest, umd->target);
++
++		if (umd->subtarget[0])
++			dag_add_relation(forest, curNode, obNode, DAG_RL_OB_DATA|DAG_RL_DATA_DATA, "UVOffset Modifier");
++		else
++			dag_add_relation(forest, curNode, obNode, DAG_RL_OB_DATA, "UVOffset Modifier");
++	}
++}
++
++ModifierTypeInfo modifierType_UVOffset = {
++	/* name */              "UVOffset",
++	/* structName */        "UVOffsetModifierData",
++	/* structSize */        sizeof(UVOffsetModifierData),
++	/* type */              eModifierTypeType_NonGeometrical,
++	/* flags */             eModifierTypeFlag_AcceptsMesh
++							| eModifierTypeFlag_SupportsEditmode
++							| eModifierTypeFlag_EnableInEditmode,
++	/* copyData */          copyData,
++	/* deformVerts */       NULL,
++	/* deformMatrices */    NULL,
++	/* deformVertsEM */     NULL,
++	/* deformMatricesEM */  NULL,
++	/* applyModifier */     applyModifier,
++	/* applyModifierEM */   applyModifierEM,
++	/* initData */          initData,
++	/* requiredDataMask */  requiredDataMask,
++	/* freeData */          NULL,
++	/* isDisabled */        isDisabled,
++	/* updateDepgraph */    updateDepgraph,
++	/* dependsOnTime */     NULL,
++	/* dependsOnNormals */	NULL,
++	/* foreachObjectLink */ foreachObjectLink,
++	/* foreachIDLink */     NULL,
++	/* foreachTexLink */    NULL,
++};
+Index: source/blender/modifiers/intern/MOD_util.c
+===================================================================
+--- source/blender/modifiers/intern/MOD_util.c	(wersja 43930)
++++ source/blender/modifiers/intern/MOD_util.c	(kopia robocza)
+@@ -260,5 +260,7 @@
+ 	INIT_TYPE(WeightVGProximity);
+ 	INIT_TYPE(DynamicPaint);
+ 	INIT_TYPE(Remesh);
++/* pkowal */
++	INIT_TYPE(UVOffset);
+ #undef INIT_TYPE
+ }
+Index: source/blender/modifiers/MOD_modifiertypes.h
+===================================================================
+--- source/blender/modifiers/MOD_modifiertypes.h	(wersja 43930)
++++ source/blender/modifiers/MOD_modifiertypes.h	(kopia robocza)
+@@ -74,6 +74,8 @@
+ extern ModifierTypeInfo modifierType_WeightVGProximity;
+ extern ModifierTypeInfo modifierType_DynamicPaint;
+ extern ModifierTypeInfo modifierType_Remesh;
++/* pkowal */
++extern ModifierTypeInfo modifierType_UVOffset;
+ 
+ /* MOD_util.c */
+ void modifier_type_init(ModifierTypeInfo *types[]);
+Index: source/blender/modifiers/CMakeLists.txt
+===================================================================
+--- source/blender/modifiers/CMakeLists.txt	(wersja 43930)
++++ source/blender/modifiers/CMakeLists.txt	(kopia robocza)
+@@ -89,6 +89,8 @@
+ 	intern/MOD_weightvgedit.c
+ 	intern/MOD_weightvgmix.c
+ 	intern/MOD_weightvgproximity.c
++# pkowal	
++	intern/MOD_uvoffset.c
+ 
+ 	MOD_modifiertypes.h
+ 	intern/MOD_boolean_util.h
+Index: source/blender/makesdna/DNA_modifier_types.h
+===================================================================
+--- source/blender/makesdna/DNA_modifier_types.h	(wersja 43930)
++++ source/blender/makesdna/DNA_modifier_types.h	(kopia robocza)
+@@ -77,6 +77,7 @@
+ 	eModifierType_Ocean,
+ 	eModifierType_DynamicPaint,
+ 	eModifierType_Remesh,
++	eModifierType_UVOffset,
+ 	NUM_MODIFIER_TYPES
+ } ModifierType;
+ 
+@@ -1061,4 +1062,15 @@
+ 	char pad;
+ } RemeshModifierData;
+ 
++/* pkowal */
++typedef struct UVOffsetModifierData {
++    ModifierData modifier;
++    /* modifier-specific data goes here; remember to add pad if necessary! */
++
++	struct Object *target;	/* target */
++	char subtarget[64];		/* optional name of bone target, MAX_ID_NAME-2 */
++	char vgroup_name[64];	/* optional vertexgroup name, MAX_VGROUP_NAME */
++	char uvlayer_name[64];	/* MAX_CUSTOMDATA_LAYER_NAME */
++} UVOffsetModifierData;
++
+ #endif
+Index: source/blender/makesrna/intern/rna_modifier.c
+===================================================================
+--- source/blender/makesrna/intern/rna_modifier.c	(wersja 43930)
++++ source/blender/makesrna/intern/rna_modifier.c	(kopia robocza)
+@@ -59,6 +59,8 @@
+ 	{eModifierType_WeightVGEdit, "VERTEX_WEIGHT_EDIT", ICON_MOD_VERTEX_WEIGHT, "Vertex Weight Edit", ""},
+ 	{eModifierType_WeightVGMix, "VERTEX_WEIGHT_MIX", ICON_MOD_VERTEX_WEIGHT, "Vertex Weight Mix", ""},
+ 	{eModifierType_WeightVGProximity, "VERTEX_WEIGHT_PROXIMITY", ICON_MOD_VERTEX_WEIGHT, "Vertex Weight Proximity", ""},
++/* pkowal */
++	{eModifierType_UVOffset, "UV_OFFSET", ICON_MOD_UVPROJECT, "UV Offset", ""},
+ 	{0, "", 0, "Generate", ""},
+ 	{eModifierType_Array, "ARRAY", ICON_MOD_ARRAY, "Array", ""},
+ 	{eModifierType_Bevel, "BEVEL", ICON_MOD_BEVEL, "Bevel", ""},
+@@ -202,6 +204,9 @@
+ 			return &RNA_DynamicPaintModifier;
+ 		case eModifierType_Remesh:
+ 			return &RNA_RemeshModifier;
++/* pkowal */
++		case eModifierType_UVOffset:
++	        return &RNA_UVOffsetModifier;
+ 		default:
+ 			return &RNA_Modifier;
+ 	}
+@@ -728,6 +733,19 @@
+ 	md->bevel_angle= (int)value;
+ }
+ 
++/* pkowal */
++static void rna_UVOffsetModifier_vgroup_set(PointerRNA *ptr, const char *value)
++{
++	UVOffsetModifierData *umd= (UVOffsetModifierData*)ptr->data;
++	rna_object_vgroup_name_set(ptr, value, umd->vgroup_name, sizeof(umd->vgroup_name));
++}
++
++static void rna_UVOffsetModifier_uvlayer_set(PointerRNA *ptr, const char *value)
++{
++	UVOffsetModifierData *umd= (UVOffsetModifierData*)ptr->data;
++	rna_object_uvlayer_name_set(ptr, value, umd->uvlayer_name, sizeof(umd->uvlayer_name));
++}
++
+ #else
+ 
+ static void rna_def_property_subdivision_common(StructRNA *srna, const char type[])
+@@ -2537,6 +2555,41 @@
+ 	RNA_def_property_update(prop, 0, "rna_Modifier_update");*/
+ }
+ 
++/* pkowal */
++static void rna_def_modifier_uvoffset(BlenderRNA *brna)
++{
++	StructRNA *srna;
++	PropertyRNA *prop;
++
++	srna = RNA_def_struct(brna, "UVOffsetModifier", "Modifier");
++	RNA_def_struct_ui_text(srna, "UVOffset Modifier", "Add target position to uv coordinates");
++	RNA_def_struct_sdna(srna, "UVOffsetModifierData");
++	RNA_def_struct_ui_icon(srna, ICON_MOD_UVPROJECT);
++
++	prop= RNA_def_property(srna, "target", PROP_POINTER, PROP_NONE);
++	RNA_def_property_ui_text(prop, "Target", "Object defining offset");
++	RNA_def_property_flag(prop, PROP_EDITABLE|PROP_ID_SELF_CHECK);
++	RNA_def_property_update(prop, 0, "rna_Modifier_dependency_update");
++
++	prop= RNA_def_property(srna, "subtarget", PROP_STRING, PROP_NONE);
++	RNA_def_property_string_sdna(prop, NULL, "subtarget");
++	RNA_def_property_ui_text(prop, "Sub-Target", "Bone defining offset");
++	RNA_def_property_update(prop, 0, "rna_Modifier_dependency_update");
++
++	prop = RNA_def_property(srna, "vertex_group", PROP_STRING, PROP_NONE);
++	RNA_def_property_string_sdna(prop, NULL, "vgroup_name");
++	RNA_def_property_ui_text(prop, "Vertex Group", "Vertex group name");
++	RNA_def_property_string_funcs(prop, NULL, NULL, "rna_UVOffsetModifier_vgroup_set");
++	RNA_def_property_update(prop, 0, "rna_Modifier_update");
++
++	prop = RNA_def_property(srna, "uv_layer", PROP_STRING, PROP_NONE);
++	RNA_def_property_string_sdna(prop, NULL, "uvlayer_name");
++	RNA_def_property_ui_text(prop, "UV Layer", "UV Layer name");
++	RNA_def_property_string_funcs(prop, NULL, NULL, "rna_UVOffsetModifier_uvlayer_set");
++	RNA_def_property_update(prop, 0, "rna_Modifier_update");
++
++}
++
+ static void rna_def_modifier_weightvg_mask(BlenderRNA *brna, StructRNA *srna)
+ {
+ 	static EnumPropertyItem weightvg_mask_tex_map_items[] = {
+@@ -3169,6 +3222,7 @@
+ 	rna_def_modifier_dynamic_paint(brna);
+ 	rna_def_modifier_ocean(brna);
+ 	rna_def_modifier_remesh(brna);
++	rna_def_modifier_uvoffset(brna);
+ }
+ 
+ #endif
+Index: source/blender/makesrna/RNA_access.h
+===================================================================
+--- source/blender/makesrna/RNA_access.h	(wersja 43930)
++++ source/blender/makesrna/RNA_access.h	(kopia robocza)
+@@ -566,6 +566,8 @@
+ extern StructRNA RNA_TransformSequence;
+ extern StructRNA RNA_UILayout;
+ extern StructRNA RNA_UIListItem;
++/* pkowal */
++extern StructRNA RNA_UVOffsetModifier;
+ extern StructRNA RNA_UVProjectModifier;
+ extern StructRNA RNA_UVProjector;
+ extern StructRNA RNA_UnitSettings;
+Index: CMakeLists.txt
+===================================================================
+--- CMakeLists.txt	(wersja 43930)
++++ CMakeLists.txt	(kopia robocza)
+@@ -170,7 +170,7 @@
+ option(WITH_MOD_SMOKE        	"Enable Smoke Modifier (Smoke Simulation)" ON)
+ option(WITH_MOD_DECIMATE       	"Enable Decimate Modifier" ON)
+ option(WITH_MOD_BOOLEAN        	"Enable Boolean Modifier" ON)
+-option(WITH_MOD_REMESH        	"Enable Remesh Modifier" ON)
++option(WITH_MOD_REMESH        	"Enable Remesh Modifier" OFF)
+ option(WITH_MOD_CLOTH_ELTOPO   	"Enable Experemental cloth solver" OFF)
+ mark_as_advanced(WITH_MOD_CLOTH_ELTOPO)
+ option(WITH_MOD_OCEANSIM        "Enable Ocean Modifier" OFF)

@@ -67,15 +67,16 @@ class ANIM_OT_keying_set_export(Operator):
         scene = context.scene
         ks = scene.keying_sets.active
 
-        f.write("# Keying Set: %s\n" % ks.name)
+        f.write("# Keying Set: %s\n" % ks.bl_idname)
 
         f.write("import bpy\n\n")
-        # XXX, why not current scene?
-        f.write("scene= bpy.data.scenes[0]\n\n")
+        f.write("scene = bpy.context.scene\n\n")
 
         # Add KeyingSet and set general settings
         f.write("# Keying Set Level declarations\n")
-        f.write("ks= scene.keying_sets.new(name=\"%s\")\n" % ks.name)
+        f.write("ks = scene.keying_sets.new(idname=\"%s\", name=\"%s\")\n"
+                "" % (ks.bl_idname, ks.bl_label))
+        f.write("ks.bl_description = \"%s\"\n" % ks.bl_description)
 
         if not ks.is_path_absolute:
             f.write("ks.is_path_absolute = False\n")
@@ -161,7 +162,7 @@ class ANIM_OT_keying_set_export(Operator):
 
 
 class BakeAction(Operator):
-    """Bake animation to an Action"""
+    """Bake object/pose loc/scale/rotation animation to a new action"""
     bl_idname = "nla.bake"
     bl_label = "Bake Action"
     bl_options = {'REGISTER', 'UNDO'}
@@ -186,17 +187,25 @@ class BakeAction(Operator):
             )
     only_selected = BoolProperty(
             name="Only Selected",
+            description="Only key selected object/bones",
             default=True,
             )
-    clear_consraints = BoolProperty(
+    clear_constraints = BoolProperty(
             name="Clear Constraints",
+            description="Remove all constraints from keyed object/bones, and do 'visual' keying",
+            default=False,
+            )
+    clear_parents = BoolProperty(
+            name="Clear Parents",
+            description="Bake animation onto the object then clear parents (objects only)",
             default=False,
             )
     bake_types = EnumProperty(
             name="Bake Data",
+            description="Which data's transformations to bake",
             options={'ENUM_FLAG'},
-            items=(('POSE', "Pose", ""),
-                   ('OBJECT', "Object", ""),
+            items=(('POSE', "Pose", "Bake bones transformations"),
+                   ('OBJECT', "Object", "Bake object transformations"),
                    ),
             default={'POSE'},
             )
@@ -207,13 +216,14 @@ class BakeAction(Operator):
 
         action = anim_utils.bake_action(self.frame_start,
                                         self.frame_end,
-                                        self.step,
-                                        self.only_selected,
-                                        'POSE' in self.bake_types,
-                                        'OBJECT' in self.bake_types,
-                                        self.clear_consraints,
-                                        True,
-                                 )
+                                        frame_step=self.step,
+                                        only_selected=self.only_selected,
+                                        do_pose='POSE' in self.bake_types,
+                                        do_object='OBJECT' in self.bake_types,
+                                        do_constraint_clear=self.clear_constraints,
+                                        do_parents_clear=self.clear_parents,
+                                        do_clean=True,
+                                        )
 
         if action is None:
             self.report({'INFO'}, "Nothing to bake")
@@ -222,12 +232,17 @@ class BakeAction(Operator):
         return {'FINISHED'}
 
     def invoke(self, context, event):
+        scene = context.scene
+        self.frame_start = scene.frame_start
+        self.frame_end = scene.frame_end
+        self.bake_types = {'POSE'} if context.mode == 'POSE' else {'OBJECT'}
+
         wm = context.window_manager
         return wm.invoke_props_dialog(self)
 
 
 class ClearUselessActions(Operator):
-    """Mark actions with no F-Curves for deletion after save+reload of """ \
+    """Mark actions with no F-Curves for deletion after save & reload of """ \
     """file preserving \"action libraries\""""
     bl_idname = "anim.clear_useless_actions"
     bl_label = "Clear Useless Actions"
@@ -246,8 +261,8 @@ class ClearUselessActions(Operator):
 
         for action in bpy.data.actions:
             # if only user is "fake" user...
-            if ((self.only_unused is False) or
-                (action.use_fake_user and action.users == 1)):
+            if     ((self.only_unused is False) or
+                    (action.use_fake_user and action.users == 1)):
 
                 # if it has F-Curves, then it's a "action library"
                 # (i.e. walk, wave, jump, etc.)

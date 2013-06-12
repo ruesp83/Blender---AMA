@@ -1,0 +1,50 @@
+BUG:
+    - Risolti:
+        * 1) Se ho allegato un gruppo, ed ho deselezionato "Advanced Cloning", i cloni del gruppo si vedono.
+        * 2) Se ho un "Mid Cap" ed ho deselezionato "Advanced Mid Cap", le copie dell'oggetto si vedono.
+        * 3) Se attivo il "Randomize Material", genera materiali casuali all'apertura e chiusura della scheda.
+        * 4) Se attivo il "Rays Direction" e disattivo la scheda "Advanced Cloning", la modalità "Rays" è ancora attiva.
+        * 5) Se cerca di attivare la casella "Rand Object" senza nessun "Dupli Group", nella scheda "Advanced Cloning", 
+             crash blender.
+        * 6) Quando si aggiunge un "Mid Cap" e non è attiva la scheda, l'oggetto non viene visualizzato.
+        * 7) Non deallocava la memoria usata per salvare i materiali del "Mid Cap".
+        * 8) Non viene allocata memoria per i materiali del "Mid Cap" se non viene utilizzato.
+        * 9) Se non viene assegnato il "Mid Cap" e non viene attivata la scheda "Advanced Mid Cap" vengono evitati
+             calcoli inerenti la distribuzione.
+
+    - BUG:
+        1) Rotation e Scale danno valori falsati, perchè usano come riferimento il clone precedente e non l'oggetto a 
+           cui è stato applicato il modificatore.
+        2) Local Rotation funziona ma comunque calcola la rotazione in base al precedente.
+        3) Se si cambia da "Fit Between" a un altro "Fit Type", non colcola opportunamente la distanza finale ottenuta 
+           da Between.
+        4) Problema con i materiali.
+
+ToDo:
+    - Implementati:
+        * 1) Seed per randomizzare il gruppo, i materiali e le trasformazioni.
+        * 2) Memorizzare in una struttura temporanea i valori del seed(transformazione, gruppi e materiale),
+             della locazione, rotazione e scala.
+
+    - Parziali:
+
+    - ToDo:
+        1) Prendere informazioni sulla rotazione e scala dall'object offset, così da poter dare ai cloni 
+           tali informazioni.
+        2) Le informazioni ricavate dal punto 3 possono essere divise per il numero di cloni, così da 
+           ottenere un fattore incrementale da aggiungere volta per volta al clone successivo.
+        3) Scegliere la direzione dell'offset (positiva e negativa) per la X-Y-Z.
+        4) Associare una curva all'array.
+        5) Dupli Group:
+            5.1) Associare il materiale del clone al "Dupli Group" inerente.
+            5.2) Materiale random anche al "Dupli Group".
+            5.3) Rendere attivo il "Dupli Group" anche quando si preme il tasto "Apply" del modificatore.
+        6) Mid Cap:
+            6.1) Permettere di legarlo ai cloni (Merge Verts).
+            6.2) Distribuirli in base al "Rays".
+        7) Material:
+            7.1) Associare una ramp color al modifier array per color gradient.
+            7.2) OB-CAP: Mantenere materiale originale per ogni Cap.
+        8) Creare i cloni con una forma ad aspirale.
+        9) MultiScatter
+        10) Distribuire su un oggetto (http://c4d.sharedby.co/share/F2ylpE, http://youtu.be/J9QPsabSwyA)

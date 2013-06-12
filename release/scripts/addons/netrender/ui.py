@@ -26,7 +26,7 @@ from netrender.utils import *
 
 from bpy.props import PointerProperty, StringProperty, BoolProperty, EnumProperty, IntProperty, CollectionProperty
 
-VERSION = b"0.3"
+VERSION = b"0.5"
 
 PATH_PREFIX = "/tmp/"
 
@@ -116,7 +116,7 @@ class RENDER_PT_network_settings(NetRenderButtonsPanel, bpy.types.Panel):
 
         layout.prop(netsettings, "mode", expand=True)
 
-        if netsettings.mode in ("RENDER_MASTER", "RENDER_SLAVE"):
+        if netsettings.mode in {'RENDER_MASTER', 'RENDER_SLAVE'}:
             layout.operator("render.netclientstart", icon='PLAY')
 
         layout.prop(netsettings, "path")
@@ -164,6 +164,8 @@ class RENDER_PT_network_slave_settings(NetRenderButtonsPanel, bpy.types.Panel):
         netsettings = context.scene.network_render
 
         layout.prop(netsettings, "slave_tags", text="Tags")
+        layout.prop(netsettings, "slave_render")
+        layout.prop(netsettings, "slave_bake")
         layout.prop(netsettings, "use_slave_clear")
         layout.prop(netsettings, "use_slave_thumb")
         layout.prop(netsettings, "use_slave_output_log")
@@ -274,7 +276,8 @@ class RENDER_PT_network_slaves(NeedValidAddress, NetRenderButtonsPanel, bpy.type
         netsettings = context.scene.network_render
 
         row = layout.row()
-        row.template_list(netsettings, "slaves", netsettings, "active_slave_index", rows=2)
+        row.template_list("UI_UL_list", "net_render_slaves", netsettings, "slaves",
+                          netsettings, "active_slave_index", rows=2)
 
         sub = row.column(align=True)
         sub.operator("render.netclientslaves", icon='FILE_REFRESH', text="")
@@ -305,7 +308,8 @@ class RENDER_PT_network_slaves_blacklist(NeedValidAddress, NetRenderButtonsPanel
         netsettings = context.scene.network_render
 
         row = layout.row()
-        row.template_list(netsettings, "slaves_blacklist", netsettings, "active_blacklisted_slave_index", rows=2)
+        row.template_list("UI_UL_list", "net_render_slaves_blacklist", netsettings, "slaves_blacklist",
+                          netsettings, "active_blacklisted_slave_index", rows=2)
 
         sub = row.column(align=True)
         sub.operator("render.netclientwhitelistslave", icon='ZOOMOUT', text="")
@@ -335,7 +339,7 @@ class RENDER_PT_network_jobs(NeedValidAddress, NetRenderButtonsPanel, bpy.types.
         netsettings = context.scene.network_render
 
         row = layout.row()
-        row.template_list(netsettings, "jobs", netsettings, "active_job_index", rows=2)
+        row.template_list("UI_UL_list", "net_render", netsettings, "jobs", netsettings, "active_job_index", rows=2)
 
         sub = row.column(align=True)
         sub.operator("render.netclientstatus", icon='FILE_REFRESH', text="")
@@ -350,8 +354,8 @@ class RENDER_PT_network_jobs(NeedValidAddress, NetRenderButtonsPanel, bpy.types.
 
             layout.label(text="Name: %s" % job.name)
             layout.label(text="Length: %04i" % len(job))
-            layout.label(text="Done: %04i" % job.results[FRAME_DONE])
-            layout.label(text="Error: %04i" % job.results[FRAME_ERROR])
+            layout.label(text="Done: %04i" % job.results[netrender.model.FRAME_DONE])
+            layout.label(text="Error: %04i" % job.results[netrender.model.FRAME_ERROR])
 
 import bl_ui.properties_render as properties_render
 class RENDER_PT_network_output(NeedValidAddress, NetRenderButtonsPanel, bpy.types.Panel):
@@ -450,6 +454,16 @@ class NetRenderSettings(bpy.types.PropertyGroup):
                         description="Output render text log to console as well as sending it to the master",
                         default = True)
         
+        NetRenderSettings.slave_render = BoolProperty(
+                        name="Render on slave",
+                        description="Use slave for render jobs",
+                        default = True)
+
+        NetRenderSettings.slave_bake = BoolProperty(
+                        name="Bake on slave",
+                        description="Use slave for baking jobs",
+                        default = True)
+
         NetRenderSettings.use_master_clear = BoolProperty(
                         name="Clear on exit",
                         description="Delete saved files on exit",
@@ -558,11 +572,11 @@ class NetRenderSettings(bpy.types.PropertyGroup):
                         maxlen = 256,
                         default = "")
     
-        NetRenderSettings.vcs_system = StringProperty(
-                        name="VCS",
-                        description="Version Control System",
-                        maxlen = 64,
-                        default = "Subversion")
+        NetRenderSettings.vcs_system = EnumProperty(
+                                items= netrender.versioning.ITEMS,
+                                name="VCS mode",
+                                description="Version Control System",
+                                default=netrender.versioning.ITEMS[0][0])
     
         NetRenderSettings.job_id = StringProperty(
                         name="Network job id",

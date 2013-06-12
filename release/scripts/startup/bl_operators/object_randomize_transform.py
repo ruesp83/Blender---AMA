@@ -23,7 +23,8 @@ from bpy.types import Operator
 from mathutils import Vector
 
 
-def randomize_selected(seed, delta, loc, rot, scale, scale_even, scale_min):
+def randomize_selected(context, seed, delta,
+                       loc, rot, scale, scale_even, scale_min):
 
     import random
     from random import uniform
@@ -33,7 +34,7 @@ def randomize_selected(seed, delta, loc, rot, scale, scale_even, scale_min):
     def rand_vec(vec_range):
         return Vector(uniform(-val, val) for val in vec_range)
 
-    for obj in bpy.context.selected_objects:
+    for obj in context.selected_objects:
 
         if loc:
             if delta:
@@ -92,11 +93,10 @@ def randomize_selected(seed, delta, loc, rot, scale, scale_even, scale_min):
 from bpy.props import (IntProperty,
                        BoolProperty,
                        FloatVectorProperty)
-from math import pi
 
 
 class RandomizeLocRotSize(Operator):
-    '''Randomize objects loc/rot/scale'''
+    """Randomize objects loc/rot/scale"""
     bl_idname = "object.randomize_transform"
     bl_label = "Randomize Transform"
     bl_options = {'REGISTER', 'UNDO'}
@@ -121,7 +121,7 @@ class RandomizeLocRotSize(Operator):
             )
     loc = FloatVectorProperty(
             name="Location",
-            description=("Maximun distance the objects "
+            description=("Maximum distance the objects "
                          "can spread over each axis"),
             min=-100.0,
             max=100.0,
@@ -135,9 +135,9 @@ class RandomizeLocRotSize(Operator):
             )
     rot = FloatVectorProperty(
             name="Rotation",
-            description="Maximun rotation over each axis",
-            min=-pi,
-            max=pi,
+            description="Maximum rotation over each axis",
+            min=-3.141592,  # math.pi
+            max=+3.141592,
             default=(0.0, 0.0, 0.0),
             subtype='EULER',
             )
@@ -181,6 +181,7 @@ class RandomizeLocRotSize(Operator):
         #scale_min = self.scale_min
         scale_min = 0
 
-        randomize_selected(seed, delta, loc, rot, scale, scale_even, scale_min)
+        randomize_selected(context, seed, delta,
+                           loc, rot, scale, scale_even, scale_min)
 
         return {'FINISHED'}

@@ -24,7 +24,7 @@ bl_info = {
     "name": "Twisted Torus",
     "author": "Paulo_Gomes",
     "version": (0, 11, 1),
-    "blender": (2, 5, 7),
+    "blender": (2, 57, 0),
     "location": "View3D > Add > Mesh ",
     "description": "Adds a mesh Twisted Torus to the Add Mesh menu",
     "warning": "",
@@ -182,7 +182,7 @@ def add_twisted_torus(major_rad, minor_rad, major_seg, minor_seg, twists):
 
 
 class AddTwistedTorus(bpy.types.Operator):
-    '''Add a torus mesh'''
+    """Add a torus mesh"""
     bl_idname = "mesh.primitive_twisted_torus_add"
     bl_label = "Add Torus"
     bl_options = {'REGISTER', 'UNDO', 'PRESET'}

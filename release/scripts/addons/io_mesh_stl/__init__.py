@@ -22,11 +22,11 @@ bl_info = {
     "name": "STL format",
     "author": "Guillaume Bouchard (Guillaum)",
     "version": (1, 0),
-    "blender": (2, 5, 7),
+    "blender": (2, 57, 0),
     "location": "File > Import-Export > Stl",
     "description": "Import-Export STL files",
     "warning": "",
-    "wiki_url": "http://wiki.blender.org/index.php/Extensions:2.5/Py/"
+    "wiki_url": "http://wiki.blender.org/index.php/Extensions:2.6/Py/"
                 "Scripts/Import-Export/STL",
     "tracker_url": "https://projects.blender.org/tracker/index.php?"
                    "func=detail&aid=22837",
@@ -58,12 +58,21 @@ if "bpy" in locals():
 import os
 
 import bpy
-from bpy.props import StringProperty, BoolProperty, CollectionProperty
-from bpy_extras.io_utils import ExportHelper, ImportHelper
+from bpy.props import (StringProperty,
+                       BoolProperty,
+                       CollectionProperty,
+                       EnumProperty,
+                       FloatProperty,
+                       )
+from bpy_extras.io_utils import (ImportHelper,
+                                 ExportHelper,
+                                 axis_conversion,
+                                 )
+from bpy.types import Operator, OperatorFileListElement
 
 
-class ImportSTL(bpy.types.Operator, ImportHelper):
-    '''Load STL triangle mesh data'''
+class ImportSTL(Operator, ImportHelper):
+    """Load STL triangle mesh data"""
     bl_idname = "import_mesh.stl"
     bl_label = "Import STL"
     bl_options = {'UNDO'}
@@ -76,7 +85,7 @@ class ImportSTL(bpy.types.Operator, ImportHelper):
             )
     files = CollectionProperty(
             name="File Path",
-            type=bpy.types.OperatorFileListElement,
+            type=OperatorFileListElement,
             )
     directory = StringProperty(
             subtype='DIR_PATH',
@@ -106,28 +115,65 @@ class ImportSTL(bpy.types.Operator, ImportHelper):
         return {'FINISHED'}
 
 
-class ExportSTL(bpy.types.Operator, ExportHelper):
-    '''Save STL triangle mesh data from the active object'''
+class ExportSTL(Operator, ExportHelper):
+    """Save STL triangle mesh data from the active object"""
     bl_idname = "export_mesh.stl"
     bl_label = "Export STL"
 
     filename_ext = ".stl"
+    filter_glob = StringProperty(default="*.stl", options={'HIDDEN'})
 
-    ascii = BoolProperty(name="Ascii",
-                         description="Save the file in ASCII file format",
-                         default=False)
-    apply_modifiers = BoolProperty(name="Apply Modifiers",
-                                   description="Apply the modifiers "
-                                               "before saving",
-                                   default=True)
+    ascii = BoolProperty(
+            name="Ascii",
+            description="Save the file in ASCII file format",
+            default=False,
+            )
+    use_mesh_modifiers = BoolProperty(
+            name="Apply Modifiers",
+            description="Apply the modifiers before saving",
+            default=True,
+            )
+
+    axis_forward = EnumProperty(
+            name="Forward",
+            items=(('X', "X Forward", ""),
+                   ('Y', "Y Forward", ""),
+                   ('Z', "Z Forward", ""),
+                   ('-X', "-X Forward", ""),
+                   ('-Y', "-Y Forward", ""),
+                   ('-Z', "-Z Forward", ""),
+                   ),
+            default='Y',
+            )
+    axis_up = EnumProperty(
+            name="Up",
+            items=(('X', "X Up", ""),
+                   ('Y', "Y Up", ""),
+                   ('Z', "Z Up", ""),
+                   ('-X', "-X Up", ""),
+                   ('-Y', "-Y Up", ""),
+                   ('-Z', "-Z Up", ""),
+                   ),
+            default='Z',
+            )
+    global_scale = FloatProperty(
+            name="Scale",
+            min=0.01, max=1000.0,
+            default=1.0,
+            )
 
     def execute(self, context):
         from . import stl_utils
         from . import blender_utils
         import itertools
+        from mathutils import Matrix
+
+        global_matrix = axis_conversion(to_forward=self.axis_forward,
+                                        to_up=self.axis_up,
+                                        ).to_4x4() * Matrix.Scale(self.global_scale, 4)
 
         faces = itertools.chain.from_iterable(
-            blender_utils.faces_from_mesh(ob, self.apply_modifiers)
+            blender_utils.faces_from_mesh(ob, global_matrix, self.use_mesh_modifiers)
             for ob in context.selected_objects)
 
         stl_utils.write_stl(self.filepath, faces, self.ascii)
@@ -136,14 +182,12 @@ class ExportSTL(bpy.types.Operator, ExportHelper):
 
 
 def menu_import(self, context):
-    self.layout.operator(ImportSTL.bl_idname,
-                         text="Stl (.stl)").filepath = "*.stl"
+    self.layout.operator(ImportSTL.bl_idname, text="Stl (.stl)")
 
 
 def menu_export(self, context):
     default_path = os.path.splitext(bpy.data.filepath)[0] + ".stl"
-    self.layout.operator(ExportSTL.bl_idname,
-                         text="Stl (.stl)").filepath = default_path
+    self.layout.operator(ExportSTL.bl_idname, text="Stl (.stl)")
 
 
 def register():

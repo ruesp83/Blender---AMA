@@ -25,7 +25,7 @@ from bpy.props import IntProperty
 
 
 class SequencerCrossfadeSounds(Operator):
-    '''Do crossfading volume animation of two selected sound strips'''
+    """Do cross-fading volume animation of two selected sound strips"""
 
     bl_idname = "sequencer.crossfade_sounds"
     bl_label = "Crossfade sounds"
@@ -76,7 +76,7 @@ class SequencerCrossfadeSounds(Operator):
 
 
 class SequencerCutMulticam(Operator):
-    '''Cut multicam strip and select camera'''
+    """Cut multi-cam strip and select camera"""
 
     bl_idname = "sequencer.cut_multicam"
     bl_label = "Cut multicam"
@@ -118,7 +118,7 @@ class SequencerCutMulticam(Operator):
 
 
 class SequencerDeinterlaceSelectedMovies(Operator):
-    '''Deinterlace all selected movie sources'''
+    """Deinterlace all selected movie sources"""
 
     bl_idname = "sequencer.deinterlace_selected_movies"
     bl_label = "Deinterlace Movies"
@@ -126,10 +126,7 @@ class SequencerDeinterlaceSelectedMovies(Operator):
 
     @classmethod
     def poll(cls, context):
-        if context.scene and context.scene.sequence_editor:
-            return True
-        else:
-            return False
+        return (context.scene and context.scene.sequence_editor)
 
     def execute(self, context):
         for s in context.scene.sequence_editor.sequences_all:

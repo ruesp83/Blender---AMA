@@ -1,0 +1,140 @@
+WORK IN PROGRESS:
+    1. Array distribuito su una curva.
+
+
+Advanced Modifier Array v0.5 beta6.3 new features and fixed bug (from v0.5.5) __\__\_____:
+    1. UPD: Modificato il codice affinchè possa usare le BMesh.
+    2. UPD: Aggiornati tutti i calcoli degli offset, affinchè possano utilizzare i dati del clone precedente.
+    3. FIX: Non deallocava la memoria usata per salvare i materiali del "Mid Cap".
+    4. FIX: Non viene allocata memoria per i materiali del "Mid Cap" se non viene utilizzato.
+    5. FIX: Quando si aggiunge un "Mid Cap" e non è attiva la scheda, l'oggetto non viene visualizzato.
+    6. FIX: Se non viene assegnato il "Mid Cap" e non viene attivata la scheda "Advanced Mid Cap" vengono evitati
+            calcoli inerenti la distribuzione.
+
+
+Advanced Modifier Array v0.5 beta5 new features and fixed bug (from v0.5.4) __\__\_____:
+    1. FIX: Aggiunto un controllo per evitare di entrare nella procedura "create_offset",
+            anche quando non c'è nessun cambiamento così da evitare cicli inutili.
+    2. ADD: Possibilità di scalare un oggetto sui singoli assi. Se il valore di XYZ è uguale a 1,
+            l'oggetto non sarà modificato su quell'asse.
+
+
+Advanced Modifier Array v0.5 beta4 new features and fixed bug (from v0.5.3.1) 30\01\2012:
+    1.  FIX: Se allego un gruppo, ed ho deselezionato "Advanced Cloning", i cloni del gruppo 
+             si vedono.
+    2.  FIX: Se ho un Mid Cap, ed ho deselezionato "Advanced Mid Cap", le copie dell'oggetto si 
+             vedono.
+    3.  FIX: Se attivo il "Randomize Material", genera materiali casuali all'apertura e chiusura 
+             della scheda.
+    4.  FIX: Se attivo il "Rays Direction" e disattivo la scheda "Advanced Cloning", la modalità 
+             rays è ancora attiva.
+    5.  FIX: Se si cerca di attivare la casella "Rand Object" senza nessun Dupli Group nella scheda 
+             "Advanced Cloning", crash Blender.
+    6:  FIX: Risolto il problema dell'UNDO.
+    7.  DEL: Il tasto "Refresh Ad. Offset" è stato eliminato.
+    8.  UPD: Attivate di default tutte le opzioni di "Randomize Transform".
+    9.  UPD: Le schede avanzate ora hanno la possibilità di essere attivate e visualizzate.
+    10. UPD: Nuova UI per la scheda "Randomize Transform".
+    11. ADD: Le modifiche ora sono in real time.
+    12. ADD: Aggiunto "Random Seed" per "Randomize Transform", "Advanced Cloning" e 
+             "Randomize Material".
+    13. ADD: Aggiunto per ogni "Random Seed" un pulsante per creare un seed casuale.
+
+
+Advanced Modifier Array v0.5 beta3.1 new features and fixed bug (from v0.5.3) 04\01\2012:
+    1. ADD: Rotazione Locale: Rotazione in base ai propri assi.
+
+
+Advanced Modifier Array v0.5 beta3 new features and fixed bug (from v0.5.2) 14\12\2011:
+    1.  FIX: "Start Cap" e "End Cap" visualizzati in modalità "Curve" anche senza "Curve Cap".
+    2.  FIX: "Mid Cap" visualizzato in modalità "Curve" anche senza "Curve Cap".
+    3.  FIX: Visualizzazione errata in "Edit Mode" del "Mid-Cap".
+    4.  FIX: Mancata inizializzazione delle variabili che indicano l'offset random.
+    5.  UPD: Nuova UI basata sul PDF di Leandro Cavalheiro.
+             (https://github.com/ruesp83/Blender---AMA/blob/master/patch-ama/pdf/array_ui.pdf)
+    6.  UPD: Due modalità per usare il modificatore:
+             - "REGULAR" : Metodo Standard di clonazione.
+             - "PATH"    : Clonazione lungo una curva.
+    7.  UPD: L'opzione "Between Offset" ora si trova nell'elenco "Fit Type".
+    8.  ADD: Possibilità di legare l'oggetto "Mid Cap" a una curva diversa da quella delle copie.
+    9.  ADD: Possibilità di aggiungere alla curva del "Mid Cap" anche lo "Start Cap" e l'"End Cap",
+             rispettivamente al primo e all'ultimo Control Points.
+    10. ADD: "Scale" può avere valori negativi, per creare cloni più piccoli dell'originale.
+    11. ADD: Il "Mid Cap" è soggetto al noise, ma solo nella modalità "Sequence".
+    12. ADD: "Start Cap - Mid Cap - End Cap" ora hanno la possibilità di usare un materiale random,
+             appartenente all'oggetto clonato.
+
+
+Advanced Modifier Array v0.5 beta2 new features and fixed bug (from v0.5.1) 3\11\2011:
+    1. ADD: Possibilità di aggiungere un oggetto "Mid Cap" in varie sequenze e sui Control Points
+            di una curva Bezier e Nurbs.
+    2. ADD: Possibilità di aggiungere più cloni di un "Mid Cap".
+
+
+Advanced Modifier Array v0.5 beta1 new features and fixed bug (from v0.4) 27\08\2011:
+    1. FIX: Quando si alloca un nuovo clone, il materiale assegnato non è il primo ma quello
+            successivo
+    2. ADD: Aggiunta l'opzione "Sequence" nella scheda "Advanced Material".
+    3. ADD: Possibilità di ripetere un materiale più volte, nella modalità "Sequence".
+    4. ADD: Possibilità di aggiungere un oggetto centrale "Mid Cap".
+
+
+Advanced Modifier Array v0.4 new features and fixed bug (from v0.3) 17\08\2011:
+    1.  FIX: Mancata deallocazione dell'ultimo clone.
+    2.  FIX: Il Dupli Group mantiene il "Noise Offset" anche se l'Advanced Noise
+             è disattivato.
+    3.  FIX: Eliminazione dall'undo del tasto "Refresh Ad. Offset". Così l'undo sui cloni
+             funzione bene.
+    4.  FIX: Le funzioni per il "Noise Offset" ora usano le funzioni in "BLI_rand.h".
+    5.  FIX: "final_offset" era calcolato con un clone in più.
+    6.  ADD: Ogni clone ora può essere associato ad un elemento casuale del "Dupli Group".
+    7.  ADD: Il "Dupli Group" ora è soggetto anche lui al Restrict Mode dei modificatori.
+    8.  ADD: Aggiornamento del "Count" quando si cambia il "Fit Type", tranne per il "Fit Length".
+    9.  ADD: Nuova UI.
+    10. ADD: Il "Noise Offset" per Loc-Rot-Scale ora non ha limiti.
+    11. ADD: Il "Noise Offset" ora ha 5 cifre decimali.
+    12. DEL: Eliminazione del "Noise Factor".
+
+
+Advanced Modifier Array v0.3 5\03\2011:
+    1.  Variazione casuale della posizione
+        - Con scelta della direzione
+    2.  Noise Factor: valore moltiplicativo dell'offset
+    3.  Lock: Blocco dell'offset
+    4.  Salvataggio e lettura dell'offset bloccato (se il Lock non è attivato alla riapertura
+        c'è un nuovo offset)
+    5.  Offset per scalare e per la rotazione.(La rotazione avviene sul centro dell'oggetto
+        principale)
+    6.  Distribuisce gli elementi in cerchio su un asse a scelta.
+    7.  Materiale random ad ogni oggetto clonato.
+    8.  Possibilità di legare un gruppo all'array.
+    9.  Possibilità di avere dei cloni tra l'oggetto clonato e un altro.
+        - Feature ispirata da Modo 501 (http://www.youtube.com/watch?v=mInaC4t8Vcc)
+    10. Nuova UI
+    11. Il noise offset ora è aggiornato solo alla pressione del tasto "Refresh Ad. Offset",
+        inerente allo stile di Blender.
+
+
+GIT:
+
+    https://github.com/ruesp83/Blender---AMA
+
+
+Video 14\12\2011:
+    1) http://vimeo.com/15561032
+    2) http://vimeo.com/16762503
+    3) http://vimeo.com/20675851
+    4) http://vimeo.com/28236738
+    5) http://vimeo.com/33667212
+    6) http://vimeo.com/34468992
+    7 New)https://vimeo.com/35901543
+
+
+Builds 14\12\2011:
+    32: Blender-AMA-32.rar
+    64: Blender-AMA-64.rar
+
+
+Patch 14\12\2011:
+    - AMA.patch
+

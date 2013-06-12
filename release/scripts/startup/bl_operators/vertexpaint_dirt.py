@@ -21,21 +21,11 @@
 
 # <pep8 compliant>
 
-# History
-#
-# Originally written by Campbell Barton aka ideasman42
-#
-# 2009-11-01: * 2.5 port by Keith "Wahooney" Boshoff
-#              * Replaced old method with my own, speed is similar (about 0.001 sec on Suzanne)
-#               but results are far more accurate
-#
-
+# Contributor(s): Keith "Wahooney" Boshoff, Campbell Barton
 
 def applyVertexDirt(me, blur_iterations, blur_strength, clamp_dirt, clamp_clean, dirt_only):
     from mathutils import Vector
     from math import acos
-
-    #BPyMesh.meshCalcNormals(me)
 
     vert_tone = [0.0] * len(me.vertices)
 
@@ -104,7 +94,7 @@ def applyVertexDirt(me, blur_iterations, blur_strength, clamp_dirt, clamp_clean,
     tone_range = max_tone - min_tone
 
     if not tone_range:
-        return
+        return {'CANCELLED'}
 
     active_col_layer = None
 
@@ -118,32 +108,34 @@ def applyVertexDirt(me, blur_iterations, blur_strength, clamp_dirt, clamp_clean,
         active_col_layer = me.vertex_colors[0].data
 
     if not active_col_layer:
-        return('CANCELLED', )
+        return
 
-    for i, f in enumerate(me.faces):
-        if not me.use_paint_mask or f.select:
+    use_paint_mask = me.use_paint_mask
 
-            f_col = active_col_layer[i]
-
-            f_col = [f_col.color1, f_col.color2, f_col.color3, f_col.color4]
-
-            for j, v in enumerate(f.vertices):
-                col = f_col[j]
-                tone = vert_tone[me.vertices[v].index]
+    for i, p in enumerate(me.polygons):
+        if not use_paint_mask or p.select:
+            for loop_index in p.loop_indices:
+                loop = me.loops[loop_index]
+                v = loop.vertex_index
+                col = active_col_layer[loop_index].color
+                tone = vert_tone[v]
                 tone = (tone - min_tone) / tone_range
 
                 if dirt_only:
                     tone = min(tone, 0.5)
-                    tone *= 2
+                    tone *= 2.0
 
                 col[0] = tone * col[0]
                 col[1] = tone * col[1]
                 col[2] = tone * col[2]
+    me.update()
+    return {'FINISHED'}
 
 
 import bpy
 from bpy.types import Operator
 from bpy.props import FloatProperty, IntProperty, BoolProperty
+from math import pi
 
 
 class VertexPaintDirt(Operator):
@@ -165,37 +157,40 @@ class VertexPaintDirt(Operator):
             )
     clean_angle = FloatProperty(
             name="Highlight Angle",
-            description="Less then 90 limits the angle used in the tonal range",
-            min=0.0, max=180.0,
-            default=180.0,
+            description="Less than 90 limits the angle used in the tonal range",
+            min=0.0, max=pi,
+            default=pi,
+            unit="ROTATION",
             )
     dirt_angle = FloatProperty(
             name="Dirt Angle",
-            description="Less then 90 limits the angle used in the tonal range",
-            min=0.0, max=180.0,
+            description="Less than 90 limits the angle used in the tonal range",
+            min=0.0, max=pi,
             default=0.0,
+            unit="ROTATION",
             )
     dirt_only = BoolProperty(
             name="Dirt Only",
-            description="Dont calculate cleans for convex areas",
+            description="Don't calculate cleans for convex areas",
             default=False,
             )
+
+    @classmethod
+    def poll(cls, context):
+        obj = context.object
+        return (obj and obj.type == 'MESH')
 
     def execute(self, context):
         import time
         from math import radians
+
         obj = context.object
-
-        if not obj or obj.type != 'MESH':
-            self.report({'ERROR'}, "Error, no active mesh object, aborting")
-            return {'CANCELLED'}
-
         mesh = obj.data
 
         t = time.time()
 
-        applyVertexDirt(mesh, self.blur_iterations, self.blur_strength, radians(self.dirt_angle), radians(self.clean_angle), self.dirt_only)
+        ret = applyVertexDirt(mesh, self.blur_iterations, self.blur_strength, self.dirt_angle, self.clean_angle, self.dirt_only)
 
         print('Dirt calculated in %.6f' % (time.time() - t))
 
-        return {'FINISHED'}
+        return ret

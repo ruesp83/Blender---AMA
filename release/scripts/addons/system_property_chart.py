@@ -19,22 +19,59 @@
 # <pep8 compliant>
 
 bl_info = {
-    "name": "Object Property Chart",
+    "name": "Property Chart",
     "author": "Campbell Barton (ideasman42)",
     "version": (0, 1),
-    "blender": (2, 5, 7),
+    "blender": (2, 57, 0),
     "location": "Tool Shelf",
-    "description": "Edit arbitrary selected properties for objects of the same type",
+    "description": ("Edit arbitrary selected properties for "
+                    "objects/sequence strips of the same type"),
     "warning": "",
-    "wiki_url": "http://wiki.blender.org/index.php/Extensions:2.5/Py/"\
-        "Scripts/System/Object Property Chart",
-    "tracker_url": "https://projects.blender.org/tracker/index.php?"\
-        "func=detail&aid=22701",
+    "wiki_url": ("http://wiki.blender.org/index.php/Extensions:2.6/Py/"
+                 "Scripts/System/Object Property Chart"),
+    "tracker_url": ("https://projects.blender.org/tracker/index.php?"
+                    "func=detail&aid=22701"),
     "category": "System"}
 
 """List properties of selected objects"""
 
 import bpy
+from bl_operators.presets import AddPresetBase
+
+
+class AddPresetProperties(AddPresetBase, bpy.types.Operator):
+    """Add an properties preset"""
+    bl_idname = "scene.properties_preset_add"
+    bl_label = "Add Properties Preset"
+    preset_menu = "SCENE_MT_properties_presets"
+
+    preset_defines = [
+        "scene = bpy.context.scene",
+    ]
+
+    def pre_cb(self, context):
+        space_type = context.space_data.type
+        if space_type == 'VIEW_3D':
+            self.preset_subdir = "system_property_chart_view3d"
+            self.preset_values = ["scene.view3d_edit_props"]
+        else:
+            self.preset_subdir = "system_property_chart_sequencer"
+            self.preset_values = ["scene.sequencer_edit_props"]
+
+
+class SCENE_MT_properties_presets(bpy.types.Menu):
+    bl_label = "Properties Presets"
+    preset_operator = "script.execute_preset"
+
+    def draw(self, context):
+        space_type = context.space_data.type
+
+        if space_type == 'VIEW_3D':
+            self.preset_subdir = "system_property_chart_view3d"
+        else:
+            self.preset_subdir = "system_property_chart_sequencer"
+
+        bpy.types.Menu.draw_preset(self, context)
 
 
 def _property_chart_data_get(self, context):
@@ -54,9 +91,9 @@ def _property_chart_data_get(self, context):
 
 
 def _property_chart_draw(self, context):
-    '''
+    """
     This function can run for different types.
-    '''
+    """
     obj, selected_objects = _property_chart_data_get(self, context)
 
     if not obj:
@@ -101,7 +138,7 @@ def _property_chart_draw(self, context):
             prop_found = False
             for attr_string in strings:
                 prop_pairs.append(obj_prop_get(obj, attr_string))
-                if prop_found == False and prop_pairs[-1] != (None, None):
+                if prop_found is False and prop_pairs[-1] != (None, None):
                     prop_found = True
 
             if prop_found:
@@ -132,9 +169,14 @@ def _property_chart_draw(self, context):
                 else:
                     col.label(text="<missing>")
 
-    # edit the display props
+    # Presets for properties
     col = layout.column()
-    col.label(text="Object Properties")
+    col.label(text="Properties")
+    row = col.row(align=True)
+    row.menu("SCENE_MT_properties_presets", text=bpy.types.SCENE_MT_properties_presets.bl_label)
+    row.operator("scene.properties_preset_add", text="", icon="ZOOMIN")
+    row.operator("scene.properties_preset_add", text="", icon="ZOOMOUT").remove_active = True
+    # edit the display props
     col.prop(id_storage, self._PROP_STORAGE_ID, text="")
 
 

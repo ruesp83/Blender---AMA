@@ -49,15 +49,16 @@ class LOGIC_PT_properties(Panel):
                 sub.prop(prop, "name", text="")
                 row.prop(prop, "type", text="")
                 # get the property from the body, not the game property
-                # note, don't do this - it's too slow and body can potentually be a really long string.
-                # row.prop(ob.data, "body", text="")
+                # note, don't do this - it's too slow and body can potentially be a really long string.
+                #~ row.prop(ob.data, "body", text="")
                 row.label("See Text Object")
             else:
                 props = layout.operator("object.game_property_new", text="Add Text Game Property", icon='ZOOMIN')
                 props.name = 'Text'
                 props.type = 'STRING'
 
-        layout.operator("object.game_property_new", text="Add Game Property", icon='ZOOMIN')
+        props = layout.operator("object.game_property_new", text="Add Game Property", icon='ZOOMIN')
+        props.name = ''
 
         for i, prop in enumerate(game.properties):
 
@@ -105,6 +106,11 @@ class LOGIC_MT_view(Menu):
         layout = self.layout
 
         layout.operator("logic.properties", icon='MENU_PANEL')
+
+        layout.separator()
+
+        layout.operator("screen.area_dupli")
+        layout.operator("screen.screen_full_area")
 
 if __name__ == "__main__":  # only for live edit.
     bpy.utils.register_module(__name__)

@@ -19,14 +19,19 @@
 # <pep8-80 compliant>
 import bpy
 from bpy.types import Operator
-import mathutils
+
+from bpy.props import (FloatProperty,
+                       IntProperty,
+                       BoolProperty,
+                       )
+from bpy.app.translations import pgettext_data as data_
+
+from bpy_extras import object_utils
 
 
 def add_torus(major_rad, minor_rad, major_seg, minor_seg):
     from math import cos, sin, pi
-
-    Vector = mathutils.Vector
-    Quaternion = mathutils.Quaternion
+    from mathutils import Vector, Quaternion
 
     PI_2 = pi * 2.0
     z_axis = 0.0, 0.0, 1.0
@@ -42,9 +47,9 @@ def add_torus(major_rad, minor_rad, major_seg, minor_seg):
             angle = 2 * pi * minor_index / minor_seg
 
             vec = quat * Vector((major_rad + (cos(angle) * minor_rad),
-                                0.0,
-                                (sin(angle) * minor_rad),
-                                ))
+                                 0.0,
+                                 (sin(angle) * minor_rad),
+                                 ))
 
             verts.extend(vec[:])
 
@@ -75,15 +80,9 @@ def add_torus(major_rad, minor_rad, major_seg, minor_seg):
 
     return verts, faces
 
-from bpy.props import (FloatProperty,
-                       IntProperty,
-                       BoolProperty,
-                       FloatVectorProperty,
-                       )
 
-
-class AddTorus(Operator):
-    '''Add a torus mesh'''
+class AddTorus(Operator, object_utils.AddObjectHelper):
+    """Add a torus mesh"""
     bl_idname = "mesh.primitive_torus_add"
     bl_label = "Add Torus"
     bl_options = {'REGISTER', 'UNDO', 'PRESET'}
@@ -94,12 +93,16 @@ class AddTorus(Operator):
                          "center of the cross sections"),
             min=0.01, max=100.0,
             default=1.0,
+            subtype='DISTANCE',
+            unit='LENGTH',
             )
     minor_radius = FloatProperty(
             name="Minor Radius",
             description="Radius of the torus' cross section",
             min=0.01, max=100.0,
             default=0.25,
+            subtype='DISTANCE',
+            unit='LENGTH',
             )
     major_segments = IntProperty(
             name="Major Segments",
@@ -123,50 +126,49 @@ class AddTorus(Operator):
             description="Total Exterior Radius of the torus",
             min=0.01, max=100.0,
             default=1.0,
+            subtype='DISTANCE',
+            unit='LENGTH',
             )
     abso_minor_rad = FloatProperty(
             name="Inside Radius",
             description="Total Interior Radius of the torus",
             min=0.01, max=100.0,
             default=0.5,
+            subtype='DISTANCE',
+            unit='LENGTH',
             )
 
-    # generic transform props
-    view_align = BoolProperty(
-            name="Align to View",
-            default=False,
-            )
-    location = FloatVectorProperty(
-            name="Location",
-            subtype='TRANSLATION',
-            )
-    rotation = FloatVectorProperty(
-            name="Rotation",
-            subtype='EULER',
-            )
+    def invoke(self, context, event):
+        object_utils.object_add_grid_scale_apply_operator(self, context)
+        return self.execute(context)
 
     def execute(self, context):
 
-        if self.use_abso == True:
+        if self.use_abso is True:
             extra_helper = (self.abso_major_rad - self.abso_minor_rad) * 0.5
             self.major_radius = self.abso_minor_rad + extra_helper
             self.minor_radius = extra_helper
 
         verts_loc, faces = add_torus(self.major_radius,
-                                    self.minor_radius,
-                                    self.major_segments,
-                                    self.minor_segments)
+                                     self.minor_radius,
+                                     self.major_segments,
+                                     self.minor_segments)
 
-        mesh = bpy.data.meshes.new("Torus")
+        mesh = bpy.data.meshes.new(data_("Torus"))
 
         mesh.vertices.add(len(verts_loc) // 3)
-        mesh.faces.add(len(faces) // 4)
+
+        nbr_loops = len(faces)
+        nbr_polys = nbr_loops // 4
+        mesh.loops.add(nbr_loops)
+        mesh.polygons.add(nbr_polys)
 
         mesh.vertices.foreach_set("co", verts_loc)
-        mesh.faces.foreach_set("vertices_raw", faces)
+        mesh.polygons.foreach_set("loop_start", range(0, nbr_loops, 4))
+        mesh.polygons.foreach_set("loop_total", (4,) * nbr_polys)
+        mesh.loops.foreach_set("vertex_index", faces)
         mesh.update()
 
-        from bpy_extras import object_utils
         object_utils.object_data_add(context, mesh, operator=self)
 
         return {'FINISHED'}

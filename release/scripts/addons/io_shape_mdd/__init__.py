@@ -21,11 +21,11 @@
 bl_info = {
     "name": "NewTek MDD format",
     "author": "Bill L.Nieuwendorp",
-    "blender": (2, 5, 7),
+    "blender": (2, 57, 0),
     "location": "File > Import-Export",
     "description": "Import-Export MDD as mesh shape keys",
     "warning": "",
-    "wiki_url": "http://wiki.blender.org/index.php/Extensions:2.5/Py/"
+    "wiki_url": "http://wiki.blender.org/index.php/Extensions:2.6/Py/"
                 "Scripts/Import-Export/NewTek_OBJ",
     "tracker_url": "",
     "support": 'OFFICIAL',
@@ -40,12 +40,12 @@ if "bpy" in locals():
 
 
 import bpy
-from bpy.props import StringProperty, IntProperty
+from bpy.props import StringProperty, IntProperty, FloatProperty
 from bpy_extras.io_utils import ExportHelper, ImportHelper
 
 
 class ImportMDD(bpy.types.Operator, ImportHelper):
-    '''Import MDD vertex keyframe file to shape keys'''
+    """Import MDD vertex keyframe file to shape keys"""
     bl_idname = "import_shape.mdd"
     bl_label = "Import MDD"
     bl_options = {'UNDO'}
@@ -70,16 +70,16 @@ class ImportMDD(bpy.types.Operator, ImportHelper):
 
     @classmethod
     def poll(cls, context):
-        ob = context.active_object
-        return (ob and ob.type == 'MESH')
+        obj = context.active_object
+        return (obj and obj.type == 'MESH')
+
+    def invoke(self, context, event):
+        scene = context.scene
+        self.frame_start = scene.frame_start
+
+        return super().invoke(context, event)
 
     def execute(self, context):
-
-        # initialize from scene if unset
-        scene = context.scene
-        if not self.frame_start:
-            self.frame_start = scene.frame_current
-
         keywords = self.as_keywords(ignore=("filter_glob",))
 
         from . import import_mdd
@@ -87,7 +87,7 @@ class ImportMDD(bpy.types.Operator, ImportHelper):
 
 
 class ExportMDD(bpy.types.Operator, ExportHelper):
-    '''Animated mesh to MDD vertex keyframe file'''
+    """Animated mesh to MDD vertex keyframe file"""
     bl_idname = "export_shape.mdd"
     bl_label = "Export MDD"
 
@@ -98,16 +98,16 @@ class ExportMDD(bpy.types.Operator, ExportHelper):
 
     minframe = 1
     maxframe = 300000
-    minfps = 1
-    maxfps = 120
+    minfps = 1.0
+    maxfps = 120.0
 
     # List of operator properties, the attributes will be assigned
     # to the class instance from the operator settings before calling.
-    fps = IntProperty(
+    fps = FloatProperty(
             name="Frames Per Second",
             description="Number of frames/second",
             min=minfps, max=maxfps,
-            default=25,
+            default=25.0,
             )
     frame_start = IntProperty(
             name="Start Frame",
@@ -127,16 +127,15 @@ class ExportMDD(bpy.types.Operator, ExportHelper):
         obj = context.active_object
         return (obj and obj.type == 'MESH')
 
-    def execute(self, context):
-        # initialize from scene if unset
+    def invoke(self, context, event):
         scene = context.scene
-        if not self.frame_start:
-            self.frame_start = scene.frame_start
-        if not self.frame_end:
-            self.frame_end = scene.frame_end
-        if not self.fps:
-            self.fps = scene.render.fps
+        self.frame_start = scene.frame_start
+        self.frame_end = scene.frame_end
+        self.fps = scene.render.fps / scene.render.fps_base
 
+        return super().invoke(context, event)
+
+    def execute(self, context):
         keywords = self.as_keywords(ignore=("check_existing", "filter_glob"))
 
         from . import export_mdd

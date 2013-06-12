@@ -18,16 +18,16 @@
 
 
 bl_info = {
-    'name': 'Light Field Tools',
-    'author': 'Aurel Wildfellner',
-    'description': 'Tools to create a light field camera and projector',
-    'version': (0, 2, 1),
-    'blender': (2, 5, 7),
-    'location': 'View3D > Tool Shelf > Light Field Tools',
-    'url': 'http://www.jku.at/cg/',
-    "wiki_url": "http://wiki.blender.org/index.php/Extensions:2.5/Py/Scripts/Render/Light_Field_Tools",
+    "name": "Light Field Tools",
+    "author": "Aurel Wildfellner",
+    "description": "Tools to create a light field camera and projector",
+    "version": (0, 3, 0),
+    "blender": (2, 64, 0),
+    "location": "View3D > Tool Shelf > Light Field Tools",
+    "url": "http://www.jku.at/cg/",
+    "wiki_url": "http://wiki.blender.org/index.php/Extensions:2.6/Py/Scripts/Render/Light_Field_Tools",
     "tracker_url": "http://projects.blender.org/tracker/index.php?func=detail&aid=25719",
-    'category': 'Render'
+    "category": "Render"
 }
 
 

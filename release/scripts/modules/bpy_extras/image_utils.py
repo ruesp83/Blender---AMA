@@ -31,6 +31,7 @@ def load_image(imagepath,
                ncase_cmp=True,
                convert_callback=None,
                verbose=False,
+               relpath=None,
                ):
     """
     Return an image from the file path with options to search multiple paths
@@ -57,6 +58,8 @@ def load_image(imagepath,
        convert it to a PNG and return the PNG's path.
        For formats blender can read, simply return the path that is given.
     :type convert_callback: function
+    :arg relpath: If not None, make the file relative to this path.
+    :type relpath: None or string
     :return: an image or None
     :rtype: :class:`bpy.types.Image`
     """
@@ -71,7 +74,7 @@ def load_image(imagepath,
     def _image_load_placeholder(path):
         name = bpy.path.basename(path)
         if type(name) == bytes:
-            name = name.decode('utf-8', "replace")
+            name = name.decode("utf-8", "replace")
         image = bpy.data.images.new(name, 128, 128)
         # allow the path to be resolved later
         image.filepath = path
@@ -97,8 +100,14 @@ def load_image(imagepath,
 
         # image path has been checked so the path could not be read for some
         # reason, so be sure to return a placeholder
-        if place_holder:
+        if place_holder and image is None:
             image = _image_load_placeholder(path)
+
+        if image:
+            if relpath is not None:
+                # make relative
+                from bpy.path import relpath as relpath_fn
+                image.filepath_raw = relpath_fn(path, start=relpath)
 
         return image
 

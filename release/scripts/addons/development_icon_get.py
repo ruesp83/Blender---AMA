@@ -23,13 +23,13 @@ bl_info = {
     'name': 'Icons',
     'author': 'Crouch, N.tox, PKHG, Campbell Barton, Dany Lebel',
     'version': (1, 5, 1),
-    "blender": (2, 5, 7),
+    "blender": (2, 57, 0),
     'location': 'Text Editor > Properties or '\
         'Console > Console Menu',
     'warning': '',
     'description': 'Click an icon to display its name and copy it '\
         'to the clipboard',
-    'wiki_url': 'http://wiki.blender.org/index.php/Extensions:2.5/'\
+    'wiki_url': 'http://wiki.blender.org/index.php/Extensions:2.6/'\
         'Py/Scripts/System/Display_All_Icons',
     'tracker_url': 'http://projects.blender.org/tracker/index.php?'\
         'func=detail&aid=22011',

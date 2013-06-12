@@ -1,0 +1,184 @@
+############################
+###### BLENDER NATION ######
+############################
+
+salvis:
+    - Nice modification to array modifier! I still wish there was a way to do “color offsets” 
+      R,G, & B) with materials so you could have an array of objects with colors gradually 
+      changing depending on their index number.
+    
+    - Bel cambiamento del Array modifier!! Mi piacerebbe che ci fosse un modo per fare un 
+      "color offset" (R, G, B) con i materiali così si potrebbe avere un array di oggetti con un
+      cambiamento di colore graduale, dipendente dal numero di indice
+    
+Ignatz:
+    - The new noise function in the Array modifier is very interesting but is not stable.
+      This issue demonstrates itself in a number of ways.
+      1) Reloading a saved file where the array modifier has been used with noise always presents a 
+         different random result. One would assume that saving a file with this feature enabled would
+         bring one back to the same (model) position and form.
+      2) Using the APPLY button on the array modifier when noise is used will not present you with 
+         the mesh in the form it was last in. It appears that the noise “reshuffles” itself just before
+         the apply actually happens. In other words, you don’t get what you expect.
+      3) If you use UNDO with this function then, again, you never return to the last postion
+         which you expected, but rather some other random noise position.
+      [ Note: I realize that this patch is a work in progress, but the observations are valid,
+              nevertheless. ]
+      :::::::::::::::::::::::::::::::::::::::::
+      Blender version: 2.56 r35391
+      Windows XP Pro 32-bit SP3
+      Intel Q9450 4gig RAM
+      NVidia GeForce 9600GT (driver 6.14.12.5721)
+
+    - La funzione per il disturbo dell'array è molto interessante ma poco stabile!!
+      Questo problema si dimostra in vari modi!!
+      1)Rileggendo un file salvato dove il modifier array è stato usato con il noise, 
+        presenta sempre un differente risultato random.
+        Suppongo, che un salvataggio del file con questa feature abilitata porterebbe
+        la stessa posizione e forma.
+      2)Utilizzando il tasto "Applica" il noise viene ricalcolato poco prima di essere applicato.
+        In altre parole non si ottiene quello che vi aspettate!!
+      3)Se si utilizza "UNDO" con questa funzione, ancora una volta, non ritorna all'ultima 
+        posizione che vi aspettate, ma qualche altra posizione casuale.
+      [Nota: Mi rendo conto che questa patch è un work in progress, ma tuttavia le osservazioni 
+             sono valide!!]
+             
+Jim:
+    - Outstanding!  Well done!
+
+TheNiceGuy:
+    - AWSOME!!!!
+
+T.E. Mencer:
+    - That's ... actually pretty stinkin' cool. At first I was all "yaawwwwnnnn boring .." and then 
+      you get to the more actually advanced stuff and I went *POP!* "Hey this is really slick!"
+      Yes, I have sound effects in my head. Goes well with the voices.
+
+    * Benjamin Lindquist:
+        - It's probably quite hard to show off all the coding work in a video without voiceover, 
+          I pretty much agree though...
+          Your comment was amusing either way. :D
+
+        * T.E. Mencer:
+            - I think my comment was a product of two things:
+              1)Too much coffee 2) Too much sugar
+              I'm sure other elements are at play, but I'll blame those two specifically.
+
+Jiggles100:
+    - trunk!!!
+  
+Somebody
+    - I'd sure like to see this in trunk.
+
+MalPraktis:
+    - This is just what I have been waiting for.  This will definitely speed up some of my projects.
+      Put this in the TRUNK!!!
+
+LoganRi:
+    - Great, this is awesome. I really dig the new cloning options.
+
+Steve Alvis:
+    - While you are tinkering with the array modifier code, is it easy to modify the color of the 
+      objects in an array in even increments (say by hsv or rgb) as defined by an offset or something
+      of the like?  It would be kinda neat to be able to do this without making 100 different materials 
+      by hand.
+
+    * Nicholas Rishel:
+        - Sounds like a job for Python scripting.
+
+Johny:
+    - Fabio, i was very impressed with an earlier version but personally i really wanted to be able
+      to have local rotation for copies and now you've perfected it with that.
+      Amazing work.. this should be in trunk.
+      Hoping for an OS X version on Graphical....sniff sniff.
+      Until then... is it possible to have this as an addon? or patch the core files yourself?
+
+Meloware:
+    - The 64 bit Windows build on Graphicall.org at rev. 43124 doesn't run, for me.
+      libgomp-1.dll and possibly other libraries are missing. I was able to run the 32 bit version
+      okay.
+
+Eonmachrealm:
+    - This is the kind of things that should be done IMHO, extending and perfecting the available tools!!!
+      nice, nice, nice
+      Trunk trunk trunk!!!!
+
+Drxms:
+    - A very usefull modifier.
+
+DimitrisC:
+    - Can anyone please tell me why we can't apply the same array modifier on more than one objects?
+      Let's say I got a street light (two objects, the mesh and the actual light/spot) and I want to 
+      clone them along a road. It should be fairly easy, you make the light a child of the mesh and 
+      use an array modifier on the father (mesh). Boom! Cloned street lamps! Set the amount,distance
+      and you're ready! I can't even use array mod. on lights. You can create instances and clones 
+      of object groups (groups that may carry lights, another array, extruded splines, meshes, text etc) 
+      in C4D since 2007-8. I'll agree with Eonmachrealm, perfecting the existing tools should be a priority.
+      The example is pretty nice and it's a step to the right direction btw.
+
+    * surt:
+        - Because a modifier is for modifying (a mesh). You want to instance, so use instancing.
+
+Kirill Poltavets:
+    - Fabio makes simple but pretty useful tool! MidCap is great feature for creation of modern 
+      buildings. With current standard Array Modifier you need to check different meshes to fit 
+      everything exactly and make different complex combinations. I see that AMA is capable to solve
+      these headaches.
+      Randomization features are really great too! Also it will save a lot of memory if will be 
+      implemented with the support of Instances code (as an option probably). I'm not sure it's possible 
+      but I crave for this! Current Particle System code is really unintuitive in cases of 
+      "instance modelling" and deals (usually) with normals so you need to perform some tricks if 
+      you want simply to create that wall of bricks without a serious memory waste.
+      I hope that further AMA will be improved even more! Now it must be completed and will be send 
+      in Trunk at least as an alternative to the standard Array.
+
+Olaf:
+    - Excellent! Is this in SVN already?
+
+Danni Coy:
+    - That's pretty awesome - what would make it even more awesome is if you could apply the modifier 
+      to a group and have it use one random object from that group in each iteration of the array 
+      that way you could for instance model a bunch of similar size but different looking planks and 
+      use the array to form a walkway where the planks all look sufficiently different 
+      (does that make sense?)
+
+Mike:
+    - I'd love to see it in trunk its wonderful piece of work! Also if you could add a scale factor 
+      as well ass the other (rotation, location) would be handy. For example to create arrays with
+      objects that vary in size ... like an array of books sitting on a shelf, or bottes sitting in 
+      a row .. as its very painful to create that with particles at the moment.
+
+
+############################
+########### VIMEO ##########
+############################
+
+Peter:
+    - fantastic! could you please develop it further, to use it for animation? 
+      (like noise speed, random mat. change speed, etc...)
+      Fantastic what you're doing, keep it up!
+      
+MoolahNasreddin:
+    - Fabio, thanks for your addon!
+      It's really useful!
+      I just want to note that Noise in options always picks different values. I created two Arrays with noises and then moved first after second, noted elements positions, then made swapping again and few times. It's always different. And I find that this noise isn't connected to the object but it's connected to Global. So when you move object - noise is "waving" all the way.
+      Please make the "seed" option. I think that it's already present in Blender (in Particles at least). Sometimes it's necessary to get the same results every time you're loading your file.
+      P.S. Also please make 5 digits after "." if it's up to you.
+
+Hypnosis Group:
+    - Cool. Why not realtime changes?
+
+Patrick Boelens:
+    - Woah, great progress; loving this modifier already! I'd like to make a few feature requests if
+      you don't mind though. =)
+      1) I see you applying loc/rot/scale a lot to make sure everything works; perhaps a "local transform" 
+        checkbox would be nice?
+      2) In the local transform offsets, I'd love to be able to set a minimum and maximum for both location, 
+        rotation and scale separately (i.e.: 3 rows with 2 columns each). This would provide more flexibility 
+        and remove the use of the + and - checkboxes.
+      3) Also in the random offsets, instead of having a refresh button, I think a seed field would be 
+        be better suited. That way we could have real-time changes in the viewport as Hypnosis Group 
+        suggested, and also go back and revise/ copy (previous) versions.
+      Now I have to admit I haven't grabbed a build just yet (sorry) and I haven't been actively following 
+      development, so apologies if this is already implemented/ in the planning. ;)
+      Cheers, Patrick

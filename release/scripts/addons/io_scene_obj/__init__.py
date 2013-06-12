@@ -21,12 +21,12 @@
 bl_info = {
     "name": "Wavefront OBJ format",
     "author": "Campbell Barton",
-    "blender": (2, 5, 8),
+    "blender": (2, 58, 0),
     "location": "File > Import-Export",
     "description": "Import-Export OBJ, Import OBJ mesh, UV's, "
                    "materials and textures",
     "warning": "",
-    "wiki_url": "http://wiki.blender.org/index.php/Extensions:2.5/Py/"
+    "wiki_url": "http://wiki.blender.org/index.php/Extensions:2.6/Py/"
                 "Scripts/Import-Export/Wavefront_OBJ",
     "tracker_url": "",
     "support": 'OFFICIAL',
@@ -46,15 +46,15 @@ from bpy.props import (BoolProperty,
                        StringProperty,
                        EnumProperty,
                        )
-from bpy_extras.io_utils import (ExportHelper,
-                                 ImportHelper,
+from bpy_extras.io_utils import (ImportHelper,
+                                 ExportHelper,
                                  path_reference_mode,
                                  axis_conversion,
                                  )
 
 
 class ImportOBJ(bpy.types.Operator, ImportHelper):
-    '''Load a Wavefront OBJ File'''
+    """Load a Wavefront OBJ File"""
     bl_idname = "import_scene.obj"
     bl_label = "Import OBJ"
     bl_options = {'PRESET', 'UNDO'}
@@ -67,7 +67,7 @@ class ImportOBJ(bpy.types.Operator, ImportHelper):
 
     use_ngons = BoolProperty(
             name="NGons",
-            description="Import faces with more then 4 verts as fgons",
+            description="Import faces with more than 4 verts as ngons",
             default=True,
             )
     use_edges = BoolProperty(
@@ -100,7 +100,7 @@ class ImportOBJ(bpy.types.Operator, ImportHelper):
 
     use_image_search = BoolProperty(
             name="Image Search",
-            description="Search subdirs for any assosiated images " \
+            description="Search subdirs for any associated images "
                         "(Warning, may be slow)",
             default=True,
             )
@@ -113,8 +113,8 @@ class ImportOBJ(bpy.types.Operator, ImportHelper):
             )
 
     global_clamp_size = FloatProperty(
-            name="Clamp Scale",
-            description="Clamp the size to this maximum (Zero to Disable)",
+            name="Clamp Size",
+            description="Clamp bounds under this value (zero to disable)",
             min=0.0, max=1000.0,
             soft_min=0.0, soft_max=1000.0,
             default=0.0,
@@ -164,6 +164,10 @@ class ImportOBJ(bpy.types.Operator, ImportHelper):
                                         ).to_4x4()
         keywords["global_matrix"] = global_matrix
 
+        if bpy.data.is_saved and context.user_preferences.filepaths.use_relative_paths:
+            import os
+            keywords["relpath"] = os.path.dirname((bpy.data.path_resolve("filepath", False).as_bytes()))
+
         return import_obj.load(self, context, **keywords)
 
     def draw(self, context):
@@ -196,7 +200,7 @@ class ImportOBJ(bpy.types.Operator, ImportHelper):
 
 
 class ExportOBJ(bpy.types.Operator, ExportHelper):
-    '''Save a Wavefront OBJ File'''
+    """Save a Wavefront OBJ File"""
 
     bl_idname = "export_scene.obj"
     bl_label = 'Export OBJ'
@@ -221,7 +225,7 @@ class ExportOBJ(bpy.types.Operator, ExportHelper):
             )
 
     # object group
-    use_apply_modifiers = BoolProperty(
+    use_mesh_modifiers = BoolProperty(
             name="Apply Modifiers",
             description="Apply modifiers (preview resolution)",
             default=True,
@@ -255,7 +259,7 @@ class ExportOBJ(bpy.types.Operator, ExportHelper):
             )
     use_nurbs = BoolProperty(
             name="Write Nurbs",
-            description="Write nurbs curves as OBJ nurbs rather then "
+            description="Write nurbs curves as OBJ nurbs rather than "
                         "converting to geometry",
             default=False,
             )
@@ -287,15 +291,6 @@ class ExportOBJ(bpy.types.Operator, ExportHelper):
             default=False,
             )
 
-    global_scale = FloatProperty(
-            name="Scale",
-            description="Scale all data",
-            min=0.01, max=1000.0,
-            soft_min=0.01,
-            soft_max=1000.0,
-            default=1.0,
-            )
-
     axis_forward = EnumProperty(
             name="Forward",
             items=(('X', "X Forward", ""),
@@ -307,7 +302,6 @@ class ExportOBJ(bpy.types.Operator, ExportHelper):
                    ),
             default='-Z',
             )
-
     axis_up = EnumProperty(
             name="Up",
             items=(('X', "X Up", ""),
@@ -318,6 +312,11 @@ class ExportOBJ(bpy.types.Operator, ExportHelper):
                    ('-Z', "-Z Up", ""),
                    ),
             default='Y',
+            )
+    global_scale = FloatProperty(
+            name="Scale",
+            min=0.01, max=1000.0,
+            default=1.0,
             )
 
     path_mode = path_reference_mode
@@ -335,13 +334,7 @@ class ExportOBJ(bpy.types.Operator, ExportHelper):
                                             "filter_glob",
                                             ))
 
-        global_matrix = Matrix()
-
-        global_matrix[0][0] = \
-        global_matrix[1][1] = \
-        global_matrix[2][2] = self.global_scale
-
-        global_matrix = (global_matrix *
+        global_matrix = (Matrix.Scale(self.global_scale, 4) *
                          axis_conversion(to_forward=self.axis_forward,
                                          to_up=self.axis_up,
                                          ).to_4x4())

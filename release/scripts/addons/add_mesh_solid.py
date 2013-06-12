@@ -21,11 +21,11 @@ bl_info = {
     "name": "Regular Solids",
     "author": "DreamPainter",
     "version": (2, 0),
-    "blender": (2, 5, 9),
+    "blender": (2, 59, 0),
     "location": "View3D > Add > Mesh > Solids",
     "description": "Add a regular solid",
     "warning": "",
-    "wiki_url": "http://wiki.blender.org/index.php/Extensions:2.5/Py/"\
+    "wiki_url": "http://wiki.blender.org/index.php/Extensions:2.6/Py/"\
         "Scripts/Add_Mesh/Add_Solid",
     "tracker_url": "https://projects.blender.org/tracker/index.php?"\
         "func=detail&aid=22405",
@@ -43,7 +43,7 @@ from bpy_extras.object_utils import object_data_add
 # assumes each polygon is convex.
 #  poly: list of faces, or a single face, like those
 #        needed for mesh.from_pydata.
-#  returns the tesselated faces.
+#  returns the tessellated faces.
 def createPolys(poly):
     # check for faces
     if len(poly) == 0:

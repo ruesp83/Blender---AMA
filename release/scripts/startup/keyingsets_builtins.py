@@ -20,14 +20,11 @@
 
 """
 Built-In Keying Sets
-None of these Keying Sets should be removed, as these
-are needed by various parts of Blender in order for them
+None of these Keying Sets should be removed, as these are needed by various parts of Blender in order for them
 to work correctly.
 
-Beware also about changing the order that these are defined
-here, since this can result in old files referring to the
-wrong Keying Set as the active one, potentially resulting
-in lost (i.e. unkeyed) animation.
+Beware also about changing the order that these are defined here, since this can result in old files referring to the
+wrong Keying Set as the active one, potentially resulting in lost (i.e. unkeyed) animation.
 """
 
 import bpy
@@ -38,8 +35,20 @@ from bpy.types import KeyingSetInfo
 # Built-In KeyingSets
 
 
+# "Defines"
+# Keep these in sync with those in ED_keyframing.h!
+ANIM_KS_LOCATION_ID = "Location"
+ANIM_KS_ROTATION_ID = "Rotation"
+ANIM_KS_SCALING_ID = "Scaling"
+ANIM_KS_LOC_ROT_SCALE_ID = "LocRotScale"
+ANIM_KS_AVAILABLE_ID = "Available"
+ANIM_KS_WHOLE_CHARACTER_ID = "WholeCharacter"
+
+
 # Location
 class BUILTIN_KSI_Location(KeyingSetInfo):
+    """Insert a keyframe on each of the location channels"""
+    bl_idname = ANIM_KS_LOCATION_ID
     bl_label = "Location"
 
     # poll - use predefined callback for selected bones/objects
@@ -54,6 +63,8 @@ class BUILTIN_KSI_Location(KeyingSetInfo):
 
 # Rotation
 class BUILTIN_KSI_Rotation(KeyingSetInfo):
+    """Insert a keyframe on each of the rotation channels"""
+    bl_idname = ANIM_KS_ROTATION_ID
     bl_label = "Rotation"
 
     # poll - use predefined callback for selected bones/objects
@@ -62,12 +73,14 @@ class BUILTIN_KSI_Rotation(KeyingSetInfo):
     # iterator - use callback for selected bones/objects
     iterator = keyingsets_utils.RKS_ITER_selected_item
 
-    # generator - use callback for location
+    # generator - use callback for rotation
     generate = keyingsets_utils.RKS_GEN_rotation
 
 
 # Scale
 class BUILTIN_KSI_Scaling(KeyingSetInfo):
+    """Insert a keyframe on each of the scale channels"""
+    bl_idname = ANIM_KS_SCALING_ID
     bl_label = "Scaling"
 
     # poll - use predefined callback for selected bones/objects
@@ -76,7 +89,7 @@ class BUILTIN_KSI_Scaling(KeyingSetInfo):
     # iterator - use callback for selected bones/objects
     iterator = keyingsets_utils.RKS_ITER_selected_item
 
-    # generator - use callback for location
+    # generator - use callback for scaling
     generate = keyingsets_utils.RKS_GEN_scaling
 
 # ------------
@@ -84,6 +97,7 @@ class BUILTIN_KSI_Scaling(KeyingSetInfo):
 
 # LocRot
 class BUILTIN_KSI_LocRot(KeyingSetInfo):
+    """Insert a keyframe on each of the location and rotation channels"""
     bl_label = "LocRot"
 
     # poll - use predefined callback for selected bones/objects
@@ -102,6 +116,7 @@ class BUILTIN_KSI_LocRot(KeyingSetInfo):
 
 # LocScale
 class BUILTIN_KSI_LocScale(KeyingSetInfo):
+    """Insert a keyframe on each of the location and scale channels"""
     bl_label = "LocScale"
 
     # poll - use predefined callback for selected bones/objects
@@ -120,6 +135,8 @@ class BUILTIN_KSI_LocScale(KeyingSetInfo):
 
 # LocRotScale
 class BUILTIN_KSI_LocRotScale(KeyingSetInfo):
+    """Insert a keyframe on each of the location, rotation, and scale channels"""
+    bl_idname = ANIM_KS_LOC_ROT_SCALE_ID
     bl_label = "LocRotScale"
 
     # poll - use predefined callback for selected bones/objects
@@ -140,6 +157,7 @@ class BUILTIN_KSI_LocRotScale(KeyingSetInfo):
 
 # RotScale
 class BUILTIN_KSI_RotScale(KeyingSetInfo):
+    """Insert a keyframe on each of the rotation and scale channels"""
     bl_label = "RotScale"
 
     # poll - use predefined callback for selected bones/objects
@@ -158,8 +176,10 @@ class BUILTIN_KSI_RotScale(KeyingSetInfo):
 # ------------
 
 
-# Location
+# VisualLocation
 class BUILTIN_KSI_VisualLoc(KeyingSetInfo):
+    """Insert a keyframe on each of the location channels, taking into account effects of constraints """
+    """and relationships"""
     bl_label = "Visual Location"
 
     bl_options = {'INSERTKEY_VISUAL'}
@@ -174,8 +194,10 @@ class BUILTIN_KSI_VisualLoc(KeyingSetInfo):
     generate = keyingsets_utils.RKS_GEN_location
 
 
-# Rotation
+# VisualRotation
 class BUILTIN_KSI_VisualRot(KeyingSetInfo):
+    """Insert a keyframe on each of the rotation channels, taking into account effects of constraints """
+    """and relationships"""
     bl_label = "Visual Rotation"
 
     bl_options = {'INSERTKEY_VISUAL'}
@@ -190,8 +212,28 @@ class BUILTIN_KSI_VisualRot(KeyingSetInfo):
     generate = keyingsets_utils.RKS_GEN_rotation
 
 
+# VisualScaling
+class BUILTIN_KSI_VisualScaling(KeyingSetInfo):
+    """Insert a keyframe on each of the scale channels, taking into account effects of constraints """
+    """and relationships"""
+    bl_label = "Visual Scaling"
+
+    bl_options = {'INSERTKEY_VISUAL'}
+
+    # poll - use predefined callback for selected bones/objects
+    poll = keyingsets_utils.RKS_POLL_selected_items
+
+    # iterator - use callback for selected bones/objects
+    iterator = keyingsets_utils.RKS_ITER_selected_item
+
+    # generator - use callback for location
+    generate = keyingsets_utils.RKS_GEN_scaling
+
+
 # VisualLocRot
 class BUILTIN_KSI_VisualLocRot(KeyingSetInfo):
+    """Insert a keyframe on each of the location and rotation channels, taking into account effects of constraints """
+    """and relationships"""
     bl_label = "Visual LocRot"
 
     bl_options = {'INSERTKEY_VISUAL'}
@@ -209,11 +251,81 @@ class BUILTIN_KSI_VisualLocRot(KeyingSetInfo):
         # rotation
         keyingsets_utils.RKS_GEN_rotation(self, context, ks, data)
 
+
+# VisualLocScale
+class BUILTIN_KSI_VisualLocScale(KeyingSetInfo):
+    """Insert a keyframe on each of the location and scaling channels, taking into account effects of constraints """
+    """and relationships"""
+    bl_label = "Visual LocScale"
+
+    bl_options = {'INSERTKEY_VISUAL'}
+
+    # poll - use predefined callback for selected bones/objects
+    poll = keyingsets_utils.RKS_POLL_selected_items
+
+    # iterator - use callback for selected bones/objects
+    iterator = keyingsets_utils.RKS_ITER_selected_item
+
+    # generator
+    def generate(self, context, ks, data):
+        # location
+        keyingsets_utils.RKS_GEN_location(self, context, ks, data)
+        # scaling
+        keyingsets_utils.RKS_GEN_scaling(self, context, ks, data)
+
+
+# VisualLocRotScale
+class BUILTIN_KSI_VisualLocRotScale(KeyingSetInfo):
+    """Insert a keyframe on each of the location, rotation and scaling channels, taking into account effects """
+    """of constraints and relationships"""
+    bl_label = "Visual LocRotScale"
+
+    bl_options = {'INSERTKEY_VISUAL'}
+
+    # poll - use predefined callback for selected bones/objects
+    poll = keyingsets_utils.RKS_POLL_selected_items
+
+    # iterator - use callback for selected bones/objects
+    iterator = keyingsets_utils.RKS_ITER_selected_item
+
+    # generator
+    def generate(self, context, ks, data):
+        # location
+        keyingsets_utils.RKS_GEN_location(self, context, ks, data)
+        # rotation
+        keyingsets_utils.RKS_GEN_rotation(self, context, ks, data)
+        # scaling
+        keyingsets_utils.RKS_GEN_scaling(self, context, ks, data)
+
+
+# VisualRotScale
+class BUILTIN_KSI_VisualRotScale(KeyingSetInfo):
+    """Insert a keyframe on each of the rotation and scaling channels, taking into account effects of constraints """
+    """and relationships"""
+    bl_label = "Visual RotScale"
+
+    bl_options = {'INSERTKEY_VISUAL'}
+
+    # poll - use predefined callback for selected bones/objects
+    poll = keyingsets_utils.RKS_POLL_selected_items
+
+    # iterator - use callback for selected bones/objects
+    iterator = keyingsets_utils.RKS_ITER_selected_item
+
+    # generator
+    def generate(self, context, ks, data):
+        # rotation
+        keyingsets_utils.RKS_GEN_rotation(self, context, ks, data)
+        # scaling
+        keyingsets_utils.RKS_GEN_scaling(self, context, ks, data)
+
 # ------------
 
 
 # Available
 class BUILTIN_KSI_Available(KeyingSetInfo):
+    """Insert a keyframe on each of the already existing F-Curves"""
+    bl_idname = ANIM_KS_AVAILABLE_ID
     bl_label = "Available"
 
     # poll - selected objects or selected object with animation data
@@ -236,6 +348,9 @@ class BUILTIN_KSI_Available(KeyingSetInfo):
 
 # All properties that are likely to get animated in a character rig
 class BUILTIN_KSI_WholeCharacter(KeyingSetInfo):
+    """Insert a keyframe for all properties that are likely to get animated in a character rig """
+    """(useful when blocking out a shot)"""
+    bl_idname = ANIM_KS_WHOLE_CHARACTER_ID
     bl_label = "Whole Character"
 
     # these prefixes should be avoided, as they are not really bones
@@ -318,15 +433,15 @@ class BUILTIN_KSI_WholeCharacter(KeyingSetInfo):
         # add rotation properties if they will
         if bone.lock_rotations_4d:
             # can check individually
-            if (bone.lock_rotation == (False, False, False)) and (bone.lock_rotation_w == False):
+            if (bone.lock_rotation == (False, False, False)) and (bone.lock_rotation_w is False):
                 ksi.addProp(ks, bone, prop)
             else:
-                if bone.lock_rotation_w == False:
+                if bone.lock_rotation_w is False:
                     ksi.addProp(ks, bone, prop, 0)  # w = 0
 
                 for i in range(3):
                     if not bone.lock_rotation[i]:
-                        ksi.addProp(ks, bone, prop, i + 1)  # i + 1, since here x,y,z = 1,2,3, and w=0
+                        ksi.addProp(ks, bone, prop, i + 1)  # i + 1, since here x/y/z = 1,2,3, and w=0
         elif True not in bone.lock_rotation:
             # if axis-angle rotations get locked as eulers, then it's too messy to allow anything
             # other than all open unless we keyframe the whole lot
@@ -379,6 +494,7 @@ class BUILTIN_KSI_WholeCharacter(KeyingSetInfo):
 
 # Delta Location
 class BUILTIN_KSI_DeltaLocation(KeyingSetInfo):
+    """Insert keyframes for additional location offset"""
     bl_label = "Delta Location"
 
     # poll - selected objects only (and only if active object in object mode)
@@ -404,6 +520,7 @@ class BUILTIN_KSI_DeltaLocation(KeyingSetInfo):
 
 # Delta Rotation
 class BUILTIN_KSI_DeltaRotation(KeyingSetInfo):
+    """Insert keyframes for additional rotation offset"""
     bl_label = "Delta Rotation"
 
     # poll - selected objects only (and only if active object in object mode)
@@ -437,6 +554,7 @@ class BUILTIN_KSI_DeltaRotation(KeyingSetInfo):
 
 # Delta Scale
 class BUILTIN_KSI_DeltaScale(KeyingSetInfo):
+    """Insert keyframes for additional scaling factor"""
     bl_label = "Delta Scale"
 
     # poll - selected objects only (and only if active object in object mode)

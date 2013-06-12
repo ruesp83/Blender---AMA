@@ -30,6 +30,9 @@ __all__ = (
     "display_name",
     "display_name_from_filepath",
     "ensure_ext",
+    "extensions_image",
+    "extensions_movie",
+    "extensions_audio",
     "is_subdir",
     "module_names",
     "relpath",
@@ -38,6 +41,15 @@ __all__ = (
 
 import bpy as _bpy
 import os as _os
+
+from _bpy_path import (extensions_audio,
+                       extensions_movie,
+                       extensions_image,
+                       )
+
+
+def _getattr_bytes(var, attr):
+    return var.path_resolve(attr, False).as_bytes()
 
 
 def abspath(path, start=None, library=None):
@@ -52,13 +64,22 @@ def abspath(path, start=None, library=None):
        convenience, when the library is not None its path replaces *start*.
     :type library: :class:`bpy.types.Library`
     """
-    if path.startswith("//"):
-        if library:
-            start = _os.path.dirname(abspath(library.filepath))
-        return _os.path.join(_os.path.dirname(_bpy.data.filepath)
-                             if start is None else start,
-                             path[2:],
-                             )
+    if isinstance(path, bytes):
+        if path.startswith(b"//"):
+            if library:
+                start = _os.path.dirname(abspath(_getattr_bytes(library, "filepath")))
+            return _os.path.join(_os.path.dirname(_getattr_bytes(_bpy.data, "filepath"))
+                                 if start is None else start,
+                                 path[2:],
+                                 )
+    else:
+        if path.startswith("//"):
+            if library:
+                start = _os.path.dirname(abspath(library.filepath))
+            return _os.path.join(_os.path.dirname(_bpy.data.filepath)
+                                 if start is None else start,
+                                 path[2:],
+                                 )
 
     return path
 
@@ -71,10 +92,16 @@ def relpath(path, start=None):
        when not set the current filename is used.
     :type start: string
     """
-    if not path.startswith("//"):
-        if start is None:
-            start = _os.path.dirname(_bpy.data.filepath)
-        return "//" + _os.path.relpath(path, start)
+    if isinstance(path, bytes):
+        if not path.startswith(b"//"):
+            if start is None:
+                start = _os.path.dirname(_getattr_bytes(_bpy.data, "filepath"))
+            return b"//" + _os.path.relpath(path, start)
+    else:
+        if not path.startswith("//"):
+            if start is None:
+                start = _os.path.dirname(_bpy.data.filepath)
+            return "//" + _os.path.relpath(path, start)
 
     return path
 
@@ -118,6 +145,14 @@ def clean_name(name, replace="_"):
     return name
 
 
+def _clean_utf8(name):
+    name = _os.path.splitext(basename(name))[0]
+    if type(name) == bytes:
+        return name.decode("utf8", "replace")
+    else:
+        return name.encode("utf8", "replace").decode("utf8")
+
+
 def display_name(name):
     """
     Creates a display string from name to be used menus and the user interface.
@@ -125,18 +160,16 @@ def display_name(name):
     mixed case names are kept as is. Intended for use with
     filenames and module names.
     """
-
-    name_base = _os.path.splitext(name)[0]
-
     # string replacements
-    name_base = name_base.replace("_colon_", ":")
+    name = name.replace("_colon_", ":")
 
-    name_base = name_base.replace("_", " ")
+    name = name.replace("_", " ")
 
-    if name_base.islower():
-        return name_base.lower().title()
-    else:
-        return name_base
+    if name.islower():
+        name = name.lower().title()
+
+    name = _clean_utf8(name)
+    return name
 
 
 def display_name_from_filepath(name):
@@ -144,8 +177,9 @@ def display_name_from_filepath(name):
     Returns the path stripped of directory and extension,
     ensured to be utf8 compatible.
     """
-    name = _os.path.splitext(basename(name))[0]
-    return name.encode("utf8", "replace").decode("utf8")
+
+    name = _clean_utf8(name)
+    return name
 
 
 def resolve_ncase(path):
@@ -249,7 +283,7 @@ def module_names(path, recursive=False):
         elif filename.endswith(".py") and filename != "__init__.py":
             fullpath = join(path, filename)
             modules.append((filename[0:-3], fullpath))
-        elif ("." not in filename):
+        elif "." not in filename:
             directory = join(path, filename)
             fullpath = join(directory, "__init__.py")
             if isfile(fullpath):
@@ -257,8 +291,8 @@ def module_names(path, recursive=False):
                 if recursive:
                     for mod_name, mod_path in module_names(directory, True):
                         modules.append(("%s.%s" % (filename, mod_name),
-                                       mod_path,
-                                       ))
+                                        mod_path,
+                                        ))
 
     return modules
 

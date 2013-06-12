@@ -21,11 +21,11 @@
 bl_info = {
     "name": "Motion Capture Tools",
     "author": "Benjy Cook",
-    "blender": (2, 5, 9),
+    "blender": (2, 62, 0),
     "location": "Object UI -> Mocap tools",
     "description": "Various tools for working with motion capture animation",
     "warning": "",
-    "wiki_url": "http://wiki.blender.org/index.php/Extensions:2.5/Py/Scripts/Animation/Motion_Capture_Tools",
+    "wiki_url": "http://wiki.blender.org/index.php/Extensions:2.6/Py/Scripts/Animation/Motion_Capture_Tools",
     "tracker_url": "http://projects.blender.org/tracker/index.php?func=detail&aid=28321",
     "support": 'OFFICIAL',
     "category": "Animation"}
@@ -145,7 +145,7 @@ class AnimationStitchSettings(bpy.types.PropertyGroup):
     blend_frame = IntProperty(name="Stitch frame",
             description="Frame to locate stitch on")
     blend_amount = IntProperty(name="Blend amount",
-            description="Size of blending transitiion, on both sides of the stitch",
+            description="Size of blending transition, on both sides of the stitch",
             default=10)
     second_offset = IntProperty(name="Second offset",
             description="Frame offset for 2nd animation, where it should start",
@@ -312,7 +312,7 @@ class MocapPanel(bpy.types.Panel):
                     for bone in perf.bones:
                         footCol.prop(data=bone, property='foot', text='', icon='POSE_DATA')
                         nameCol.label(bone.name)
-                        mapCol.prop_search(bone, "map", enduser_arm, "bones")
+                        mapCol.prop_search(bone, "map", enduser_arm, "bones", text='')
                         selectCol.operator("mocap.selectmap", text='', icon='CURSOR').perf_bone = bone.name
                         label_mod = "FK"
                         if bone.map:
@@ -370,7 +370,7 @@ class MocapConstraintsPanel(bpy.types.Panel):
                         headerRow.operator("mocap.removeconstraint", text="", icon='X', emboss=False).constraint = i
                         if m_constraint.show_expanded:
                             box.separator()
-                            box.prop_search(m_constraint, 'constrained_bone', enduser_obj.pose, "bones", icon='BONE_DATA')
+                            box.prop_search(m_constraint, 'constrained_bone', enduser_obj.pose, "bones", icon='BONE_DATA', text="")
                             if m_constraint.type == "distance" or m_constraint.type == "point":
                                 box.prop_search(m_constraint, 'constrained_boneB', enduser_obj.pose, "bones", icon='CONSTRAINT_BONE')
                             frameRow = box.row()
@@ -431,9 +431,9 @@ class ExtraToolsPanel(bpy.types.Panel):
 class OBJECT_OT_RetargetButton(bpy.types.Operator):
     #Retargeting operator. Assumes selected and active armatures, where the performer (the selected one)
     # has an action for retargeting
-    '''Retarget animation from selected armature to active armature '''
+    """Retarget animation from selected armature to active armature"""
     bl_idname = "mocap.retarget"
-    bl_label = "Retarget active action from Performer to Enduser"
+    bl_label = "Retarget"
     bl_options = {'REGISTER', 'UNDO'}
 
     def execute(self, context):
@@ -454,7 +454,7 @@ class OBJECT_OT_RetargetButton(bpy.types.Operator):
             enduser_obj.data.advancedRetarget = True
         else:
             retarget.totalRetarget(performer_obj, enduser_obj, scene, s_frame, e_frame)
-        return {"FINISHED"}
+        return {'FINISHED'}
 
     @classmethod
     def poll(cls, context):
@@ -469,15 +469,15 @@ class OBJECT_OT_RetargetButton(bpy.types.Operator):
 
 class OBJECT_OT_SaveMappingButton(bpy.types.Operator):
     #Operator for saving mapping to enduser armature
-    '''Save mapping to active armature (for future retargets) '''
+    """Save mapping to active armature (for future retargets)"""
     bl_idname = "mocap.savemapping"
-    bl_label = "Save user generated mapping from Performer to Enduser"
+    bl_label = "Save Mapping"
 
     def execute(self, context):
         enduser_obj = bpy.context.active_object
         performer_obj = [obj for obj in bpy.context.selected_objects if obj != enduser_obj][0]
         retarget.createDictionary(performer_obj.data, enduser_obj.data)
-        return {"FINISHED"}
+        return {'FINISHED'}
 
     @classmethod
     def poll(cls, context):
@@ -491,16 +491,16 @@ class OBJECT_OT_SaveMappingButton(bpy.types.Operator):
 
 
 class OBJECT_OT_LoadMappingButton(bpy.types.Operator):
-    '''Load saved mapping from active armature'''
+    """Load saved mapping from active armature"""
     #Operator for loading mapping to enduser armature
     bl_idname = "mocap.loadmapping"
-    bl_label = "Load user generated mapping from Performer to Enduser"
+    bl_label = "Load Mapping"
 
     def execute(self, context):
         enduser_obj = bpy.context.active_object
         performer_obj = [obj for obj in bpy.context.selected_objects if obj != enduser_obj][0]
         retarget.loadMapping(performer_obj.data, enduser_obj.data)
-        return {"FINISHED"}
+        return {'FINISHED'}
 
     @classmethod
     def poll(cls, context):
@@ -515,9 +515,9 @@ class OBJECT_OT_LoadMappingButton(bpy.types.Operator):
 
 class OBJECT_OT_SelectMapBoneButton(bpy.types.Operator):
     #Operator for setting selected bone in enduser armature to the performer mapping
-    '''Select a bone for faster mapping'''
+    """Select a bone for faster mapping"""
     bl_idname = "mocap.selectmap"
-    bl_label = "Select a bone for faster mapping"
+    bl_label = "Select Mapping Bone"
     perf_bone = StringProperty()
 
     def execute(self, context):
@@ -532,7 +532,7 @@ class OBJECT_OT_SelectMapBoneButton(bpy.types.Operator):
                         selectedBone = bone.name
                         break
         performer_obj.data.bones[self.perf_bone].map = selectedBone
-        return {"FINISHED"}
+        return {'FINISHED'}
 
     @classmethod
     def poll(cls, context):
@@ -547,13 +547,13 @@ class OBJECT_OT_SelectMapBoneButton(bpy.types.Operator):
 
 class OBJECT_OT_ConvertSamplesButton(bpy.types.Operator):
     #Operator to convert samples to beziers on the selected object
-    '''Convert active armature's sampled keyframed to beziers'''
+    """Convert active armature's sampled keyframed to beziers"""
     bl_idname = "mocap.samples"
-    bl_label = "Convert samples / simplifies keyframes to beziers"
+    bl_label = "Convert Samples"
 
     def execute(self, context):
         mocap_tools.fcurves_simplify(context, context.active_object)
-        return {"FINISHED"}
+        return {'FINISHED'}
 
     @classmethod
     def poll(cls, context):
@@ -562,13 +562,14 @@ class OBJECT_OT_ConvertSamplesButton(bpy.types.Operator):
 
 class OBJECT_OT_LooperButton(bpy.types.Operator):
     #Operator to trim fcurves which contain a few loops to a single one on the selected object
-    '''Trim active armature's animation to a single cycle, given a cyclic animation (such as a walk cycle)'''
+    """Trim active armature's animation to a single cycle, given """ \
+    """a cyclic animation (such as a walk cycle)"""
     bl_idname = "mocap.looper"
-    bl_label = "loop animation / sampled mocap data"
+    bl_label = "Loop Mocap"
 
     def execute(self, context):
         mocap_tools.autoloop_anim()
-        return {"FINISHED"}
+        return {'FINISHED'}
 
     @classmethod
     def poll(cls, context):
@@ -577,13 +578,14 @@ class OBJECT_OT_LooperButton(bpy.types.Operator):
 
 class OBJECT_OT_DenoiseButton(bpy.types.Operator):
     #Operator to denoise impluse noise on the active object's fcurves
-    '''Denoise active armature's animation (good for dealing with 'bad' frames inherent in mocap animation)'''
+    """Denoise active armature's animation (good for dealing """ \
+    """with 'bad' frames inherent in mocap animation)"""
     bl_idname = "mocap.denoise"
-    bl_label = "Denoise sampled mocap data"
+    bl_label = "Denoise Mocap"
 
     def execute(self, context):
         mocap_tools.denoise_median()
-        return {"FINISHED"}
+        return {'FINISHED'}
 
     @classmethod
     def poll(cls, context):
@@ -592,14 +594,15 @@ class OBJECT_OT_DenoiseButton(bpy.types.Operator):
 
 class OBJECT_OT_LimitDOFButton(bpy.types.Operator):
     #Operator to analyze performer armature and apply rotation constraints on the enduser armature
-    '''Create limit constraints on the active armature from the selected armature's animation's range of motion'''
+    """Create limit constraints on the active armature from """ \
+    """the selected armature's animation's range of motion"""
     bl_idname = "mocap.limitdof"
-    bl_label = "Analyze animations Max/Min DOF and add hard/soft constraints"
+    bl_label = "Set DOF Constraints"
 
     def execute(self, context):
         performer_obj = [obj for obj in context.selected_objects if obj != context.active_object][0]
         mocap_tools.limit_dof(context, performer_obj, context.active_object)
-        return {"FINISHED"}
+        return {'FINISHED'}
 
     @classmethod
     def poll(cls, context):
@@ -614,13 +617,13 @@ class OBJECT_OT_LimitDOFButton(bpy.types.Operator):
 
 class OBJECT_OT_RemoveLimitDOFButton(bpy.types.Operator):
     #Removes constraints created by above operator
-    '''Remove previously created limit constraints on the active armature'''
+    """Remove previously created limit constraints on the active armature"""
     bl_idname = "mocap.removelimitdof"
-    bl_label = "Remove previously created limit constraints on the active armature"
+    bl_label = "Remove DOF Constraints"
 
     def execute(self, context):
         mocap_tools.limit_dof_toggle_off(context, context.active_object)
-        return {"FINISHED"}
+        return {'FINISHED'}
 
     @classmethod
     def poll(cls, context):
@@ -632,13 +635,14 @@ class OBJECT_OT_RemoveLimitDOFButton(bpy.types.Operator):
 
 class OBJECT_OT_RotateFixArmature(bpy.types.Operator):
     #Operator to fix common imported Mocap data issue of wrong axis system on active object
-    '''Realign the active armature's axis system to match Blender (commonly needed after bvh import)'''
+    """Realign the active armature's axis system to match Blender """ \
+    """(commonly needed after bvh import)"""
     bl_idname = "mocap.rotate_fix"
-    bl_label = "Rotate selected armature 90 degrees (fix for bvh import)"
+    bl_label = "Rotate Fix"
 
     def execute(self, context):
         mocap_tools.rotate_fix_armature(context.active_object.data)
-        return {"FINISHED"}
+        return {'FINISHED'}
 
     @classmethod
     def poll(cls, context):
@@ -648,15 +652,16 @@ class OBJECT_OT_RotateFixArmature(bpy.types.Operator):
 
 class OBJECT_OT_ScaleFixArmature(bpy.types.Operator):
     #Operator to scale down the selected armature to match the active one
-    '''Rescale selected armature to match the active animation, for convienence'''
+    """Rescale selected armature to match the active animation, """ \
+    """for convenience"""
     bl_idname = "mocap.scale_fix"
-    bl_label = "Scale performer armature to match target armature"
+    bl_label = "Scale Fix"
 
     def execute(self, context):
         enduser_obj = bpy.context.active_object
         performer_obj = [obj for obj in bpy.context.selected_objects if obj != enduser_obj][0]
         mocap_tools.scale_fix_armature(performer_obj, enduser_obj)
-        return {"FINISHED"}
+        return {'FINISHED'}
 
     @classmethod
     def poll(cls, context):
@@ -671,9 +676,10 @@ class OBJECT_OT_ScaleFixArmature(bpy.types.Operator):
 
 class MOCAP_OT_AddMocapFix(bpy.types.Operator):
     #Operator to add a post-retarget fix
-    '''Add a post-retarget fix - useful for fixing certain artifacts following the retarget'''
+    """Add a post-retarget fix - useful for fixing certain """ \
+    """artifacts following the retarget"""
     bl_idname = "mocap.addmocapfix"
-    bl_label = "Add Mocap Fix to target armature"
+    bl_label = "Add Mocap Fix"
     type = EnumProperty(name="Type of Fix",
     items=[("point", "Maintain Position", "Bone is at a specific point"),
         ("freeze", "Maintain Position at frame", "Bone does not move from location specified in target frame"),
@@ -686,7 +692,7 @@ class MOCAP_OT_AddMocapFix(bpy.types.Operator):
         enduser_arm = enduser_obj.data
         new_mcon = enduser_arm.mocap_constraints.add()
         new_mcon.type = self.type
-        return {"FINISHED"}
+        return {'FINISHED'}
 
     @classmethod
     def poll(cls, context):
@@ -696,9 +702,9 @@ class MOCAP_OT_AddMocapFix(bpy.types.Operator):
 
 class OBJECT_OT_RemoveMocapConstraint(bpy.types.Operator):
     #Operator to remove a post-retarget fix
-    '''Remove this post-retarget fix'''
+    """Remove this post-retarget fix"""
     bl_idname = "mocap.removeconstraint"
-    bl_label = "Remove fixes from target armature"
+    bl_label = "Remove Mocap Fix"
     constraint = IntProperty()
 
     def execute(self, context):
@@ -711,7 +717,7 @@ class OBJECT_OT_RemoveMocapConstraint(bpy.types.Operator):
             cons_obj = mocap_constraints.getConsObj(bone)
             mocap_constraints.removeConstraint(m_constraint, cons_obj)
         m_constraints.remove(self.constraint)
-        return {"FINISHED"}
+        return {'FINISHED'}
 
     @classmethod
     def poll(cls, context):
@@ -721,13 +727,13 @@ class OBJECT_OT_RemoveMocapConstraint(bpy.types.Operator):
 
 class OBJECT_OT_BakeMocapConstraints(bpy.types.Operator):
     #Operator to bake all post-retarget fixes
-    '''Bake all post-retarget fixes to the Retarget Fixes NLA Track'''
+    """Bake all post-retarget fixes to the Retarget Fixes NLA Track"""
     bl_idname = "mocap.bakeconstraints"
-    bl_label = "Bake all fixes to target armature"
+    bl_label = "Bake Mocap Fixes"
 
     def execute(self, context):
         mocap_constraints.bakeConstraints(context)
-        return {"FINISHED"}
+        return {'FINISHED'}
 
     @classmethod
     def poll(cls, context):
@@ -737,13 +743,14 @@ class OBJECT_OT_BakeMocapConstraints(bpy.types.Operator):
 
 class OBJECT_OT_UnbakeMocapConstraints(bpy.types.Operator):
     #Operator to unbake all post-retarget fixes
-    '''Unbake all post-retarget fixes - removes the baked data from the Retarget Fixes NLA Track'''
+    """Unbake all post-retarget fixes - removes the baked data """ \
+    """from the Retarget Fixes NLA Track"""
     bl_idname = "mocap.unbakeconstraints"
-    bl_label = "Unbake all fixes to target armature"
+    bl_label = "Unbake Mocap Fixes"
 
     def execute(self, context):
         mocap_constraints.unbakeConstraints(context)
-        return {"FINISHED"}
+        return {'FINISHED'}
 
     @classmethod
     def poll(cls, context):
@@ -754,13 +761,14 @@ class OBJECT_OT_UnbakeMocapConstraints(bpy.types.Operator):
 class OBJECT_OT_UpdateMocapConstraints(bpy.types.Operator):
     #Operator to update all post-retarget fixes, similar to update dependencies on drivers
     #Needed because python properties lack certain callbacks and some fixes take a while to recalculate.
-    '''Update all post-retarget fixes (neccesary to take under consideration changes to armature object or pose)'''
+    """Update all post-retarget fixes (neccesary to take under """ \
+    """consideration changes to armature object or pose)"""
     bl_idname = "mocap.updateconstraints"
-    bl_label = "Update all post-retarget fixes"
+    bl_label = "Update Mocap Fixes"
 
     def execute(self, context):
         mocap_constraints.updateConstraints(context.active_object, context)
-        return {"FINISHED"}
+        return {'FINISHED'}
 
     @classmethod
     def poll(cls, context):
@@ -770,15 +778,15 @@ class OBJECT_OT_UpdateMocapConstraints(bpy.types.Operator):
 
 class OBJECT_OT_GuessHierachyMapping(bpy.types.Operator):
     #Operator which calls heurisitic function to guess mapping between 2 armatures
-    '''Attemp to auto figure out hierarchy mapping'''
+    """Attempt to auto figure out hierarchy mapping"""
     bl_idname = "mocap.guessmapping"
-    bl_label = "Attemp to auto figure out hierarchy mapping"
+    bl_label = "Guess Hierarchy Mapping"
 
     def execute(self, context):
         enduser_obj = bpy.context.active_object
         performer_obj = [obj for obj in bpy.context.selected_objects if obj != enduser_obj][0]
         mocap_tools.guessMapping(performer_obj, enduser_obj)
-        return {"FINISHED"}
+        return {'FINISHED'}
 
     @classmethod
     def poll(cls, context):
@@ -793,14 +801,14 @@ class OBJECT_OT_GuessHierachyMapping(bpy.types.Operator):
 
 class OBJECT_OT_PathEditing(bpy.types.Operator):
     #Operator which calls path editing function, making active object follow the selected curve.
-    '''Set active object (stride object) to follow the selected curve'''
+    """Set active object (stride object) to follow the selected curve"""
     bl_idname = "mocap.pathediting"
-    bl_label = "Set active object (stride object) to follow the selected curve"
+    bl_label = "Set Path"
 
     def execute(self, context):
         path = [obj for obj in context.selected_objects if obj != context.active_object][0]
         mocap_tools.path_editing(context, context.active_object, path)
-        return {"FINISHED"}
+        return {'FINISHED'}
 
     @classmethod
     def poll(cls, context):
@@ -813,13 +821,13 @@ class OBJECT_OT_PathEditing(bpy.types.Operator):
 
 class OBJECT_OT_AnimationStitchingButton(bpy.types.Operator):
     #Operator which calls stitching function, combining 2 animations onto the NLA.
-    '''Stitche two defined animations into a single one via alignment of NLA Tracks'''
+    """Stitch two defined animations into a single one via alignment of NLA Tracks"""
     bl_idname = "mocap.animstitch"
-    bl_label = "Stitch two defined animations into a single one via alignment of NLA Tracks"
+    bl_label = "Stitch Animations"
 
     def execute(self, context):
         mocap_tools.anim_stitch(context, context.active_object)
-        return {"FINISHED"}
+        return {'FINISHED'}
 
     @classmethod
     def poll(cls, context):
@@ -834,13 +842,13 @@ class OBJECT_OT_AnimationStitchingButton(bpy.types.Operator):
 
 class OBJECT_OT_GuessAnimationStitchingButton(bpy.types.Operator):
     #Operator which calls stitching function heuristic, setting good values for above operator.
-    '''Guess the stitch frame and second offset for animation stitch'''
+    """Guess the stitch frame and second offset for animation stitch"""
     bl_idname = "mocap.animstitchguess"
-    bl_label = "Guess the stitch frame and second offset for animation stitch"
+    bl_label = "Guess Animation Stitch"
 
     def execute(self, context):
         mocap_tools.guess_anim_stitch(context, context.active_object)
-        return {"FINISHED"}
+        return {'FINISHED'}
 
     @classmethod
     def poll(cls, context):

@@ -57,7 +57,7 @@ def CLIP_set_viewport_background(context, all_screens, clip, clip_user):
         space_v3d.show_background_images = True
 
     CLIP_spaces_walk(context, all_screens, 'VIEW_3D', 'VIEW_3D',
-                      set_background, clip, clip_user)
+                     set_background, clip, clip_user)
 
 
 def CLIP_camera_for_clip(context, clip):
@@ -69,7 +69,7 @@ def CLIP_camera_for_clip(context, clip):
         if ob.type == 'CAMERA':
             for con in ob.constraints:
                 if con.type == 'CAMERA_SOLVER':
-                    cur_clip = scene.clip if con.use_active_clip else con.clip
+                    cur_clip = scene.active_clip if con.use_active_clip else con.clip
 
                     if cur_clip == clip:
                         return ob
@@ -90,29 +90,34 @@ def CLIP_track_view_selected(sc, track):
     return False
 
 
-def CLIP_default_settings_from_track(clip, track):
+def CLIP_default_settings_from_track(clip, track, framenr):
     settings = clip.tracking.settings
 
     width = clip.size[0]
     height = clip.size[1]
 
-    pattern = track.pattern_max - track.pattern_min
-    search = track.search_max - track.search_min
+    marker = track.markers.find_frame(framenr, False)
+    pattern_bb = marker.pattern_bound_box
 
-    pattern[0] = pattern[0] * clip.size[0]
-    pattern[1] = pattern[1] * clip.size[1]
+    pattern = Vector(pattern_bb[1]) - Vector(pattern_bb[0])
+    search = marker.search_max - marker.search_min
 
-    search[0] = search[0] * clip.size[0]
-    search[1] = search[1] * clip.size[1]
+    pattern[0] = pattern[0] * width
+    pattern[1] = pattern[1] * height
 
-    settings.default_tracker = track.tracker
-    settings.default_pyramid_levels = track.pyramid_levels
+    search[0] = search[0] * width
+    search[1] = search[1] * height
+
     settings.default_correlation_min = track.correlation_min
     settings.default_pattern_size = max(pattern[0], pattern[1])
     settings.default_search_size = max(search[0], search[1])
     settings.default_frames_limit = track.frames_limit
     settings.default_pattern_match = track.pattern_match
     settings.default_margin = track.margin
+    settings.default_motion_model = track.motion_model
+    settings.use_default_brute = track.use_brute
+    settings.use_default_normalization = track.use_normalization
+    settings.use_default_mask = track.use_mask
     settings.use_default_red_channel = track.use_red_channel
     settings.use_default_green_channel = track.use_green_channel
     settings.use_default_blue_channel = track.use_blue_channel
@@ -143,6 +148,7 @@ class CLIP_OT_track_to_empty(Operator):
         if constraint is None:
             constraint = ob.constraints.new(type='FOLLOW_TRACK')
 
+        constraint.use_active_clip = False
         constraint.clip = sc.clip
         constraint.track = track.name
         constraint.use_3d_position = False
@@ -275,8 +281,8 @@ class CLIP_OT_delete_proxy(Operator):
 
 
 class CLIP_OT_set_viewport_background(Operator):
-    """Set current movie clip as a camera background in 3D viewport \
-(works only when a 3D viewport is visible)"""
+    """Set current movie clip as a camera background in 3D view-port """ \
+    """(works only when a 3D view-port is visible)"""
 
     bl_idname = "clip.set_viewport_background"
     bl_label = "Set as Background"
@@ -314,16 +320,16 @@ object's movement caused by this constraint"""
         frame_current = scene.frame_current
         matrices = []
 
-        # Find constraint which would eb converting
+        # Find constraint which would be converting
         # TODO: several camera solvers and track followers would fail,
-        #       but can't think about eal workflow where it'll be useful
+        #       but can't think about real work-flow where it'll be useful
         for x in ob.constraints:
             if x.type in {'CAMERA_SOLVER', 'FOLLOW_TRACK', 'OBJECT_SOLVER'}:
                 con = x
 
         if not con:
             self.report({'ERROR'},
-                "Motion Tracking constraint to be converted not found")
+                        "Motion Tracking constraint to be converted not found")
 
             return {'CANCELLED'}
 
@@ -335,7 +341,7 @@ object's movement caused by this constraint"""
 
         if not clip:
             self.report({'ERROR'},
-                "Movie clip to use tracking data from isn't set")
+                        "Movie clip to use tracking data from isn't set")
 
             return {'CANCELLED'}
 
@@ -368,7 +374,7 @@ object's movement caused by this constraint"""
 
         ob.animation_data_create()
 
-        # Apply matrices on object and insert keyframes
+        # Apply matrices on object and insert key-frames
         i = 0
         for x in range(sfra, efra + 1):
             scene.frame_set(x)
@@ -455,9 +461,9 @@ class CLIP_OT_setup_tracking_scene(Operator):
         scene.camera = camob
 
         camob.matrix_local = (Matrix.Translation((7.481, -6.508, 5.344)) *
-            Matrix.Rotation(0.815, 4, 'Z') *
-            Matrix.Rotation(0.011, 4, 'Y') *
-            Matrix.Rotation(1.109, 4, 'X'))
+                              Matrix.Rotation(0.815, 4, 'Z') *
+                              Matrix.Rotation(0.011, 4, 'Y') *
+                              Matrix.Rotation(1.109, 4, 'X'))
 
         return camob
 
@@ -496,7 +502,7 @@ class CLIP_OT_setup_tracking_scene(Operator):
                 fg = rlayers[0]
                 fg.name = 'Foreground'
             else:
-                fg = scene.render.layers.new('Foreground')
+                fg = scene.render.layers.new("Foreground")
 
             fg.use_sky = False
             fg.layers = [True] + [False] * 19
@@ -504,7 +510,7 @@ class CLIP_OT_setup_tracking_scene(Operator):
             fg.use_pass_vector = True
 
         if not scene.render.layers.get("Background"):
-            bg = scene.render.layers.new('Background')
+            bg = scene.render.layers.new("Background")
             bg.use_pass_shadow = True
             bg.use_pass_ambient_occlusion = True
             bg.layers = [False] * 10 + [True] + [False] * 9
@@ -559,7 +565,7 @@ class CLIP_OT_setup_tracking_scene(Operator):
             space.show_backdrop = True
 
         CLIP_spaces_walk(context, True, 'NODE_EDITOR', 'NODE_EDITOR',
-                          setup_space)
+                         setup_space)
 
         sc = context.space_data
         scene = context.scene
@@ -570,25 +576,25 @@ class CLIP_OT_setup_tracking_scene(Operator):
         need_stabilization = False
 
         # create nodes
-        rlayer_fg = self._findOrCreateNode(tree, 'R_LAYERS')
-        rlayer_bg = tree.nodes.new(type='R_LAYERS')
-        composite = self._findOrCreateNode(tree, 'COMPOSITE')
+        rlayer_fg = self._findOrCreateNode(tree, 'CompositorNodeRLayers')
+        rlayer_bg = tree.nodes.new(type='CompositorNodeRLayers')
+        composite = self._findOrCreateNode(tree, 'CompositorNodeComposite')
 
-        movieclip = tree.nodes.new(type='MOVIECLIP')
-        distortion = tree.nodes.new(type='MOVIEDISTORTION')
+        movieclip = tree.nodes.new(type='CompositorNodeMovieClip')
+        distortion = tree.nodes.new(type='CompositorNodeMovieDistortion')
 
         if need_stabilization:
-            stabilize = tree.nodes.new(type='STABILIZE2D')
+            stabilize = tree.nodes.new(type='CompositorNodeStabilize2D')
 
-        scale = tree.nodes.new(type='SCALE')
-        invert = tree.nodes.new(type='INVERT')
-        add_ao = tree.nodes.new(type='MIX_RGB')
-        add_shadow = tree.nodes.new(type='MIX_RGB')
-        mul_shadow = tree.nodes.new(type='MIX_RGB')
-        mul_image = tree.nodes.new(type='MIX_RGB')
-        vector_blur = tree.nodes.new(type='VECBLUR')
-        alphaover = tree.nodes.new(type='ALPHAOVER')
-        viewer = tree.nodes.new(type='VIEWER')
+        scale = tree.nodes.new(type='CompositorNodeScale')
+        invert = tree.nodes.new(type='CompositorNodeInvert')
+        add_ao = tree.nodes.new(type='CompositorNodeMixRGB')
+        add_shadow = tree.nodes.new(type='CompositorNodeMixRGB')
+        mul_shadow = tree.nodes.new(type='CompositorNodeMixRGB')
+        mul_image = tree.nodes.new(type='CompositorNodeMixRGB')
+        vector_blur = tree.nodes.new(type='CompositorNodeVecBlur')
+        alphaover = tree.nodes.new(type='CompositorNodeAlphaOver')
+        viewer = tree.nodes.new(type='CompositorNodeViewer')
 
         # setup nodes
         movieclip.clip = clip
@@ -608,49 +614,53 @@ class CLIP_OT_setup_tracking_scene(Operator):
         rlayer_fg.layer = "Foreground"
 
         add_ao.blend_type = 'ADD'
+        add_ao.show_preview = False
         add_shadow.blend_type = 'ADD'
+        add_shadow.show_preview = False
 
         mul_shadow.blend_type = 'MULTIPLY'
-        mul_shadow.inputs['Fac'].default_value = 0.8
+        mul_shadow.inputs["Fac"].default_value = 0.8
+        mul_shadow.show_preview = False
 
         mul_image.blend_type = 'MULTIPLY'
-        mul_image.inputs['Fac'].default_value = 0.8
+        mul_image.inputs["Fac"].default_value = 0.8
+        mul_image.show_preview = False
 
         vector_blur.factor = 0.75
 
         # create links
-        tree.links.new(movieclip.outputs['Image'], distortion.inputs['Image'])
+        tree.links.new(movieclip.outputs["Image"], distortion.inputs["Image"])
 
         if need_stabilization:
-            tree.links.new(distortion.outputs['Image'],
-                stabilize.inputs['Image'])
-            tree.links.new(stabilize.outputs['Image'], scale.inputs['Image'])
+            tree.links.new(distortion.outputs["Image"],
+                           stabilize.inputs["Image"])
+            tree.links.new(stabilize.outputs["Image"], scale.inputs["Image"])
         else:
-            tree.links.new(distortion.outputs['Image'], scale.inputs['Image'])
+            tree.links.new(distortion.outputs["Image"], scale.inputs["Image"])
 
-        tree.links.new(rlayer_bg.outputs['Alpha'], invert.inputs['Color'])
+        tree.links.new(rlayer_bg.outputs["Alpha"], invert.inputs["Color"])
 
-        tree.links.new(invert.outputs['Color'], add_shadow.inputs[1])
-        tree.links.new(rlayer_bg.outputs['Shadow'], add_shadow.inputs[2])
+        tree.links.new(invert.outputs["Color"], add_shadow.inputs[1])
+        tree.links.new(rlayer_bg.outputs["Shadow"], add_shadow.inputs[2])
 
-        tree.links.new(invert.outputs['Color'], add_ao.inputs[1])
-        tree.links.new(rlayer_bg.outputs['AO'], add_ao.inputs[2])
+        tree.links.new(invert.outputs["Color"], add_ao.inputs[1])
+        tree.links.new(rlayer_bg.outputs["AO"], add_ao.inputs[2])
 
-        tree.links.new(add_ao.outputs['Image'], mul_shadow.inputs[1])
-        tree.links.new(add_shadow.outputs['Image'], mul_shadow.inputs[2])
+        tree.links.new(add_ao.outputs["Image"], mul_shadow.inputs[1])
+        tree.links.new(add_shadow.outputs["Image"], mul_shadow.inputs[2])
 
-        tree.links.new(scale.outputs['Image'], mul_image.inputs[1])
-        tree.links.new(mul_shadow.outputs['Image'], mul_image.inputs[2])
+        tree.links.new(scale.outputs["Image"], mul_image.inputs[1])
+        tree.links.new(mul_shadow.outputs["Image"], mul_image.inputs[2])
 
-        tree.links.new(rlayer_fg.outputs['Image'], vector_blur.inputs['Image'])
-        tree.links.new(rlayer_fg.outputs['Z'], vector_blur.inputs['Z'])
-        tree.links.new(rlayer_fg.outputs['Speed'], vector_blur.inputs['Speed'])
+        tree.links.new(rlayer_fg.outputs["Image"], vector_blur.inputs["Image"])
+        tree.links.new(rlayer_fg.outputs["Z"], vector_blur.inputs["Z"])
+        tree.links.new(rlayer_fg.outputs["Speed"], vector_blur.inputs["Speed"])
 
-        tree.links.new(mul_image.outputs['Image'], alphaover.inputs[1])
-        tree.links.new(vector_blur.outputs['Image'], alphaover.inputs[2])
+        tree.links.new(mul_image.outputs["Image"], alphaover.inputs[1])
+        tree.links.new(vector_blur.outputs["Image"], alphaover.inputs[2])
 
-        tree.links.new(alphaover.outputs['Image'], composite.inputs['Image'])
-        tree.links.new(alphaover.outputs['Image'], viewer.inputs['Image'])
+        tree.links.new(alphaover.outputs["Image"], composite.inputs["Image"])
+        tree.links.new(alphaover.outputs["Image"], viewer.inputs["Image"])
 
         # place nodes
         movieclip.location = Vector((-300.0, 350.0))
@@ -706,19 +716,29 @@ class CLIP_OT_setup_tracking_scene(Operator):
         # ensure no nodes were creates on position of existing node
         self._offsetNodes(tree)
 
+        scene.render.alpha_mode = 'TRANSPARENT'
+        if scene.cycles:
+            scene.cycles.film_transparent = True
+
     @staticmethod
     def _createMesh(scene, name, vertices, faces):
-        from bpy_extras.io_utils import unpack_list, unpack_face_list
+        from bpy_extras.io_utils import unpack_list
 
         mesh = bpy.data.meshes.new(name=name)
 
         mesh.vertices.add(len(vertices))
         mesh.vertices.foreach_set("co", unpack_list(vertices))
 
-        mesh.faces.add(len(faces))
-        mesh.faces.foreach_set("vertices_raw", unpack_face_list(faces))
+        nbr_loops = len(faces)
+        nbr_polys = nbr_loops // 4
+        mesh.loops.add(nbr_loops)
+        mesh.polygons.add(nbr_polys)
 
-        mesh.update(calc_edges=True)
+        mesh.polygons.foreach_set("loop_start", range(0, nbr_loops, 4))
+        mesh.polygons.foreach_set("loop_total", (4,) * nbr_polys)
+        mesh.loops.foreach_set("vertex_index", faces)
+
+        mesh.update()
 
         ob = bpy.data.objects.new(name=name, object_data=mesh)
 
@@ -736,7 +756,7 @@ class CLIP_OT_setup_tracking_scene(Operator):
 
     def _createGround(self, scene):
         vertices = self._getPlaneVertices(4.0, 0.0)
-        faces = [(0, 1, 2, 3)]
+        faces = [0, 1, 2, 3]
 
         ob = self._createMesh(scene, "Ground", vertices, faces)
         ob["is_ground"] = True
@@ -774,12 +794,12 @@ class CLIP_OT_setup_tracking_scene(Operator):
     def _createSampleObject(self, scene):
         vertices = self._getPlaneVertices(1.0, -1.0) + \
             self._getPlaneVertices(1.0, 1.0)
-        faces = ((0, 1, 2, 3),
-                 (4, 7, 6, 5),
-                 (0, 4, 5, 1),
-                 (1, 5, 6, 2),
-                 (2, 6, 7, 3),
-                 (3, 7, 4, 0))
+        faces = (0, 1, 2, 3,
+                 4, 7, 6, 5,
+                 0, 4, 5, 1,
+                 1, 5, 6, 2,
+                 2, 6, 7, 3,
+                 3, 7, 4, 0)
 
         return self._createMesh(scene, "Cube", vertices, faces)
 
@@ -791,7 +811,7 @@ class CLIP_OT_setup_tracking_scene(Operator):
 
         all_layers = self._mergeLayers(fg.layers, bg.layers)
 
-        # enshure all lamps are active on foreground and background
+        # ensure all lamps are active on foreground and background
         has_lamp = False
         has_mesh = False
         for ob in scene.objects:
@@ -834,6 +854,7 @@ class CLIP_OT_setup_tracking_scene(Operator):
 
         return {'FINISHED'}
 
+
 class CLIP_OT_track_settings_as_default(Operator):
     """Copy tracking settings from active track to default settings"""
 
@@ -856,6 +877,9 @@ class CLIP_OT_track_settings_as_default(Operator):
         sc = context.space_data
         clip = sc.clip
 
-        CLIP_default_settings_from_track(clip, clip.tracking.tracks.active)
+        track = clip.tracking.tracks.active
+        framenr = context.scene.frame_current - clip.frame_start + 1
+
+        CLIP_default_settings_from_track(clip, track, framenr)
 
         return {'FINISHED'}

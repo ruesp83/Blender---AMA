@@ -17,14 +17,33 @@
 # ##### END GPL LICENSE BLOCK #####
 
 # <pep8 compliant>
-
 import bpy
-from bpy.types import Panel
+from bpy.types import Panel, UIList
 
-from .properties_physics_common import (
-    point_cache_ui,
-    effector_weights_ui,
-    )
+from bl_ui.properties_physics_common import (point_cache_ui,
+                                             effector_weights_ui,
+                                             )
+
+
+class PHYSICS_UL_dynapaint_surfaces(UIList):
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
+        # assert(isinstance(item, bpy.types.DynamicPaintSurface)
+        surf = item
+        sticon = layout.enum_item_icon(surf, "surface_type", surf.surface_type)
+        if self.layout_type in {'DEFAULT', 'COMPACT'}:
+            row = layout.row(align=True)
+            row.label(text="", icon_value=icon)
+            row.label(text=surf.name, translate=False, icon_value=sticon)
+            row = layout.row(align=True)
+            if surf.use_color_preview:
+                row.prop(surf, "show_preview", text="", emboss=False,
+                         icon='RESTRICT_VIEW_OFF' if surf.show_preview else 'RESTRICT_VIEW_ON')
+            row.prop(surf, "is_active", text="")
+        elif self.layout_type in {'GRID'}:
+            layout.alignment = 'CENTER'
+            row = layout.row(align=True)
+            row.label(text="", icon_value=icon)
+            row.label(text="", icon_value=sticon)
 
 
 class PhysicButtonsPanel():
@@ -60,7 +79,8 @@ class PHYSICS_PT_dynamic_paint(PhysicButtonsPanel, Panel):
                 surface = canvas.canvas_surfaces.active
 
                 row = layout.row()
-                row.template_list(canvas, "canvas_surfaces", canvas.canvas_surfaces, "active_index", rows=2)
+                row.template_list("PHYSICS_UL_dynapaint_surfaces", "", canvas, "canvas_surfaces",
+                                  canvas.canvas_surfaces, "active_index", rows=2)
 
                 col = row.column(align=True)
                 col.operator("dpaint.surface_slot_add", icon='ZOOMIN', text="")
@@ -121,7 +141,8 @@ class PHYSICS_PT_dp_advanced_canvas(PhysicButtonsPanel, Panel):
     @classmethod
     def poll(cls, context):
         md = context.dynamic_paint
-        return md and md.ui_type == 'CANVAS' and md.canvas_settings and md.canvas_settings.canvas_surfaces.active
+        rd = context.scene.render
+        return md and md.ui_type == 'CANVAS' and md.canvas_settings and md.canvas_settings.canvas_surfaces.active and (not rd.use_game_engine)
 
     def draw(self, context):
         layout = self.layout
@@ -195,10 +216,13 @@ class PHYSICS_PT_dp_canvas_output(PhysicButtonsPanel, Panel):
     @classmethod
     def poll(cls, context):
         md = context.dynamic_paint
+        rd = context.scene.render
         if not (md and md.ui_type == 'CANVAS' and md.canvas_settings):
             return 0
         surface = context.dynamic_paint.canvas_settings.canvas_surfaces.active
-        return surface and not (surface.surface_format == 'VERTEX' and (surface.surface_type in {'DISPLACE', 'WAVE'}))
+        return (surface and
+                (not (surface.surface_format == 'VERTEX' and (surface.surface_type in {'DISPLACE', 'WAVE'}))) and
+                (not rd.use_game_engine))
 
     def draw(self, context):
         layout = self.layout
@@ -215,9 +239,9 @@ class PHYSICS_PT_dp_canvas_output(PhysicButtonsPanel, Panel):
                  # toggle active preview
                 layout.prop(surface, "preview_id")
 
-                # paintmap output
+                # paint-map output
                 row = layout.row()
-                row.prop_search(surface, "output_name_a", ob.data, "vertex_colors", text="Paintmap layer: ")
+                row.prop_search(surface, "output_name_a", ob.data, "vertex_colors", text="Paintmap layer:")
                 if surface.output_exists(object=ob, index=0):
                     ic = 'ZOOMOUT'
                 else:
@@ -225,9 +249,9 @@ class PHYSICS_PT_dp_canvas_output(PhysicButtonsPanel, Panel):
 
                 row.operator("dpaint.output_toggle", icon=ic, text="").output = 'A'
 
-                # wetmap output
+                # wet-map output
                 row = layout.row()
-                row.prop_search(surface, "output_name_b", ob.data, "vertex_colors", text="Wetmap layer: ")
+                row.prop_search(surface, "output_name_b", ob.data, "vertex_colors", text="Wetmap layer:")
                 if surface.output_exists(object=ob, index=1):
                     ic = 'ZOOMOUT'
                 else:
@@ -237,7 +261,7 @@ class PHYSICS_PT_dp_canvas_output(PhysicButtonsPanel, Panel):
 
             elif surface_type == 'WEIGHT':
                 row = layout.row()
-                row.prop_search(surface, "output_name_a", ob, "vertex_groups", text="Vertex Group: ")
+                row.prop_search(surface, "output_name_a", ob, "vertex_groups", text="Vertex Group:")
                 if surface.output_exists(object=ob, index=0):
                     ic = 'ZOOMOUT'
                 else:
@@ -270,7 +294,7 @@ class PHYSICS_PT_dp_canvas_output(PhysicButtonsPanel, Panel):
                 sub.prop(surface, "output_name_b", text="")
             else:
                 col = layout.column()
-                col.prop(surface, "output_name_a", text="Filename: ")
+                col.prop(surface, "output_name_a", text="Filename:")
                 if surface_type == 'DISPLACE':
                     col.prop(surface, "displace_type", text="Displace Type")
                     col.prop(surface, "depth_clamp")
@@ -285,10 +309,11 @@ class PHYSICS_PT_dp_canvas_initial_color(PhysicButtonsPanel, Panel):
     @classmethod
     def poll(cls, context):
         md = context.dynamic_paint
+        rd = context.scene.render
         if not (md and md.ui_type == 'CANVAS' and md.canvas_settings):
             return 0
         surface = context.dynamic_paint.canvas_settings.canvas_surfaces.active
-        return (surface and surface.surface_type == 'PAINT')
+        return (surface and surface.surface_type == 'PAINT') and (not rd.use_game_engine)
 
     def draw(self, context):
         layout = self.layout
@@ -309,7 +334,7 @@ class PHYSICS_PT_dp_canvas_initial_color(PhysicButtonsPanel, Panel):
             layout.prop_search(surface, "init_layername", ob.data, "uv_textures", text="UV Map:")
 
         elif surface.init_color_type == 'VERTEX_COLOR':
-            layout.prop_search(surface, "init_layername", ob.data, "vertex_colors", text="Color Layer: ")
+            layout.prop_search(surface, "init_layername", ob.data, "vertex_colors", text="Color Layer:")
 
 
 class PHYSICS_PT_dp_effects(PhysicButtonsPanel, Panel):
@@ -319,10 +344,11 @@ class PHYSICS_PT_dp_effects(PhysicButtonsPanel, Panel):
     @classmethod
     def poll(cls, context):
         md = context.dynamic_paint
+        rd = context.scene.render
         if not (md and md.ui_type == 'CANVAS' and md.canvas_settings):
             return False
         surface = context.dynamic_paint.canvas_settings.canvas_surfaces.active
-        return (surface and surface.surface_type == 'PAINT')
+        return (surface and surface.surface_type == 'PAINT') and (not rd.use_game_engine)
 
     def draw(self, context):
         layout = self.layout
@@ -345,7 +371,7 @@ class PHYSICS_PT_dp_effects(PhysicButtonsPanel, Panel):
 
             col = layout.column()
             col.active = surface.use_drip
-            effector_weights_ui(self, context, surface.effector_weights)
+            effector_weights_ui(self, context, surface.effector_weights, 'DYNAMIC_PAINT')
 
             layout.label(text="Surface Movement:")
             row = layout.row()
@@ -367,11 +393,13 @@ class PHYSICS_PT_dp_cache(PhysicButtonsPanel, Panel):
     @classmethod
     def poll(cls, context):
         md = context.dynamic_paint
+        rd = context.scene.render
         return (md and
                 md.ui_type == 'CANVAS' and
                 md.canvas_settings and
                 md.canvas_settings.canvas_surfaces.active and
-                md.canvas_settings.canvas_surfaces.active.is_cache_user)
+                md.canvas_settings.canvas_surfaces.active.is_cache_user and
+                (not rd.use_game_engine))
 
     def draw(self, context):
         surface = context.dynamic_paint.canvas_settings.canvas_surfaces.active
@@ -386,7 +414,8 @@ class PHYSICS_PT_dp_brush_source(PhysicButtonsPanel, Panel):
     @classmethod
     def poll(cls, context):
         md = context.dynamic_paint
-        return md and md.ui_type == 'BRUSH' and md.brush_settings
+        rd = context.scene.render
+        return md and md.ui_type == 'BRUSH' and md.brush_settings and (not rd.use_game_engine)
 
     def draw(self, context):
         layout = self.layout
@@ -438,7 +467,8 @@ class PHYSICS_PT_dp_brush_velocity(PhysicButtonsPanel, Panel):
     @classmethod
     def poll(cls, context):
         md = context.dynamic_paint
-        return md and md.ui_type == 'BRUSH' and md.brush_settings
+        rd = context.scene.render
+        return md and md.ui_type == 'BRUSH' and md.brush_settings and (not rd.use_game_engine)
 
     def draw(self, context):
         layout = self.layout
@@ -473,7 +503,8 @@ class PHYSICS_PT_dp_brush_wave(PhysicButtonsPanel, Panel):
     @classmethod
     def poll(cls, context):
         md = context.dynamic_paint
-        return md and md.ui_type == 'BRUSH' and md.brush_settings
+        rd = context.scene.render
+        return md and md.ui_type == 'BRUSH' and md.brush_settings and (not rd.use_game_engine)
 
     def draw(self, context):
         layout = self.layout

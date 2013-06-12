@@ -26,7 +26,7 @@ class NLA_HT_header(Header):
     bl_space_type = 'NLA_EDITOR'
 
     def draw(self, context):
-        from .space_dopesheet import dopesheet_filter
+        from bl_ui.space_dopesheet import dopesheet_filter
 
         layout = self.layout
 
@@ -104,7 +104,7 @@ class NLA_MT_marker(Menu):
     def draw(self, context):
         layout = self.layout
 
-        from .space_time import marker_menu_generic
+        from bl_ui.space_time import marker_menu_generic
         marker_menu_generic(layout)
 
 
@@ -143,7 +143,7 @@ class NLA_MT_edit(Menu):
         layout.operator_menu_enum("anim.channels_move", "direction", text="Track Ordering...")
 
         layout.separator()
-        # TODO: names of these tools for 'tweakmode' need changing?
+        # TODO: names of these tools for 'tweak-mode' need changing?
         if scene.is_nla_tweakmode:
             layout.operator("nla.tweakmode_exit", text="Stop Tweaking Strip Actions")
         else:
@@ -167,6 +167,9 @@ class NLA_MT_add(Menu):
         layout.separator()
         layout.operator("nla.tracks_add").above_selected = False
         layout.operator("nla.tracks_add", text="Add Tracks Above Selected").above_selected = True
+
+        layout.separator()
+        layout.operator("nla.selected_objects_add")
 
 
 class NLA_MT_edit_transform(Menu):

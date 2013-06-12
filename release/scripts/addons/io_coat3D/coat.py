@@ -32,9 +32,13 @@ def set_exchange_folder():
     Blender_export = ""
 
     if(platform == 'win32'):
-        exchange = os.path.expanduser("~") + os.sep + 'Documents' + os.sep + '3D-CoatV3' + os.sep +'Exchange'
+        exchange = os.path.expanduser("~") + os.sep + 'Documents' + os.sep + '3D-CoatV4' + os.sep +'Exchange'
+        if not(os.path.isdir(exchange)):
+            exchange = os.path.expanduser("~") + os.sep + 'Documents' + os.sep + '3D-CoatV3' + os.sep +'Exchange'
     else:
-        exchange = os.path.expanduser("~") + os.sep + '3D-CoatV3' + os.sep + 'Exchange'
+        exchange = os.path.expanduser("~") + os.sep + '3D-CoatV4' + os.sep + 'Exchange'
+        if not(os.path.isdir(exchange)):
+            exchange = os.path.expanduser("~") + os.sep + '3D-CoatV3' + os.sep + 'Exchange'          
     if(not(os.path.isdir(exchange))):
         exchange = coat3D.exchangedir 
 
@@ -228,15 +232,15 @@ class SCENE_OT_export(bpy.types.Operator):
 
         obj.location = (0,0,0)
         obj.rotation_euler = (0,0,0)
-        obj.scale = (1,1,1)
-
+        bpy.ops.object.transform_apply(scale=True)
+        
         bpy.ops.export_scene.obj(filepath=coa.applink_name,use_selection=True,
-        use_apply_modifiers=False,use_blen_objects=True, group_by_material= True,
-        use_materials = False,keep_vertex_order = True,axis_forward='X',axis_up='Y')
-
+        use_mesh_modifiers=False,use_blen_objects=True, use_materials = True,
+        keep_vertex_order = True,axis_forward='Y',axis_up='Z')
+        
         obj.location = coa.loc
         obj.rotation_euler = coa.rot
-        obj.scale = coa.sca
+        
 
         bpy.context.scene.cursor_location = coat3D.cursor_loc
         bpy.context.scene.cursor_location = coat3D.cursor_orginal
@@ -249,6 +253,8 @@ class SCENE_OT_export(bpy.types.Operator):
         file.close()
 
         coa.objecttime = str(os.path.getmtime(coa.applink_name))
+        
+        
                
         return {'FINISHED'}
 
@@ -362,7 +368,7 @@ class SCENE_OT_import(bpy.types.Operator):
                     if(os.path.isfile(mtl)):
                         os.remove(mtl)
                    
-                    bpy.ops.import_scene.obj(filepath=path_object,axis_forward='X',axis_up='Y')
+                    bpy.ops.import_scene.obj(filepath=path_object,axis_forward='Y',axis_up='Z',use_image_search=False)
                     obj_proxy = scene.objects[0]
                     bpy.ops.object.select_all(action='TOGGLE')
                     obj_proxy.select = True
@@ -371,9 +377,11 @@ class SCENE_OT_import(bpy.types.Operator):
                     bpy.ops.object.transform_apply(rotation=True)
                     proxy_mat = obj_proxy.material_slots[0].material
                     if(delete_material):
-                        obj_proxy.data.materials.pop(0,1)
-                        proxy_mat.user_clear()
-                        bpy.data.materials.remove(proxy_mat)
+                        while(list(obj_proxy.data.materials) != []):
+                            proxy_mat = obj_proxy.material_slots[0].material
+                            obj_proxy.data.materials.pop(0,1)
+                            proxy_mat.user_clear()
+                            bpy.data.materials.remove(proxy_mat)
                     bpy.ops.object.select_all(action='TOGGLE')
 
                     if(coat3D.importlevel):
@@ -390,8 +398,9 @@ class SCENE_OT_import(bpy.types.Operator):
                         obj_data = objekti.data.id_data
                         objekti.data = obj_proxy.data.id_data
                         if(bpy.data.meshes[obj_data.name].users == 0):
-                            bpy.data.meshes.remove(obj_data)
                             objekti.data.id_data.name = obj_data.name
+                            bpy.data.meshes.remove(obj_data)
+                            
 
                     obj_proxy.select = True
                     bpy.ops.object.delete()
@@ -470,7 +479,7 @@ class SCENE_OT_import(bpy.types.Operator):
             if(os.path.isfile(mtl_list)):
                 os.remove(mtl_list)
                 
-            bpy.ops.import_scene.obj(filepath=new_applink_name,axis_forward='X',axis_up='Y')
+            bpy.ops.import_scene.obj(filepath=new_applink_name,axis_forward='Y',axis_up='Z')
             bpy.ops.object.transform_apply(rotation=True)
             new_obj = scene.objects[0]
             new_obj.coat3D.applink_name = obj_path

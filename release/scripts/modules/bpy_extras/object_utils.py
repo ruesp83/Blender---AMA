@@ -21,11 +21,16 @@
 __all__ = (
     "add_object_align_init",
     "object_data_add",
+    "AddObjectHelper",
+    "object_add_grid_scale",
+    "object_add_grid_scale_apply_operator",
+    "object_image_guess",
     )
 
 
 import bpy
-import mathutils
+
+from bpy.props import BoolProperty, FloatVectorProperty
 
 
 def add_object_align_init(context, operator):
@@ -44,7 +49,7 @@ def add_object_align_init(context, operator):
     properties = operator.properties if operator is not None else None
 
     space_data = context.space_data
-    if space_data.type != 'VIEW_3D':
+    if space_data and space_data.type != 'VIEW_3D':
         space_data = None
 
     # location
@@ -66,7 +71,14 @@ def add_object_align_init(context, operator):
         if properties.is_property_set("view_align"):
             view_align = view_align_force = operator.view_align
         else:
-            properties.view_align = view_align
+            if properties.is_property_set("rotation"):
+                # ugh, 'view_align' callback resets
+                value = properties.rotation[:]
+                properties.view_align = view_align
+                properties.rotation = value
+                del value
+            else:
+                properties.view_align = view_align
 
     if operator and (properties.is_property_set("rotation") and
                      not view_align_force):
@@ -77,7 +89,7 @@ def add_object_align_init(context, operator):
             rotation = space_data.region_3d.view_matrix.to_3x3().inverted()
             rotation.resize_4x4()
         else:
-            rotation = mathutils.Matrix()
+            rotation = Matrix()
 
         # set the operator properties
         if operator:
@@ -86,7 +98,7 @@ def add_object_align_init(context, operator):
     return location * rotation
 
 
-def object_data_add(context, obdata, operator=None):
+def object_data_add(context, obdata, operator=None, use_active_layer=True):
     """
     Add an object using the view context and preference to to initialize the
     location, rotation and layer.
@@ -111,8 +123,20 @@ def object_data_add(context, obdata, operator=None):
     base = scene.objects.link(obj_new)
     base.select = True
 
+    v3d = None
     if context.space_data and context.space_data.type == 'VIEW_3D':
-        base.layers_from_view(context.space_data)
+        v3d = context.space_data
+
+    if use_active_layer:
+        if v3d and v3d.local_view:
+            base.layers_from_view(context.space_data)
+            base.layers[scene.active_layer] = True
+        else:
+            base.layers = [True if i == scene.active_layer
+                           else False for i in range(len(scene.layers))]
+    else:
+        if v3d:
+            base.layers_from_view(context.space_data)
 
     obj_new.matrix_world = add_object_align_init(context, operator)
 
@@ -153,3 +177,91 @@ def object_data_add(context, obdata, operator=None):
             bpy.ops.object.mode_set(mode='EDIT')
 
     return base
+
+
+class AddObjectHelper:
+    def view_align_update_callback(self, context):
+        if not self.view_align:
+            self.rotation.zero()
+
+    view_align = BoolProperty(
+            name="Align to View",
+            default=False,
+            update=view_align_update_callback,
+            )
+    location = FloatVectorProperty(
+            name="Location",
+            subtype='TRANSLATION',
+            )
+    rotation = FloatVectorProperty(
+            name="Rotation",
+            subtype='EULER',
+            )
+
+
+def object_add_grid_scale(context):
+    """
+    Return scale which should be applied on object
+    data to align it to grid scale
+    """
+
+    space_data = context.space_data
+
+    if space_data and space_data.type == 'VIEW_3D':
+        return space_data.grid_scale_unit
+
+    return 1.0
+
+
+def object_add_grid_scale_apply_operator(operator, context):
+    """
+    Scale an operators distance values by the grid size.
+    """
+    grid_scale = object_add_grid_scale(context)
+
+    properties = operator.properties
+    properties_def = properties.bl_rna.properties
+    for prop_id in properties_def.keys():
+        if not properties.is_property_set(prop_id):
+            prop_def = properties_def[prop_id]
+            if prop_def.unit == 'LENGTH' and prop_def.subtype == 'DISTANCE':
+                setattr(operator, prop_id, getattr(operator, prop_id) * grid_scale)
+
+
+def object_image_guess(obj, bm=None):
+    """
+    Return a single image used by the object,
+    first checking the texture-faces, then the material.
+    """
+    # TODO, cycles/nodes materials
+    me = obj.data
+    if bm is None:
+        if obj.mode == 'EDIT':
+            bm = bmesh.from_edit_mesh(me)
+
+    if bm is not None:
+        tex_layer = bm.faces.layers.tex.active
+        if tex_layer is not None:
+            for f in bm.faces:
+                image = f[tex_layer].image
+                if image is not None:
+                    return image
+    else:
+        tex_layer = me.uv_textures.active
+        if tex_layer is not None:
+            for tf in tex_layer.data:
+                image = tf.image
+                if image is not None:
+                    return image
+
+    for m in obj.data.materials:
+        if m is not None:
+            # backwards so topmost are highest priority
+            for mtex in reversed(m.texture_slots):
+                if mtex and mtex.use_map_color_diffuse:
+                    texture = mtex.texture
+                    if texture and texture.type == 'IMAGE':
+                        image = texture.image
+                        if image is not None:
+                            return image
+    return None

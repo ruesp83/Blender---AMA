@@ -66,9 +66,9 @@ def rna_id_ignore(rna_id):
 
 def range_str(val):
     if val < -10000000:
-        return '-inf'
+        return "-inf"
     elif val > 10000000:
-        return 'inf'
+        return "inf"
     elif type(val) == float:
         return '%g' % val
     else:
@@ -148,7 +148,9 @@ class InfoStructRNA:
         import types
         functions = []
         for identifier, attr in self._get_py_visible_attrs():
-            if type(attr) in {types.FunctionType, types.MethodType}:
+            # methods may be python wrappers to C functions
+            attr_func = getattr(attr, "__func__", attr)
+            if type(attr_func) in {types.FunctionType, types.MethodType}:
                 functions.append((identifier, attr))
         return functions
 
@@ -156,7 +158,9 @@ class InfoStructRNA:
         import types
         functions = []
         for identifier, attr in self._get_py_visible_attrs():
-            if type(attr) in {types.BuiltinMethodType, types.BuiltinFunctionType}:
+            # methods may be python wrappers to C functions
+            attr_func = getattr(attr, "__func__", attr)
+            if type(attr_func) in {types.BuiltinMethodType, types.BuiltinFunctionType}:
                 functions.append((identifier, attr))
         return functions
 
@@ -249,7 +253,7 @@ class InfoPropertyRNA:
 
     def get_arg_default(self, force=True):
         default = self.default_str
-        if default and (force or self.is_required == False):
+        if default and (force or self.is_required is False):
             return "%s=%s" % (self.identifier, default)
         return self.identifier
 
@@ -305,8 +309,8 @@ class InfoPropertyRNA:
         return type_str
 
     def __str__(self):
-        txt = ''
-        txt += ' * ' + self.identifier + ': ' + self.description
+        txt = ""
+        txt += " * " + self.identifier + ": " + self.description
 
         return txt
 
@@ -398,7 +402,7 @@ class InfoOperatorRNA:
             return None, None
 
 
-def _GetInfoRNA(bl_rna, cls, parent_id=''):
+def _GetInfoRNA(bl_rna, cls, parent_id=""):
 
     if bl_rna is None:
         return None
@@ -437,9 +441,9 @@ def BuildRNAInfo():
     # rna_functions_dict = {}  # store all functions directly in this type (not inherited)
 
     def full_rna_struct_path(rna_struct):
-        '''
+        """
         Needed when referencing one struct from another
-        '''
+        """
         nested = rna_struct.nested
         if nested:
             return "%s.%s" % (full_rna_struct_path(nested), rna_struct.identifier)
@@ -493,7 +497,7 @@ def BuildRNAInfo():
 
     # Arrange so classes are always defined in the correct order
     deps_ok = False
-    while deps_ok == False:
+    while deps_ok is False:
         deps_ok = True
         rna_done = set()
 
@@ -641,7 +645,7 @@ if __name__ == "__main__":
 
         props = [(prop.identifier, prop) for prop in v.properties]
         for prop_id, prop in sorted(props):
-            # if prop.type == 'boolean':
+            # if prop.type == "boolean":
             #     continue
             prop_type = prop.type
             if prop.array_length > 0:

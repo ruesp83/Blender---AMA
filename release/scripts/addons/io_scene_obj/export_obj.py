@@ -33,6 +33,15 @@ def name_compat(name):
         return name.replace(' ', '_')
 
 
+def mesh_triangulate(me):
+    import bmesh
+    bm = bmesh.new()
+    bm.from_mesh(me)
+    bmesh.ops.triangulate(bm, faces=bm.faces)
+    bm.to_mesh(me)
+    bm.free()
+
+
 def write_mtl(scene, filepath, path_mode, copy_set, mtl_dict):
     from mathutils import Color
 
@@ -42,13 +51,13 @@ def write_mtl(scene, filepath, path_mode, copy_set, mtl_dict):
     else:
         world_amb = Color((0.0, 0.0, 0.0))
 
-    source_dir = bpy.data.filepath
+    source_dir = os.path.dirname(bpy.data.filepath)
     dest_dir = os.path.dirname(filepath)
 
     file = open(filepath, "w", encoding="utf8", newline="\n")
     fw = file.write
 
-    fw('# Blender MTL File: %r\n' % os.path.basename(bpy.data.filepath))
+    fw('# Blender MTL File: %r\n' % (os.path.basename(bpy.data.filepath) or "None"))
     fw('# Material Count: %i\n' % len(mtl_dict))
 
     mtl_dict_values = list(mtl_dict.values())
@@ -61,7 +70,7 @@ def write_mtl(scene, filepath, path_mode, copy_set, mtl_dict):
         # Get the Blender data for the material and the image.
         # Having an image named None will make a bug, dont do it :)
 
-        fw('newmtl %s\n' % mtl_mat_name)  # Define a new material: matname_imgname
+        fw('\nnewmtl %s\n' % mtl_mat_name)  # Define a new material: matname_imgname
 
         if mat:
             # convert from blenders spec to 0 - 1000 range.
@@ -72,7 +81,7 @@ def write_mtl(scene, filepath, path_mode, copy_set, mtl_dict):
             fw('Ns %.6f\n' % tspec)
             del tspec
 
-            fw('Ka %.6f %.6f %.6f\n' % (mat.ambient * world_amb)[:])  # Ambient, uses mirror colour,
+            fw('Ka %.6f %.6f %.6f\n' % (mat.ambient * world_amb)[:])  # Ambient, uses mirror color,
             fw('Kd %.6f %.6f %.6f\n' % (mat.diffuse_intensity * mat.diffuse_color)[:])  # Diffuse
             fw('Ks %.6f %.6f %.6f\n' % (mat.specular_intensity * mat.specular_color)[:])  # Specular
             if hasattr(mat, "ior"):
@@ -92,7 +101,7 @@ def write_mtl(scene, filepath, path_mode, copy_set, mtl_dict):
         else:
             #write a dummy material here?
             fw('Ns 0\n')
-            fw('Ka %.6f %.6f %.6f\n' % world_amb[:])  # Ambient, uses mirror colour,
+            fw('Ka %.6f %.6f %.6f\n' % world_amb[:])  # Ambient, uses mirror color,
             fw('Kd 0.8 0.8 0.8\n')
             fw('Ks 0.8 0.8 0.8\n')
             fw('d 1\n')  # No alpha
@@ -100,38 +109,58 @@ def write_mtl(scene, filepath, path_mode, copy_set, mtl_dict):
 
         # Write images!
         if face_img:  # We have an image on the face!
-            # write relative image path
-            rel = bpy_extras.io_utils.path_reference(face_img.filepath, source_dir, dest_dir, path_mode, "", copy_set, face_img.library)
-            fw('map_Kd %s\n' % rel)  # Diffuse mapping image
+            filepath = face_img.filepath
+            if filepath:  # may be '' for generated images
+                # write relative image path
+                filepath = bpy_extras.io_utils.path_reference(filepath, source_dir, dest_dir,
+                                                              path_mode, "", copy_set, face_img.library)
+                fw('map_Kd %s\n' % filepath)  # Diffuse mapping image
+                del filepath
+            else:
+                # so we write the materials image.
+                face_img = None
 
         if mat:  # No face image. if we havea material search for MTex image.
             image_map = {}
             # backwards so topmost are highest priority
             for mtex in reversed(mat.texture_slots):
-                if mtex and mtex.texture.type == 'IMAGE':
+                if mtex and mtex.texture and mtex.texture.type == 'IMAGE':
                     image = mtex.texture.image
                     if image:
                         # texface overrides others
-                        if mtex.use_map_color_diffuse and face_img is None:
+                        if      (mtex.use_map_color_diffuse and
+                                (face_img is None) and
+                                (mtex.use_map_warp is False) and
+                                (mtex.texture_coords != 'REFLECTION')):
                             image_map["map_Kd"] = image
                         if mtex.use_map_ambient:
                             image_map["map_Ka"] = image
+                        # this is the Spec intensity channel but Ks stands for specular Color
+                        '''
                         if mtex.use_map_specular:
                             image_map["map_Ks"] = image
+                        '''
+                        if mtex.use_map_color_spec:  # specular color
+                            image_map["map_Ks"] = image
+                        if mtex.use_map_hardness:  # specular hardness/glossiness
+                            image_map["map_Ns"] = image
                         if mtex.use_map_alpha:
                             image_map["map_d"] = image
                         if mtex.use_map_translucency:
                             image_map["map_Tr"] = image
-                        if mtex.use_map_normal:
+                        if mtex.use_map_normal and (mtex.texture.use_normal_map is True):
                             image_map["map_Bump"] = image
-                        if mtex.use_map_hardness:
-                            image_map["map_Ns"] = image
+                        if mtex.use_map_normal and (mtex.texture.use_normal_map is False):
+                            image_map["map_Disp"] = image                      
+                        if mtex.use_map_color_diffuse and (mtex.texture_coords == 'REFLECTION'):
+                            image_map["map_refl"] = image
+                        if mtex.use_map_emit:
+                            image_map["map_Ke"] = image
 
             for key, image in image_map.items():
-                filepath = bpy_extras.io_utils.path_reference(image.filepath, source_dir, dest_dir, path_mode, "", copy_set, image.library)
+                filepath = bpy_extras.io_utils.path_reference(image.filepath, source_dir, dest_dir,
+                                                              path_mode, "", copy_set, image.library)
                 fw('%s %s\n' % (key, repr(filepath)[1:-1]))
-
-        fw('\n\n')
 
     file.close()
 
@@ -229,12 +258,12 @@ def write_file(filepath, objects, scene,
                EXPORT_GLOBAL_MATRIX=None,
                EXPORT_PATH_MODE='AUTO',
                ):
-    '''
+    """
     Basic write function. The context and options must be already set
     This can be accessed externaly
     eg.
     write( 'c:\\test\\foobar.obj', Blender.Object.GetSelected() ) # Using default options.
-    '''
+    """
 
     if EXPORT_GLOBAL_MATRIX is None:
         EXPORT_GLOBAL_MATRIX = mathutils.Matrix()
@@ -291,6 +320,10 @@ def write_file(filepath, objects, scene,
     # A Dict of Materials
     # (material.name, image.name):matname_imagename # matname_imagename has gaps removed.
     mtl_dict = {}
+    # Used to reduce the usage of matname_texname materials, which can become annoying in case of
+    # repeated exports/imports, yet keeping unique mat names per keys!
+    # mtl_name: (material.name, image.name)
+    mtl_rev_dict = {}
 
     copy_set = set()
 
@@ -326,7 +359,7 @@ def write_file(filepath, objects, scene,
             # END NURBS
 
             try:
-                me = ob.to_mesh(scene, EXPORT_APPLY_MODIFIERS, 'PREVIEW')
+                me = ob.to_mesh(scene, EXPORT_APPLY_MODIFIERS, 'PREVIEW', calc_tessface=False)
             except RuntimeError:
                 me = None
 
@@ -335,18 +368,23 @@ def write_file(filepath, objects, scene,
 
             me.transform(EXPORT_GLOBAL_MATRIX * ob_mat)
 
+            if EXPORT_TRI:
+                # _must_ do this first since it re-allocs arrays
+                mesh_triangulate(me)
+
             if EXPORT_UV:
                 faceuv = len(me.uv_textures) > 0
                 if faceuv:
-                    uv_layer = me.uv_textures.active.data[:]
+                    uv_texture = me.uv_textures.active.data[:]
+                    uv_layer = me.uv_layers.active.data[:]
             else:
                 faceuv = False
 
             me_verts = me.vertices[:]
 
             # Make our own list so it can be sorted to reduce context switching
-            face_index_pairs = [(face, index) for index, face in enumerate(me.faces)]
-            # faces = [ f for f in me.faces ]
+            face_index_pairs = [(face, index) for index, face in enumerate(me.polygons)]
+            # faces = [ f for f in me.tessfaces ]
 
             if EXPORT_EDGES:
                 edges = me.edges
@@ -369,14 +407,14 @@ def write_file(filepath, objects, scene,
             # avoid bad index errors
             if not materials:
                 materials = [None]
-                material_names = [""]
+                material_names = [name_compat(None)]
 
             # Sort by Material, then images
             # so we dont over context switch in the obj file.
             if EXPORT_KEEP_VERT_ORDER:
                 pass
             elif faceuv:
-                face_index_pairs.sort(key=lambda a: (a[0].material_index, hash(uv_layer[a[1]].image), a[0].use_smooth))
+                face_index_pairs.sort(key=lambda a: (a[0].material_index, hash(uv_texture[a[1]].image), a[0].use_smooth))
             elif len(materials) > 1:
                 face_index_pairs.sort(key=lambda a: (a[0].material_index, a[0].use_smooth))
             else:
@@ -407,24 +445,27 @@ def write_file(filepath, objects, scene,
             # UV
             if faceuv:
                 # in case removing some of these dont get defined.
-                uv = uvkey = uv_dict = f_index = uv_index = None
+                uv = uvkey = uv_dict = f_index = uv_index = uv_ls = uv_k = None
 
-                uv_face_mapping = [[0, 0, 0, 0] for i in range(len(face_index_pairs))]  # a bit of a waste for tri's :/
+                uv_face_mapping = [None] * len(face_index_pairs)
 
                 uv_dict = {}  # could use a set() here
-                uv_layer = me.uv_textures.active.data
                 for f, f_index in face_index_pairs:
-                    for uv_index, uv in enumerate(uv_layer[f_index].uv):
+                    uv_ls = uv_face_mapping[f_index] = []
+                    for uv_index, l_index in enumerate(f.loop_indices):
+                        uv = uv_layer[l_index].uv
+
                         uvkey = veckey2d(uv)
                         try:
-                            uv_face_mapping[f_index][uv_index] = uv_dict[uvkey]
+                            uv_k = uv_dict[uvkey]
                         except:
-                            uv_face_mapping[f_index][uv_index] = uv_dict[uvkey] = len(uv_dict)
+                            uv_k = uv_dict[uvkey] = len(uv_dict)
                             fw('vt %.6f %.6f\n' % uv[:])
+                        uv_ls.append(uv_k)
 
                 uv_unique_count = len(uv_dict)
 
-                del uv, uvkey, uv_dict, f_index, uv_index
+                del uv, uvkey, uv_dict, f_index, uv_index, uv_ls, uv_k
                 # Only need uv_unique_count and uv_face_mapping
 
             # NORMAL, Smooth/Non smoothed.
@@ -453,19 +494,19 @@ def write_file(filepath, objects, scene,
             if EXPORT_POLYGROUPS:
                 # Retrieve the list of vertex groups
                 vertGroupNames = ob.vertex_groups.keys()
-
-                currentVGroup = ''
-                # Create a dictionary keyed by face id and listing, for each vertex, the vertex groups it belongs to
-                vgroupsMap = [[] for _i in range(len(me_verts))]
-                for v_idx, v_ls in enumerate(vgroupsMap):
-                    v_ls[:] = [(vertGroupNames[g.group], g.weight) for g in me_verts[v_idx].groups]
+                if vertGroupNames:
+                    currentVGroup = ''
+                    # Create a dictionary keyed by face id and listing, for each vertex, the vertex groups it belongs to
+                    vgroupsMap = [[] for _i in range(len(me_verts))]
+                    for v_idx, v_ls in enumerate(vgroupsMap):
+                        v_ls[:] = [(vertGroupNames[g.group], g.weight) for g in me_verts[v_idx].groups]
 
             for f, f_index in face_index_pairs:
                 f_smooth = f.use_smooth
                 f_mat = min(f.material_index, len(materials) - 1)
 
                 if faceuv:
-                    tface = uv_layer[f_index]
+                    tface = uv_texture[f_index]
                     f_image = tface.image
 
                 # MAKE KEY
@@ -476,7 +517,7 @@ def write_file(filepath, objects, scene,
 
                 # Write the vertex group
                 if EXPORT_POLYGROUPS:
-                    if ob.vertex_groups:
+                    if vertGroupNames:
                         # find what vertext group the face belongs to
                         vgroup_of_face = findVertexGroupName(f, vgroupsMap)
                         if vgroup_of_face != currentVGroup:
@@ -505,10 +546,21 @@ def write_file(filepath, objects, scene,
                             # converting any spaces to underscores with name_compat.
 
                             # If none image dont bother adding it to the name
-                            if key[1] is None:
-                                mat_data = mtl_dict[key] = ("%s" % name_compat(key[0])), materials[f_mat], f_image
-                            else:
-                                mat_data = mtl_dict[key] = ("%s_%s" % (name_compat(key[0]), name_compat(key[1]))), materials[f_mat], f_image
+                            # Try to avoid as much as possible adding texname (or other things)
+                            # to the mtl name (see [#32102])...
+                            mtl_name = "%s" % name_compat(key[0])
+                            if mtl_rev_dict.get(mtl_name, None) not in {key, None}:
+                                if key[1] is None:
+                                    tmp_ext = "_NONE"
+                                else:
+                                    tmp_ext = "_%s" % name_compat(key[1])
+                                i = 0
+                                while mtl_rev_dict.get(mtl_name + tmp_ext, None) not in {key, None}:
+                                    i += 1
+                                    tmp_ext = "_%3d" % i
+                                mtl_name += tmp_ext
+                            mat_data = mtl_dict[key] = mtl_name, materials[f_mat], f_image
+                            mtl_rev_dict[mtl_name] = key
 
                         if EXPORT_GROUP_BY_MAT:
                             fw("g %s_%s_%s\n" % (name_compat(ob.name), name_compat(ob.data.name), mat_data[0]))  # can be mat_image or (null)
@@ -524,61 +576,53 @@ def write_file(filepath, objects, scene,
                         fw('s off\n')
                         contextSmooth = f_smooth
 
-                f_v_orig = [(vi, me_verts[v_idx]) for vi, v_idx in enumerate(f.vertices)]
+                f_v = [(vi, me_verts[v_idx]) for vi, v_idx in enumerate(f.vertices)]
 
-                if not EXPORT_TRI or len(f_v_orig) == 3:
-                    f_v_iter = (f_v_orig, )
-                else:
-                    f_v_iter = (f_v_orig[0], f_v_orig[1], f_v_orig[2]), (f_v_orig[0], f_v_orig[2], f_v_orig[3])
-
-                # support for triangulation
-                for f_v in f_v_iter:
-                    fw('f')
-
-                    if faceuv:
-                        if EXPORT_NORMALS:
-                            if f_smooth:  # Smoothed, use vertex normals
-                                for vi, v in f_v:
-                                    fw(" %d/%d/%d" %
-                                               (v.index + totverts,
-                                                totuvco + uv_face_mapping[f_index][vi],
-                                                globalNormals[veckey3d(v.normal)],
-                                                ))  # vert, uv, normal
-
-                            else:  # No smoothing, face normals
-                                no = globalNormals[veckey3d(f.normal)]
-                                for vi, v in f_v:
-                                    fw(" %d/%d/%d" %
-                                               (v.index + totverts,
-                                                totuvco + uv_face_mapping[f_index][vi],
-                                                no,
-                                                ))  # vert, uv, normal
-                        else:  # No Normals
+                fw('f')
+                if faceuv:
+                    if EXPORT_NORMALS:
+                        if f_smooth:  # Smoothed, use vertex normals
                             for vi, v in f_v:
-                                fw(" %d/%d" % (
+                                fw(" %d/%d/%d" %
+                                           (v.index + totverts,
+                                            totuvco + uv_face_mapping[f_index][vi],
+                                            globalNormals[veckey3d(v.normal)],
+                                            ))  # vert, uv, normal
+
+                        else:  # No smoothing, face normals
+                            no = globalNormals[veckey3d(f.normal)]
+                            for vi, v in f_v:
+                                fw(" %d/%d/%d" %
+                                           (v.index + totverts,
+                                            totuvco + uv_face_mapping[f_index][vi],
+                                            no,
+                                            ))  # vert, uv, normal
+                    else:  # No Normals
+                        for vi, v in f_v:
+                            fw(" %d/%d" % (
+                                       v.index + totverts,
+                                       totuvco + uv_face_mapping[f_index][vi],
+                                       ))  # vert, uv
+
+                    face_vert_index += len(f_v)
+
+                else:  # No UV's
+                    if EXPORT_NORMALS:
+                        if f_smooth:  # Smoothed, use vertex normals
+                            for vi, v in f_v:
+                                fw(" %d//%d" % (
                                            v.index + totverts,
-                                           totuvco + uv_face_mapping[f_index][vi],
-                                           ))  # vert, uv
-
-                        face_vert_index += len(f_v)
-
-                    else:  # No UV's
-                        if EXPORT_NORMALS:
-                            if f_smooth:  # Smoothed, use vertex normals
-                                for vi, v in f_v:
-                                    fw(" %d//%d" % (
-                                               v.index + totverts,
-                                               globalNormals[veckey3d(v.normal)],
-                                               ))
-                            else:  # No smoothing, face normals
-                                no = globalNormals[veckey3d(f.normal)]
-                                for vi, v in f_v:
-                                    fw(" %d//%d" % (v.index + totverts, no))
-                        else:  # No Normals
+                                           globalNormals[veckey3d(v.normal)],
+                                           ))
+                        else:  # No smoothing, face normals
+                            no = globalNormals[veckey3d(f.normal)]
                             for vi, v in f_v:
-                                fw(" %d" % (v.index + totverts))
+                                fw(" %d//%d" % (v.index + totverts, no))
+                    else:  # No Normals
+                        for vi, v in f_v:
+                            fw(" %d" % (v.index + totverts))
 
-                    fw('\n')
+                fw('\n')
 
             # Write edges.
             if EXPORT_EDGES:
@@ -684,11 +728,11 @@ def _write(context, filepath,
 #   Window.WaitCursor(0)
 
 
-'''
+"""
 Currently the exporter lacks these features:
 * multiple scene export (only active scene is written)
 * particles
-'''
+"""
 
 
 def save(operator, context, filepath="",
@@ -697,7 +741,7 @@ def save(operator, context, filepath="",
          use_normals=False,
          use_uvs=True,
          use_materials=True,
-         use_apply_modifiers=True,
+         use_mesh_modifiers=True,
          use_blen_objects=True,
          group_by_object=False,
          group_by_material=False,
@@ -716,7 +760,7 @@ def save(operator, context, filepath="",
            EXPORT_NORMALS=use_normals,
            EXPORT_UV=use_uvs,
            EXPORT_MTL=use_materials,
-           EXPORT_APPLY_MODIFIERS=use_apply_modifiers,
+           EXPORT_APPLY_MODIFIERS=use_mesh_modifiers,
            EXPORT_BLEN_OBS=use_blen_objects,
            EXPORT_GROUP_BY_OB=group_by_object,
            EXPORT_GROUP_BY_MAT=group_by_material,

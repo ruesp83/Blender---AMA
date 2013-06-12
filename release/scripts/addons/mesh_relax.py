@@ -25,11 +25,11 @@ bl_info = {
     "name": "Relax",
     "author": "Fabian Fricke",
     "version": (1,1),
-    "blender": (2, 5, 7),
+    "blender": (2, 57, 0),
     "location": "View3D > Specials > Relax ",
     "description": "Relax the selected verts while retaining the shape",
     "warning": "",
-    "wiki_url": "http://wiki.blender.org/index.php/Extensions:2.5/Py/"\
+    "wiki_url": "http://wiki.blender.org/index.php/Extensions:2.6/Py/"\
         "Scripts/Modeling/Relax",
     "tracker_url": "https://projects.blender.org/tracker/index.php?"\
         "func=detail&aid=21421",
@@ -92,7 +92,8 @@ def relax_mesh(context):
     bpy.ops.object.mode_set(mode='EDIT')
 
 class Relax(bpy.types.Operator):
-    '''Relaxes selected vertices while retaining the shape as much as possible'''
+    """Relaxes selected vertices while retaining the shape """ \
+    """as much as possible"""
     bl_idname = 'mesh.relax'
     bl_label = 'Relax'
     bl_options = {'REGISTER', 'UNDO'}

@@ -44,7 +44,7 @@ changes have been made:
 import os
 import sys
 
-TIMEOUT_STORAGE = 3  # Time in secs after which the rootmodules will be stored
+TIMEOUT_STORAGE = 3  # Time in secs after which the root-modules will be stored
 TIMEOUT_GIVEUP = 20  # Time in secs after which we give up
 
 ROOT_MODULES = None
@@ -53,7 +53,7 @@ ROOT_MODULES = None
 def get_root_modules():
     """
     Returns a list containing the names of all the modules available in the
-    folders of the pythonpath.
+    folders of the python-path.
 
     :returns: modules
     :rtype: list
@@ -111,10 +111,11 @@ def module_list(path):
     else:
         folder_list = []
     #folder_list = glob.glob(os.path.join(path,'*'))
-    folder_list = [p for p in folder_list  \
-       if os.path.exists(os.path.join(path, p, '__init__.py'))\
-           or p[-3:] in ('.py', '.so')\
-           or p[-4:] in ('.pyc', '.pyo', '.pyd')]
+    folder_list = [
+            p for p in folder_list
+            if (os.path.exists(os.path.join(path, p, '__init__.py')) or
+                p[-3:] in {'.py', '.so'} or
+                p[-4:] in {'.pyc', '.pyo', '.pyd'})]
 
     folder_list = [os.path.basename(p).split('.')[0] for p in folder_list]
     return folder_list

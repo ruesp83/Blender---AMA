@@ -23,7 +23,7 @@ import bpy
 from bpy.types import Operator
 
 DEG_TO_RAD = 0.017453292519943295 # pi/180.0
-SMALL_NUM = 0.000000001
+SMALL_NUM = 0.0000001  # see bug [#31598] why we dont have smaller values
 BIG_NUM = 1e15
 
 global USER_FILL_HOLES
@@ -71,7 +71,7 @@ def pointInTri2D(v, v1, v2, v3):
 
         mtx = Matrix((side1, side2, nor))
 
-        # Zero area 2d tri, even tho we throw away zerop area faces
+        # Zero area 2d tri, even tho we throw away zero area faces
         # the projection UV can result in a zero area UV.
         if not mtx.determinant():
             dict_matrix[key] = None
@@ -107,7 +107,6 @@ def boundsEdgeLoop(edges):
     # print len(faces), minx, maxx, miny , maxy
     for ed in edges:
         for pt in ed:
-            print 'ass'
             x= pt[0]
             y= pt[1]
             if x<minx: x= minx
@@ -141,7 +140,7 @@ def island2Edge(island):
             else:
                 i1= vIdx;	i2= vIdx-1
 
-            try:	edges[ f_uvkey[i1], f_uvkey[i2] ] *= 0 # sets any edge with more then 1 user to 0 are not returned.
+            try:	edges[ f_uvkey[i1], f_uvkey[i2] ] *= 0 # sets any edge with more than 1 user to 0 are not returned.
             except:	edges[ f_uvkey[i1], f_uvkey[i2] ] = (f.uv[i1] - f.uv[i2]).length,
 
     # If 2 are the same then they will be together, but full [a,b] order is not correct.
@@ -162,7 +161,7 @@ def island2Edge(island):
     return length_sorted_edges, [v.to_3d() for v in unique_points.values()]
 
 # ========================= NOT WORKING????
-# Find if a points inside an edge loop, un-ordered.
+# Find if a points inside an edge loop, unordered.
 # pt is and x/y
 # edges are a non ordered loop of edges.
 # offsets are the edge x and y offset.
@@ -493,7 +492,7 @@ def mergeUvIslands(islandList):
                                 pass
 
                             if Intersect == 2:  # Source inside target
-                                '''
+                                """
                                 We have an intersection, if we are inside the target
                                 then move us 1 whole width across,
                                 Its possible this is a bad idea since 2 skinny Angular faces
@@ -501,8 +500,7 @@ def mergeUvIslands(islandList):
                                 since we have already tested for it.
 
                                 It gives about 10% speedup with minimal errors.
-                                '''
-                                #print 'ass'
+                                """
                                 # Move the test along its width + SMALL_NUM
                                 #boxLeft += sourceIsland[4] + SMALL_NUM
                                 boxLeft += sourceIsland[4]
@@ -519,7 +517,7 @@ def mergeUvIslands(islandList):
                                     for uv in f.uv:
                                         uv+= offset
 
-                                sourceIsland[0][:] = [] # Empty
+                                del sourceIsland[0][:]  # Empty
 
 
                                 # Move edge loop into new and offset.
@@ -529,7 +527,7 @@ def mergeUvIslands(islandList):
                                      (e[0]+offset, e[1]+offset, e[2])\
                                 ) for e in sourceIsland[6] ] )
 
-                                sourceIsland[6][:] = [] # Empty
+                                del sourceIsland[6][:]  # Empty
 
                                 # Sort by edge length, reverse so biggest are first.
 
@@ -542,7 +540,7 @@ def mergeUvIslands(islandList):
                                 for p in sourceIsland[7]:
                                     p+= offset
 
-                                sourceIsland[7][:] = []
+                                del sourceIsland[7][:]
 
 
                                 # Decrement the efficiency
@@ -696,11 +694,11 @@ def packIslands(islandList):
             islandIdx -=1
             continue
 
-        '''Save the offset to be applied later,
+        """Save the offset to be applied later,
         we could apply to the UVs now and allign them to the bottom left hand area
         of the UV coords like the box packer imagines they are
         but, its quicker just to remember their offset and
-        apply the packing and offset in 1 pass '''
+        apply the packing and offset in 1 pass """
         islandOffsetList.append((minx, miny))
 
         # Add to boxList. use the island idx for the BOX id.
@@ -711,7 +709,7 @@ def packIslands(islandList):
     # with the islands.
 
     #print '\tPacking UV Islands...'
-#XXX	Window.DrawProgressBar(0.7, 'Packing %i UV Islands...' % len(packBoxes) )
+#XXX	Window.DrawProgressBar(0.7, "Packing %i UV Islands..." % len(packBoxes) )
 
     # time1 = time.time()
     packWidth, packHeight = geometry.box_pack_2d(packBoxes)
@@ -722,7 +720,7 @@ def packIslands(islandList):
     #	raise "Error packed boxes differs from original length"
 
     #print '\tWriting Packed Data to faces'
-#XXX	Window.DrawProgressBar(0.8, 'Writing Packed Data to faces')
+#XXX	Window.DrawProgressBar(0.8, "Writing Packed Data to faces")
 
     # Sort by ID, so there in sync again
     islandIdx = len(islandList)
@@ -757,14 +755,11 @@ def VectoQuat(vec):
 
 class thickface(object):
     __slost__= "v", "uv", "no", "area", "edge_keys"
-    def __init__(self, face, uvface, mesh_verts):
+    def __init__(self, face, uv_layer, mesh_verts):
         self.v = [mesh_verts[i] for i in face.vertices]
-        if len(self.v)==4:
-            self.uv = uvface.uv1, uvface.uv2, uvface.uv3, uvface.uv4
-        else:
-            self.uv = uvface.uv1, uvface.uv2, uvface.uv3
+        self.uv = [uv_layer[i].uv for i in face.loop_indices]
 
-        self.no = face.normal
+        self.no = face.normal.copy()
         self.area = face.area
         self.edge_keys = face.edge_keys
 
@@ -835,7 +830,7 @@ def main(context,
         USER_ONLY_SELECTED_FACES = False
 
     if not obList:
-        raise('error, no selected mesh objects')
+        raise Exception("error, no selected mesh objects")
 
     # Reuse variable
     if len(obList) == 1:
@@ -892,13 +887,13 @@ def main(context,
         if not me.uv_textures: # Mesh has no UV Coords, don't bother.
             me.uv_textures.new()
 
-        uv_layer = me.uv_textures.active.data
+        uv_layer = me.uv_layers.active.data
         me_verts = list(me.vertices)
 
         if USER_ONLY_SELECTED_FACES:
-            meshFaces = [thickface(f, uv_layer[i], me_verts) for i, f in enumerate(me.faces) if f.select]
+            meshFaces = [thickface(f, uv_layer, me_verts) for i, f in enumerate(me.polygons) if f.select]
         else:
-        	meshFaces = [thickface(f, uv_layer[i], me_verts) for i, f in enumerate(me.faces)]
+            meshFaces = [thickface(f, uv_layer, me_verts) for i, f in enumerate(me.polygons)]
 
         if not meshFaces:
             continue
@@ -998,7 +993,7 @@ def main(context,
             if mostUniqueAngle < USER_PROJECTION_LIMIT_CONVERTED:
                 #print 'adding', mostUniqueAngle, USER_PROJECTION_LIMIT, len(newProjectMeshFaces)
                 # Now weight the vector to all its faces, will give a more direct projection
-                # if the face its self was not representive of the normal from surrounding faces.
+                # if the face its self was not representative of the normal from surrounding faces.
 
                 newProjectVec = tempMeshFaces[mostUniqueIndex].no
                 newProjectMeshFaces = [tempMeshFaces.pop(mostUniqueIndex)]
@@ -1109,15 +1104,16 @@ from bpy.props import FloatProperty
 
 
 class SmartProject(Operator):
-    '''This script projection unwraps the selected faces of a mesh ''' \
-    '''(it operates on all selected mesh objects, and can be used to unwrap selected faces, or all faces)'''
+    """This script projection unwraps the selected faces of a mesh """ \
+    """(it operates on all selected mesh objects, and can be used """ \
+    """to unwrap selected faces, or all faces)"""
     bl_idname = "uv.smart_project"
     bl_label = "Smart UV Project"
     bl_options = {'REGISTER', 'UNDO'}
 
     angle_limit = FloatProperty(
             name="Angle Limit",
-            description="lower for more projection groups, higher for less distortion",
+            description="Lower for more projection groups, higher for less distortion",
             min=1.0, max=89.0,
             default=66.0,
             )

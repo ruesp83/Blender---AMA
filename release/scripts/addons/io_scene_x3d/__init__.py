@@ -19,13 +19,13 @@
 # <pep8-80 compliant>
 
 bl_info = {
-    "name": "Web3D X3D/VRML format",
+    "name": "Web3D X3D/VRML2 format",
     "author": "Campbell Barton, Bart",
-    "blender": (2, 5, 7),
+    "blender": (2, 57, 0),
     "location": "File > Import-Export",
-    "description": "Import-Export X3D, Import VRML",
+    "description": "Import-Export X3D, Import VRML2",
     "warning": "",
-    "wiki_url": "http://wiki.blender.org/index.php/Extensions:2.5/Py/"
+    "wiki_url": "http://wiki.blender.org/index.php/Extensions:2.6/Py/"
                 "Scripts/Import-Export/Web3D",
     "tracker_url": "",
     "support": 'OFFICIAL',
@@ -39,7 +39,7 @@ if "bpy" in locals():
         imp.reload(export_x3d)
 
 import bpy
-from bpy.props import StringProperty, BoolProperty, EnumProperty
+from bpy.props import StringProperty, BoolProperty, EnumProperty, FloatProperty
 from bpy_extras.io_utils import (ImportHelper,
                                  ExportHelper,
                                  axis_conversion,
@@ -48,9 +48,9 @@ from bpy_extras.io_utils import (ImportHelper,
 
 
 class ImportX3D(bpy.types.Operator, ImportHelper):
-    '''Import and X3D or VRML file'''
+    """Import an X3D or VRML2 file"""
     bl_idname = "import_scene.x3d"
-    bl_label = "Import X3D/VRML"
+    bl_label = "Import X3D/VRML2"
     bl_options = {'PRESET', 'UNDO'}
 
     filename_ext = ".x3d"
@@ -96,7 +96,7 @@ class ImportX3D(bpy.types.Operator, ImportHelper):
 
 
 class ExportX3D(bpy.types.Operator, ExportHelper):
-    '''Export selection to Extensible 3D file (.x3d)'''
+    """Export selection to Extensible 3D file (.x3d)"""
     bl_idname = "export_scene.x3d"
     bl_label = 'Export X3D'
     bl_options = {'PRESET'}
@@ -109,7 +109,7 @@ class ExportX3D(bpy.types.Operator, ExportHelper):
             description="Export selected objects only",
             default=False,
             )
-    use_apply_modifiers = BoolProperty(
+    use_mesh_modifiers = BoolProperty(
             name="Apply Modifiers",
             description="Use transformed mesh data from each object",
             default=True,
@@ -136,7 +136,8 @@ class ExportX3D(bpy.types.Operator, ExportHelper):
             )
     name_decorations = BoolProperty(
             name="Name decorations",
-            description="Add prefixes to the names of exported nodes to indicate their type",
+            description=("Add prefixes to the names of exported nodes to "
+                         "indicate their type"),
             default=True,
             )
     use_h3d = BoolProperty(
@@ -144,7 +145,7 @@ class ExportX3D(bpy.types.Operator, ExportHelper):
             description="Export shaders for H3D",
             default=False,
             )
-            
+
     axis_forward = EnumProperty(
             name="Forward",
             items=(('X', "X Forward", ""),
@@ -156,7 +157,6 @@ class ExportX3D(bpy.types.Operator, ExportHelper):
                ),
         default='Z',
         )
-        
     axis_up = EnumProperty(
             name="Up",
             items=(('X', "X Up", ""),
@@ -168,20 +168,28 @@ class ExportX3D(bpy.types.Operator, ExportHelper):
                    ),
             default='Y',
             )
+    global_scale = FloatProperty(
+            name="Scale",
+            min=0.01, max=1000.0,
+            default=1.0,
+            )
 
     path_mode = path_reference_mode
 
     def execute(self, context):
         from . import export_x3d
 
+        from mathutils import Matrix
+
         keywords = self.as_keywords(ignore=("axis_forward",
                                             "axis_up",
+                                            "global_scale",
                                             "check_existing",
                                             "filter_glob",
                                             ))
         global_matrix = axis_conversion(to_forward=self.axis_forward,
                                         to_up=self.axis_up,
-                                        ).to_4x4()
+                                        ).to_4x4() * Matrix.Scale(self.global_scale, 4)
         keywords["global_matrix"] = global_matrix
 
         return export_x3d.save(self, context, **keywords)

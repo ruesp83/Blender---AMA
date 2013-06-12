@@ -22,12 +22,11 @@ bl_info = {
     "name": "Dynamic Spacebar Menu",
     "author": "JayDez, sim88, meta-androcto, sam",
     "version": (1, 7, 3),
-    "blender": (2, 6, 0),
-    "api": 41287,
+    "blender": (2, 60, 0),
     "location": "View3D > Spacebar Key",
     "description": "Context Sensitive Spacebar Menu",
     "warning": "",
-    "wiki_url": "http://wiki.blender.org/index.php/Extensions:2.5/Py/"\
+    "wiki_url": "http://wiki.blender.org/index.php/Extensions:2.6/Py/"\
         "Scripts/3D_interaction/Dynamic_Spacebar_Menu",
     "tracker_url": "https://projects.blender.org/tracker/index.php?"\
         "func=detail&aid=22060",
@@ -510,7 +509,7 @@ class VIEW3D_MT_Space_Dynamic_Menu(bpy.types.Menu):
             layout.operator("object.mode_set", text="Enter Object Mode",
                             icon='OBJECT_DATA')
 
-        elif ob.mode == 'EDIT_ARMATURE':
+        elif ob.mode == 'EDIT':
             # Armature menu
 
             # Search Menu
@@ -805,7 +804,7 @@ class VIEW3D_MT_SelectMenu(bpy.types.Menu):
         layout.operator("view3d.select_circle")
         layout.separator()
 
-        layout.operator("object.select_all", text="Select/Deselect All").action = 'TOGGLE'
+        layout.operator("object.select_all").action = 'TOGGLE'
         layout.operator("object.select_all", text="Inverse").action = 'INVERT'
         layout.operator("object.select_random", text="Random")
         layout.operator("object.select_mirror", text="Mirror")
@@ -831,7 +830,7 @@ class VIEW3D_MT_SelectEditMenu(bpy.types.Menu):
         layout.operator("view3d.select_circle")
         layout.separator()
 
-        layout.operator("mesh.select_all", text="Select/Deselect All").action = 'TOGGLE'
+        layout.operator("mesh.select_all").action = 'TOGGLE'
         layout.operator("mesh.select_all", text="Inverse").action = 'INVERT'
         layout.separator()
 
@@ -840,20 +839,16 @@ class VIEW3D_MT_SelectEditMenu(bpy.types.Menu):
         layout.operator("mesh.edges_select_sharp", text="Sharp Edges")
         layout.operator("mesh.faces_select_linked_flat",
                         text="Linked Flat Faces")
-        layout.operator("mesh.faces_select_interior", text="Interior Faces")
+        layout.operator("mesh.select_interior_faces", text="Interior Faces")
         layout.operator("mesh.select_axis", text="Side of Active")
         layout.separator()
 
-        layout.operator("mesh.select_by_number_vertices",
-                        text="Triangles").type = 'TRIANGLES'
-        layout.operator("mesh.select_by_number_vertices",
-                        text="Quads").type = 'QUADS'
+        layout.operator("mesh.select_face_by_sides", text="By Number of Verts")
         if context.scene.tool_settings.mesh_select_mode[2] == False:
-            layout.operator("mesh.select_non_manifold",
-                            text="Non Manifold")
-        layout.operator("mesh.select_by_number_vertices",
-                        text="Loose Verts/Edges").type = 'OTHER'
+            layout.operator("mesh.select_non_manifold", text="Non Manifold")
+        layout.operator("mesh.select_loose", text="Loose Geometry")
         layout.operator("mesh.select_similar", text="Similar")
+
         layout.separator()
 
         layout.operator("mesh.select_less", text="Less")
@@ -863,7 +858,7 @@ class VIEW3D_MT_SelectEditMenu(bpy.types.Menu):
         layout.operator("mesh.select_mirror", text="Mirror")
 
         layout.operator("mesh.select_linked", text="Linked")
-        layout.operator("mesh.select_vertex_path", text="Vertex Path")
+        layout.operator("mesh.shortest_path_select", text="Shortest Path")
         layout.operator("mesh.loop_multi_select", text="Edge Loop")
         layout.operator("mesh.loop_multi_select", text="Edge Ring").ring = True
         layout.separator()
@@ -881,7 +876,7 @@ class VIEW3D_MT_SelectCurveMenu(bpy.types.Menu):
         layout.operator("view3d.select_circle")
         layout.separator()
 
-        layout.operator("curve.select_all", text="Select/Deselect All").action = 'TOGGLE'
+        layout.operator("curve.select_all").action = 'TOGGLE'
         layout.operator("curve.select_all").action = 'INVERT'
         layout.operator("curve.select_random")
         layout.operator("curve.select_nth")
@@ -905,7 +900,7 @@ class VIEW3D_MT_SelectArmatureMenu(bpy.types.Menu):
         layout.operator("view3d.select_border")
         layout.separator()
 
-        layout.operator("armature.select_all", text="Select/Deselect All")
+        layout.operator("armature.select_all")
         layout.operator("armature.select_inverse", text="Inverse")
         layout.separator()
 
@@ -937,7 +932,7 @@ class VIEW3D_MT_SelectPoseMenu(bpy.types.Menu):
         layout.operator("view3d.select_border")
         layout.separator()
 
-        layout.operator("pose.select_all", text="Select/Deselect All").action = 'TOGGLE'
+        layout.operator("pose.select_all").action = 'TOGGLE'
         layout.operator("pose.select_all", text="Inverse").action = 'INVERT'
         layout.operator("pose.select_constraint_target",
                         text="Constraint Target")
@@ -1003,7 +998,7 @@ class VIEW3D_MT_SelectSurface(bpy.types.Menu):
 
         layout.separator()
 
-        layout.operator("curve.select_all", text="Select/Deselect All").action = 'TOGGLE'
+        layout.operator("curve.select_all").action = 'TOGGLE'
         layout.operator("curve.select_all").action = 'INVERT'
         layout.operator("curve.select_random")
         layout.operator("curve.select_nth")
@@ -1406,7 +1401,7 @@ def unregister():
     wm = bpy.context.window_manager
     kc = wm.keyconfigs.addon
     if kc:
-        km = kc.addon.keymaps['3D View']
+        km = kc.keymaps['3D View']
         for kmi in km.keymap_items:
             if kmi.idname == 'wm.call_menu':
                 if kmi.properties.name == "VIEW3D_MT_Space_Dynamic_Menu":

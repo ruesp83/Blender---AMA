@@ -482,6 +482,8 @@ def addTree(props):
     cu = bpy.data.curves.new('tree','CURVE')
     treeOb = bpy.data.objects.new('tree',cu)
     bpy.context.scene.objects.link(treeOb)
+    
+    treeOb.location=bpy.context.scene.cursor_location
 
     cu.dimensions = '3D'
     cu.fill_mode = 'FULL'
@@ -759,12 +761,18 @@ def addTree(props):
             bpy.context.scene.objects.link(leafObj)
             leafObj.parent = treeOb
             leafMesh.from_pydata(leafVerts,(),leafFaces)
-            leafMesh.validate()
-            
+
             if leafShape == 'rect':
-                uv = leafMesh.uv_textures.new("leafUV")
-                for tf in uv.data:
-                    tf.uv1, tf.uv2, tf.uv3, tf.uv4 = Vector((1, 0)), Vector((1, 1)), Vector((1 - leafScaleX, 1)), Vector((1 - leafScaleX, 0))
+                leafMesh.uv_textures.new("leafUV")
+                uvlayer = leafMesh.uv_layers.active.data
+
+                for i in range(0, len(leafFaces)):
+                    uvlayer[i*4 + 0].uv = Vector((1, 0))
+                    uvlayer[i*4 + 1].uv = Vector((1, 1))
+                    uvlayer[i*4 + 2].uv = Vector((1 - leafScaleX, 1))
+                    uvlayer[i*4 + 3].uv = Vector((1 - leafScaleX, 0))
+
+            leafMesh.validate()
 
 # This can be used if we need particle leaves
 #            if (storeN == levels-1) and leaves:

@@ -2,11 +2,11 @@ bl_info = {
     "name": "Texture Paint Layer Manager",
     "author": "Michael Wiliamson",
     "version": (1, 0),
-    "blender": (2, 5, 7),
+    "blender": (2, 57, 0),
     "location": "Texture Paint > Properties > Texture Paint Layers Panels",
     "description": "Adds a layer manager for image based texture slots in paint and quick add layer tools",
     "warning": "",
-    "wiki_url": "http://wiki.blender.org/index.php/Extensions:2.5/Py/Scripts/3D_interaction/Texture_paint_layers",
+    "wiki_url": "http://wiki.blender.org/index.php/Extensions:2.6/Py/Scripts/3D_interaction/Texture_paint_layers",
     "tracker_url": "http://projects.blender.org/tracker/index.php?func=detail&aid=26789",
     "category": "Paint"}
         
@@ -48,7 +48,7 @@ def load_a_brush(context, filepath):
 
 
 class load_single_brush(bpy.types.Operator, ImportHelper):
-    ''' Load an image as a brush texture'''
+    """Load an image as a brush texture"""
     bl_idname = "texture.load_single_brush"  
     bl_label = "Load Image as Brush"
 
@@ -97,7 +97,7 @@ def loadbrushes(context, filepath):
 
 
 class ImportBrushes(bpy.types.Operator, ImportHelper):
-    ''' Load a directory of images as brush textures '''
+    """Load a directory of images as brush textures"""
     bl_idname = "texture.load_brushes"  
     bl_label = "Load brushes directory"
 
@@ -154,12 +154,10 @@ class OBJECT_PT_Texture_paint_layers(bpy.types.Panel):
                 row = layout.row() 
                 row.label(' Add a Material first!', icon = 'ERROR')
             else:
-                row = layout.row()        
-                row.template_list(ob, "material_slots", ob, 
-                    "active_material_index", rows=2 )
-                
-        
-                
+                row = layout.row()
+                row.template_list("UI_UL_list", "texture_paint_layers", ob, "material_slots", ob,
+                                  "active_material_index", rows=2 )
+
                 #list Paintable textures
                 #TODO add filter for channel type
                 i = -1
@@ -346,16 +344,17 @@ def main(context,tn):
     m_id = ob.active_material_index 
 
     if img:
-        for f in me.faces:  
+        for f in me.polygons:  
             if f.material_index == m_id:
-                uvtex[f.index].select_uv
                 uvtex[f.index].image = img
+
             
 
     else:
-        for f in me.faces:  
+        for f in me.polygons:  
             if f.material_index == m_id:
                 uvtex[f.index].image = None
+ 
     me.update()
 
 
@@ -365,7 +364,7 @@ def main(context,tn):
 
 
 class set_active_paint_layer(bpy.types.Operator):
-    ''''''
+    """"""
     bl_idname = "object.set_active_paint_layer"
     bl_label = "set_active_paint_layer"
     tex_index = IntProperty(name = 'tex_index', 
@@ -383,7 +382,7 @@ class set_active_paint_layer(bpy.types.Operator):
 
 
 def add_image_kludge(iname = 'grey', iwidth = 256, iheight = 256, 
-        icolor = (0.5,0.5,0.5,1.0)):
+        icolor = (0.5,0.5,0.5,1.0), nfloat = False):
     #evil kludge to get index of new image created using bpy.ops
     #store current images
     tl =[]
@@ -394,7 +393,7 @@ def add_image_kludge(iname = 'grey', iwidth = 256, iheight = 256,
     #create a new image
 
     bpy.ops.image.new(name =iname,width =iwidth,height =iheight, 
-            color = icolor)
+            color = icolor, float = nfloat)
         
     #find its creation index
     it = 0
@@ -410,10 +409,12 @@ def add_paint(context, size =2048, typ = 'NORMAL'):
     ob = bpy.context.object
     mat = ob.active_material
     ts = mat.texture_slots.add()
+    ifloat = False
 
     if typ =='NORMAL':
         color =(0.5,0.5,0.5,1.0)
         iname = 'Bump'
+        ifloat = True
     elif typ =='COLOR':
         iname ='Color'
         color = (1.0,1.0,1.0,0.0)
@@ -434,7 +435,7 @@ def add_paint(context, size =2048, typ = 'NORMAL'):
     tex = bpy.data.textures.new(name = iname, type = 'IMAGE')
     ts.texture = tex
     img = add_image_kludge(iname = typ, 
-        iwidth = size,iheight = size, icolor= color )
+        iwidth = size,iheight = size, icolor= color, nfloat = ifloat)
     tex.image = img
     
     if typ == 'COLOR':
@@ -445,7 +446,7 @@ def add_paint(context, size =2048, typ = 'NORMAL'):
         ts.use_map_normal = True
         ts.use_map_color_diffuse =False
         ts.normal_factor = -1
-        ts.bump_method='BUMP_DEFAULT'
+        ts.bump_method='BUMP_MEDIUM_QUALITY'
         ts.bump_objectspace='BUMP_OBJECTSPACE'
         
     elif typ == 'SPECULAR':
@@ -522,7 +523,7 @@ def add_paint(context, size =2048, typ = 'NORMAL'):
     
 
 class add_paint_layer(bpy.types.Operator):
-    ''''''
+    """"""
     bl_idname = "object.add_paint_layer"
     bl_label = "Add Paint Layer"
     ttype = StringProperty(name ='ttype',default ='NORMAL')
@@ -567,7 +568,6 @@ def save_painted(ts):
                         else:
                             i.filepath = fp
                         i.name = name
-                        i.use_premultiply = True
                     except:
                         print("something wrong with", fp)
     #THAT'S THE GENERATED FILES saved, pathed and reloaded
@@ -593,7 +593,7 @@ def save_all_paint():
             
             
 class save_all_generated(bpy.types.Operator):
-    '''Saves painted layers to disc '''
+    """Saves painted layers to disc"""
     bl_idname = "paint.save_all_generated" 
      
     bl_label = "SAVE PAINT LAYERS"

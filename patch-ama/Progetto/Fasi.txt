@@ -1,0 +1,26 @@
+Fase 1:
+    Target: Riscrivere Dupli Group.
+    Info: Bisogna riscriverlo come se fosse un Object Cap. 
+    Implementato come "DupliObject" da problemi nell'applicare il modificatore.
+    Il problema principale è che non conserva le informazioni necessarie per riprodurre il Dupli Group.
+    Un problema legato alla nuovo modo di gestirlo, sarà che tutti gli oggetti appartenenti al gruppo 
+    avranno lo stesso materiale dell'oggetto clonato. (Problema risolvibile nella fase 2)
+    
+Fase 2:
+    Target: Gestione Materiali.
+    Info: 1) Dupli Group:
+             - Associare il materiale del clone al "Dupli Group" inerente.
+             - Materiale random anche al "Dupli Group".
+          2) OB-CAP: Mantenere materiale originale per ogni Cap.
+          3) Ramp Color al modifier array per color gradient.
+
+Fase 3:
+    Target: Associare curva ad un array.
+    Info:
+    
+Fase 4:
+    Target: MultiScatter
+    
+Fase 5: Duplicare all'interno di un oggetto.
+
+Fase 6: Associare colore del clone in base ad una texture

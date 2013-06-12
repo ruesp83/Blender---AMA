@@ -23,11 +23,11 @@ bl_info = {
     "name": "API Navigator",
     "author": "Dany Lebel (Axon_D)",
     "version": (1, 0, 2),
-    "blender": (2, 5, 7),
+    "blender": (2, 57, 0),
     "location": "Text Editor > Properties > API Navigator Panel",
     "description": "Allows exploration of the python api via the user interface",
     "warning": "",
-    "wiki_url": "http://wiki.blender.org/index.php/Extensions:2.5/Py/"
+    "wiki_url": "http://wiki.blender.org/index.php/Extensions:2.6/Py/"
         "Scripts/Text_Editor/API_Navigator",
     "tracker_url": "http://projects.blender.org/tracker/index.php?"\
         "func=detail&aid=24982",

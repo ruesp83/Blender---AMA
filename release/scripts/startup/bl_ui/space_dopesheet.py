@@ -36,6 +36,8 @@ def dopesheet_filter(layout, context, genericFiltersOnly=False):
 
     if is_nla:
         row.prop(dopesheet, "show_missing_nla", text="")
+    else:  # graph and dopesheet editors - F-Curves and drivers only
+        row.prop(dopesheet, "show_only_errors", text="")
 
     if not genericFiltersOnly:
         if bpy.data.groups:
@@ -65,6 +67,8 @@ def dopesheet_filter(layout, context, genericFiltersOnly=False):
                 row.prop(dopesheet, "show_meshes", text="")
             if bpy.data.shape_keys:
                 row.prop(dopesheet, "show_shapekeys", text="")
+            if bpy.data.meshes:
+                row.prop(dopesheet, "show_modifiers", text="")
             if bpy.data.materials:
                 row.prop(dopesheet, "show_materials", text="")
             if bpy.data.lamps:
@@ -149,6 +153,7 @@ class DOPESHEET_MT_view(Menu):
         layout.prop(st, "use_realtime_update")
         layout.prop(st, "show_frame_indicator")
         layout.prop(st, "show_sliders")
+        layout.prop(st, "show_group_colors")
         layout.prop(st, "use_auto_merge_keyframes")
         layout.prop(st, "use_marker_sync")
 
@@ -160,7 +165,6 @@ class DOPESHEET_MT_view(Menu):
         layout.operator("action.previewrange_set")
 
         layout.separator()
-        layout.operator("action.frame_jump")
         layout.operator("action.view_all")
         layout.operator("action.view_selected")
 
@@ -210,7 +214,7 @@ class DOPESHEET_MT_marker(Menu):
     def draw(self, context):
         layout = self.layout
 
-        from .space_time import marker_menu_generic
+        from bl_ui.space_time import marker_menu_generic
         marker_menu_generic(layout)
 
         st = context.space_data
@@ -237,9 +241,13 @@ class DOPESHEET_MT_channel(Menu):
         layout.operator("anim.channels_delete")
 
         layout.separator()
-        layout.operator("anim.channels_setting_toggle")
-        layout.operator("anim.channels_setting_enable")
-        layout.operator("anim.channels_setting_disable")
+        layout.operator("anim.channels_group")
+        layout.operator("anim.channels_ungroup")
+
+        layout.separator()
+        layout.operator_menu_enum("anim.channels_setting_toggle", "type")
+        layout.operator_menu_enum("anim.channels_setting_enable", "type")
+        layout.operator_menu_enum("anim.channels_setting_disable", "type")
 
         layout.separator()
         layout.operator("anim.channels_editable_toggle")
@@ -269,6 +277,9 @@ class DOPESHEET_MT_key(Menu):
 
         layout.separator()
         layout.operator("action.keyframe_insert")
+
+        layout.separator()
+        layout.operator("action.frame_jump")
 
         layout.separator()
         layout.operator("action.duplicate_move")

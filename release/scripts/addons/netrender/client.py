@@ -104,6 +104,9 @@ def fillCommonJobSettings(job, job_name, netsettings):
         job.render = netsettings.job_render_engine_other
     else:
         job.render = netsettings.job_render_engine
+        
+    if netsettings.job_tags:
+        job.tags.update(netsettings.job_tags.split(";"))
      
     if netsettings.job_type == "JOB_BLENDER":
         job.type = netrender.model.JOB_BLENDER
@@ -137,7 +140,7 @@ def sendJobVCS(conn, scene, anim = False):
 
     filename = filename[len(netsettings.vcs_wpath):]
     
-    if filename[0] in (os.sep, os.altsep):
+    if filename[0] in {os.sep, os.altsep}:
         filename = filename[1:]
     
     job.addFile(filename, signed=False)
@@ -443,9 +446,7 @@ class NetworkRenderEngine(bpy.types.RenderEngine):
             result_path = os.path.join(bpy.path.abspath(netsettings.path), "output.exr")
             
             folder = os.path.split(result_path)[0]
-            
-            if not os.path.exists(folder):
-                os.mkdir(folder)
+            verifyCreateDir(folder)
 
             f = open(result_path, "wb")
 

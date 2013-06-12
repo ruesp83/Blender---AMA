@@ -80,21 +80,31 @@ class DATA_PT_lens(CameraButtonsPanel, Panel):
             row = col.row()
             if cam.lens_unit == 'MILLIMETERS':
                 row.prop(cam, "lens")
-            elif cam.lens_unit == 'DEGREES':
+            elif cam.lens_unit == 'FOV':
                 row.prop(cam, "angle")
             row.prop(cam, "lens_unit", text="")
 
         elif cam.type == 'ORTHO':
             col.prop(cam, "ortho_scale")
 
-        col = layout.column()
-        if cam.type == 'ORTHO':
-            if cam.use_panorama:
-                col.alert = True
-            else:
-                col.enabled = False
-
-        col.prop(cam, "use_panorama")
+        elif cam.type == 'PANO':
+            engine = context.scene.render.engine
+            if engine == 'CYCLES':
+                ccam = cam.cycles
+                col.prop(ccam, "panorama_type", text="Type")
+                if ccam.panorama_type == 'FISHEYE_EQUIDISTANT':
+                    col.prop(ccam, "fisheye_fov")
+                elif ccam.panorama_type == 'FISHEYE_EQUISOLID':
+                    row = layout.row()
+                    row.prop(ccam, "fisheye_lens", text="Lens")
+                    row.prop(ccam, "fisheye_fov")
+            elif engine == 'BLENDER_RENDER':
+                row = col.row()
+                if cam.lens_unit == 'MILLIMETERS':
+                    row.prop(cam, "lens")
+                elif cam.lens_unit == 'DEGREES':
+                    row.prop(cam, "angle")
+                row.prop(cam, "lens_unit", text="")
 
         split = layout.split()
 
@@ -132,8 +142,12 @@ class DATA_PT_camera(CameraButtonsPanel, Panel):
         if cam.sensor_fit == 'AUTO':
             col.prop(cam, "sensor_width", text="Size")
         else:
-            col.prop(cam, "sensor_width", text="Width")
-            col.prop(cam, "sensor_height", text="Height")
+            sub = col.column()
+            sub.active = cam.sensor_fit == 'HORIZONTAL'
+            sub.prop(cam, "sensor_width", text="Width")
+            sub = col.column()
+            sub.active = cam.sensor_fit == 'VERTICAL'
+            sub.prop(cam, "sensor_height", text="Height")
 
         col = split.column(align=True)
         col.prop(cam, "sensor_fit", text="")
@@ -173,7 +187,7 @@ class DATA_PT_camera_display(CameraButtonsPanel, Panel):
         col = split.column()
         col.prop(cam, "show_limits", text="Limits")
         col.prop(cam, "show_mist", text="Mist")
-        col.prop(cam, "show_title_safe", text="Title Safe")
+        col.prop(cam, "show_title_safe", text="Safe Areas")
         col.prop(cam, "show_sensor", text="Sensor")
         col.prop(cam, "show_name", text="Name")
 

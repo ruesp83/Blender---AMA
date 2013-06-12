@@ -126,6 +126,7 @@ class object_spec(object):
 
 def read(filepath):
     format = b''
+    texture = b''
     version = b'1.0'
     format_specs = {b'binary_little_endian': '<',
                     b'binary_big_endian': '>',
@@ -147,73 +148,76 @@ def read(filepath):
                   b'double': 'd',
                   b'string': 's'}
     obj_spec = object_spec()
+    invalid_ply = (None, None, None)
 
-    file = open(filepath, 'rb')  # Only for parsing the header, not binary data
-    signature = file.readline()
+    with open(filepath, 'rb') as plyf:
+        signature = plyf.readline()
 
-    if not signature.startswith(b'ply'):
-        print('Signature line was invalid')
-        return None
+        if not signature.startswith(b'ply'):
+            print('Signature line was invalid')
+            return invalid_ply
 
-    while 1:
-        tokens = re.split(br'[ \r\n]+', file.readline())
+        valid_header = False
+        for line in plyf:
+            tokens = re.split(br'[ \r\n]+', line)
 
-        if len(tokens) == 0:
-            continue
-        if tokens[0] == b'end_header':
-            break
-        elif tokens[0] == b'comment' or tokens[0] == b'obj_info':
-            continue
-        elif tokens[0] == b'format':
-            if len(tokens) < 3:
-                print('Invalid format line')
-                return None
-            if tokens[1] not in format_specs:  # .keys(): # keys is implicit
-                print('Unknown format', tokens[1])
-                return None
-            if tokens[2] != version:
-                print('Unknown version', tokens[2])
-                return None
-            format = tokens[1]
-        elif tokens[0] == b'element':
-            if len(tokens) < 3:
-                print(b'Invalid element line')
-                return None
-            obj_spec.specs.append(element_spec(tokens[1], int(tokens[2])))
-        elif tokens[0] == b'property':
-            if not len(obj_spec.specs):
-                print('Property without element')
-                return None
-            if tokens[1] == b'list':
-                obj_spec.specs[-1].properties.append(property_spec(tokens[4], type_specs[tokens[2]], type_specs[tokens[3]]))
-            else:
-                obj_spec.specs[-1].properties.append(property_spec(tokens[2], None, type_specs[tokens[1]]))
+            if len(tokens) == 0:
+                continue
+            if tokens[0] == b'end_header':
+                valid_header = True
+                break
+            elif tokens[0] == b'comment':
+                if len(tokens) < 2:
+                    continue
+                elif tokens[1] == b'TextureFile':
+                    if len(tokens) < 4:
+                        print('Invalid texture line')
+                    else:
+                        texture = tokens[2]
+                continue
+            elif tokens[0] == b'obj_info':
+                continue
+            elif tokens[0] == b'format':
+                if len(tokens) < 3:
+                    print('Invalid format line')
+                    return invalid_ply
+                if tokens[1] not in format_specs:
+                    print('Unknown format', tokens[1])
+                    return invalid_ply
+                if tokens[2] != version:
+                    print('Unknown version', tokens[2])
+                    return invalid_ply
+                format = tokens[1]
+            elif tokens[0] == b'element':
+                if len(tokens) < 3:
+                    print(b'Invalid element line')
+                    return invalid_ply
+                obj_spec.specs.append(element_spec(tokens[1], int(tokens[2])))
+            elif tokens[0] == b'property':
+                if not len(obj_spec.specs):
+                    print('Property without element')
+                    return invalid_ply
+                if tokens[1] == b'list':
+                    obj_spec.specs[-1].properties.append(property_spec(tokens[4], type_specs[tokens[2]], type_specs[tokens[3]]))
+                else:
+                    obj_spec.specs[-1].properties.append(property_spec(tokens[2], None, type_specs[tokens[1]]))
+        if not valid_header:
+            print("Invalid header ('end_header' line not found!)")
+            return invalid_ply
 
-    if format != b'ascii':
-        file.close()  # was ascii, now binary
-        file = open(filepath, 'rb')
+        obj = obj_spec.load(format_specs[format], plyf)
 
-        # skip the header...
-        while not file.readline().startswith(b'end_header'):
-            pass
-
-    obj = obj_spec.load(format_specs[format], file)
-
-    file.close()
-
-    return obj_spec, obj
+    return obj_spec, obj, texture
 
 
 import bpy
 
 
-def load_ply(filepath):
-    import time
+def load_ply_mesh(filepath, ply_name):
     from bpy_extras.io_utils import unpack_face_list
     # from bpy_extras.image_utils import load_image  # UNUSED
 
-    t = time.time()
-    obj_spec, obj = read(filepath)
+    obj_spec, obj, texture = read(filepath)
     if obj is None:
         print('Invalid file')
         return
@@ -247,7 +251,7 @@ def load_ply(filepath):
     def add_face(vertices, indices, uvindices, colindices):
         mesh_faces.append(indices)
         if uvindices:
-            mesh_uvs.append([(vertices[index][uvindices[0]], 1.0 - vertices[index][uvindices[1]]) for index in indices])
+            mesh_uvs.append([(vertices[index][uvindices[0]], vertices[index][uvindices[1]]) for index in indices])
         if colindices:
             mesh_colors.append([(vertices[index][colindices[0]] * colmultiply[0],
                                  vertices[index][colindices[1]] * colmultiply[1],
@@ -282,8 +286,6 @@ def load_ply(filepath):
                 for j in range(len_ind - 2):
                     add_face(verts, (ind[0], ind[j + 1], ind[j + 2]), uvindices, colindices)
 
-    ply_name = bpy.path.display_name_from_filepath(filepath)
-
     mesh = bpy.data.meshes.new(name=ply_name)
 
     mesh.vertices.add(len(obj[b'vertex']))
@@ -291,14 +293,14 @@ def load_ply(filepath):
     mesh.vertices.foreach_set("co", [a for v in obj[b'vertex'] for a in (v[vindices_x], v[vindices_y], v[vindices_z])])
 
     if mesh_faces:
-        mesh.faces.add(len(mesh_faces))
-        mesh.faces.foreach_set("vertices_raw", unpack_face_list(mesh_faces))
+        mesh.tessfaces.add(len(mesh_faces))
+        mesh.tessfaces.foreach_set("vertices_raw", unpack_face_list(mesh_faces))
 
         if uvindices or colindices:
             if uvindices:
-                uvlay = mesh.uv_textures.new()
+                uvlay = mesh.tessface_uv_textures.new()
             if colindices:
-                vcol_lay = mesh.vertex_colors.new()
+                vcol_lay = mesh.tessface_vertex_colors.new()
 
             if uvindices:
                 for i, f in enumerate(uvlay.data):
@@ -321,8 +323,47 @@ def load_ply(filepath):
     mesh.validate()
     mesh.update()
 
+    if texture and uvindices:
+
+        import os
+        import sys
+        from bpy_extras.image_utils import load_image
+
+        encoding = sys.getfilesystemencoding()
+        encoded_texture = texture.decode(encoding=encoding)
+        name = bpy.path.display_name_from_filepath(texture)
+        image = load_image(encoded_texture, os.path.dirname(filepath), recursive=True, place_holder=True)
+
+        if image:
+            texture = bpy.data.textures.new(name=name, type='IMAGE')
+            texture.image = image
+
+            material = bpy.data.materials.new(name=name)
+            material.use_shadeless = True
+
+            mtex = material.texture_slots.add()
+            mtex.texture = texture
+            mtex.texture_coords = 'UV'
+            mtex.use_map_color_diffuse = True
+
+            mesh.materials.append(material)
+            for face in mesh.uv_textures[0].data:
+                face.image = image
+
+    return mesh
+
+
+def load_ply(filepath):
+    import time
+
+    t = time.time()
+    ply_name = bpy.path.display_name_from_filepath(filepath)
+
+    mesh = load_ply_mesh(filepath, ply_name)
+    if not mesh:
+        return {'CANCELLED'}
+
     scn = bpy.context.scene
-    #scn.objects.selected = [] # XXX25
 
     obj = bpy.data.objects.new(ply_name, mesh)
     scn.objects.link(obj)
@@ -330,8 +371,8 @@ def load_ply(filepath):
     obj.select = True
 
     print('\nSuccessfully imported %r in %.3f sec' % (filepath, time.time() - t))
+    return {'FINISHED'}
 
 
 def load(operator, context, filepath=""):
-    load_ply(filepath)
-    return {'FINISHED'}
+    return load_ply(filepath)

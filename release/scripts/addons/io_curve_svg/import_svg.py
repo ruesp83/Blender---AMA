@@ -32,9 +32,9 @@ from . import svg_colors
 # TODO: "em" and "ex" aren't actually supported
 SVGUnits = {"": 1.0,
             "px": 1.0,
-            "in": 90,
-            "mm": 90 / 25.4,
-            "cm": 90 / 2.54,
+            "in": 90.0,
+            "mm": 90.0 / 25.4,
+            "cm": 90.0 / 2.54,
             "pt": 1.25,
             "pc": 15.0,
             "em": 1.0,
@@ -87,7 +87,7 @@ def SVGParseFloat(s, i=0):
                 token += s[i]
                 i += 1
         elif s[i].isspace() or s[i] == ',':
-            # Inkscape sometimes uses qeird float format with missed
+            # Inkscape sometimes uses weird float format with missed
             # fractional part after dot. Suppose zero fractional part
             # for this case
             pass
@@ -428,6 +428,9 @@ def SVGParseStyles(node, context):
                 styles['useFill'] = True
                 styles['fill'] = SVGGetMaterial(fill, context)
 
+    if styles['useFill'] is None and context['style']:
+        styles = context['style'].copy()
+
     if styles['useFill'] is None:
         styles['useFill'] = True
         styles['fill'] = SVGGetMaterial('#000', context)
@@ -444,7 +447,7 @@ class SVGPathData:
 
     __slots__ = ('_data',   # List of tokens
                  '_index',  # Index of current token in tokens list
-                 '_len')    # Lenght og tokens list
+                 '_len')    # Length of tokens list
 
     def __init__(self, d):
         """
@@ -787,7 +790,7 @@ class SVGPathParser:
         """
         Calc arc paths
 
-        Copied and adoptedfrom paths_svg2obj.py scring for Blender 2.49
+        Copied and adoptedfrom paths_svg2obj.py script for Blender 2.49
         which is Copyright (c) jm soler juillet/novembre 2004-april 2009,
         """
 
@@ -887,7 +890,6 @@ class SVGPathParser:
         Elliptical arc CurveTo path command
         """
 
-        # c = code.lower()  # UNUSED
         cur = self._data.cur()
 
         while cur is not None and not cur.isalpha():
@@ -981,7 +983,7 @@ class SVGGeometry:
         Pop display rectangle
         """
 
-        self._context['rects'].pop
+        self._context['rects'].pop()
         self._context['rect'] = self._context['rects'][-1]
 
     def _pushMatrix(self, matrix):
@@ -999,6 +1001,22 @@ class SVGGeometry:
 
         matrix = self._context['transform'].pop()
         self._context['matrix'] = self._context['matrix'] * matrix.inverted()
+
+    def _pushStyle(self, style):
+        """
+        Push style
+        """
+
+        self._context['styles'].append(style)
+        self._context['style'] = style
+
+    def _popStyle(self):
+        """
+        Pop style
+        """
+
+        self._context['styles'].pop()
+        self._context['style'] = self._context['styles'][-1]
 
     def _transformCoord(self, point):
         """
@@ -1069,7 +1087,8 @@ class SVGGeometryContainer(SVGGeometry):
     Container of SVG geometries
     """
 
-    __slots__ = ('_geometries')  # List of chold geometries
+    __slots__ = ('_geometries',  # List of chold geometries
+                 '_styles')  # Styles, used for displaying
 
     def __init__(self, node, context):
         """
@@ -1079,11 +1098,17 @@ class SVGGeometryContainer(SVGGeometry):
         super().__init__(node, context)
 
         self._geometries = []
+        self._styles = SVGEmptyStyles
 
     def parse(self):
         """
         Parse XML node to memory
         """
+
+        if type(self._node) is xml.dom.minidom.Element:
+            self._styles = SVGParseStyles(self._node, self._context)
+
+        self._pushStyle(self._styles)
 
         for node in self._node.childNodes:
             if type(node) is not xml.dom.minidom.Element:
@@ -1092,6 +1117,8 @@ class SVGGeometryContainer(SVGGeometry):
             ob = parseAbstractNode(node, self._context)
             if ob is not None:
                 self._geometries.append(ob)
+
+        self._popStyle()
 
     def _doCreateGeom(self, instancing):
         """
@@ -1244,7 +1271,6 @@ class SVGGeometryUSE(SVGGeometry):
         Create real geometries
         """
 
-        # geometries = []  # UNUSED
         ref = self._node.getAttribute('xlink:href')
         geom = self._context['defines'].get(ref)
 
@@ -1755,8 +1781,8 @@ class SVGLoader(SVGGeometryContainer):
         node = xml.dom.minidom.parse(filepath)
 
         m = Matrix()
-        m = m * Matrix.Scale(1.0 / 90.0, 4, Vector((1.0, 0.0, 0.0)))
-        m = m * Matrix.Scale(-1.0 / 90.0, 4, Vector((0.0, 1.0, 0.0)))
+        m = m * Matrix.Scale(1.0 / 90.0 * 0.3048 / 12.0, 4, Vector((1.0, 0.0, 0.0)))
+        m = m * Matrix.Scale(-1.0 / 90.0 * 0.3048 / 12.0, 4, Vector((0.0, 1.0, 0.0)))
 
         rect = (1, 1)
 
@@ -1765,7 +1791,9 @@ class SVGLoader(SVGGeometryContainer):
                          'rects': [rect],
                          'rect': rect,
                          'matrix': m,
-                         'materials': {}}
+                         'materials': {},
+                         'styles': [None],
+                         'style': None}
 
         super().__init__(node, self._context)
 

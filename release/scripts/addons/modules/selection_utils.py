@@ -27,8 +27,8 @@ selected = []
 
 
 class SelectionOrder(bpy.types.Operator):
-    '''Store the object names in the order they are selected.
-    Use RETURN key to confirm selection, ESCAPE key to cancel'''
+    """Store the object names in the order they are selected, """ \
+    """use RETURN key to confirm selection, ESCAPE key to cancel"""
     bl_idname = "object.select_order"
     bl_label = "Select with Order"
     bl_options = {'UNDO'}
@@ -46,7 +46,7 @@ class SelectionOrder(bpy.types.Operator):
 
         if num == 0:
             # Reset the list
-            selected[:] = []
+            del selected[:]
         elif num > self.num_selected:
             # Get all the newly selected objects and add
             new = [ob.name for ob in sel if ob.name not in selected]
@@ -72,8 +72,9 @@ class SelectionOrder(bpy.types.Operator):
         return {'PASS_THROUGH'}
 
     def invoke(self, context, event):
-        context.window_manager.modal_handler_add(self)
         self.update(context)
+
+        context.window_manager.modal_handler_add(self)
         return {'RUNNING_MODAL'}
 
 

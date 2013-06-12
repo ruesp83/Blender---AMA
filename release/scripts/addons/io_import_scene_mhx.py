@@ -20,13 +20,12 @@
 # Product Home Page:   http://www.makehuman.org/
 # Code Home Page:      http://code.google.com/p/makehuman/
 # Authors:             Thomas Larsson
-# Script copyright (C) MakeHuman Team 2001-2011
-# Coding Standards:    See http://sites.google.com/site/makehumandocs/developers-guide
+# Script copyright (C) MakeHuman Team 2001-2013
+# Coding Standards: See http://www.makehuman.org/node/165
 
 """
 Abstract
-MHX (MakeHuman eXchange format) importer for Blender 2.5x.
-Version 1.10.2
+MHX (MakeHuman eXchange format) importer for Blender 2.6x.
 
 This script should be distributed with Blender.
 If not, place it in the .blender/scripts/addons dir
@@ -39,8 +38,8 @@ Alternatively, run the script in the script editor (Alt-P), and access from the 
 bl_info = {
     'name': 'Import: MakeHuman (.mhx)',
     'author': 'Thomas Larsson',
-    'version': (1, 10, 2),
-    "blender": (2, 5, 9),
+    'version': (1, 15, 4),
+    "blender": (2, 67, 0),
     'location': "File > Import > MakeHuman (.mhx)",
     'description': 'Import files in the MakeHuman eXchange format (.mhx)',
     'warning': '',
@@ -50,9 +49,9 @@ bl_info = {
     'category': 'Import-Export'}
 
 MAJOR_VERSION = 1
-MINOR_VERSION = 10
-SUB_VERSION = 2
-BLENDER_VERSION = (2, 59, 2)
+MINOR_VERSION = 15
+FROM_VERSION = 13
+SUB_VERSION = 3
 
 #
 #
@@ -61,13 +60,15 @@ BLENDER_VERSION = (2, 59, 2)
 import bpy
 import os
 import time
+import math
 import mathutils
+from mathutils import Vector, Matrix
 from bpy.props import *
 
 MHX249 = False
 Blender24 = False
 Blender25 = True
-TexDir = "~/makehuman/exports"
+theDir = "~/makehuman/exports"
 
 #
 #
@@ -96,12 +97,16 @@ todo = []
 
 T_EnforceVersion = 0x01
 T_Clothes = 0x02
-T_Stretch = 0x04
+T_HardParents = 0x0
+T_CrashSafe = 0x0
 
 T_Diamond = 0x10
 T_Replace = 0x20
-T_Face = 0x40
-T_Shape = 0x80
+T_Shapekeys = 0x40
+T_ShapeDrivers = 0x80
+
+T_Face = T_Shapekeys
+T_Shape = T_Shapekeys
 
 T_Mesh = 0x100
 T_Armature = 0x200
@@ -112,8 +117,11 @@ T_Rigify = 0x1000
 T_Opcns = 0x2000
 T_Symm = 0x4000
 
-toggle = (T_EnforceVersion + T_Mesh + T_Armature + 
-        T_Face + T_Shape + T_Proxy + T_Clothes + T_Rigify)
+DefaultToggle = ( T_EnforceVersion + T_Mesh + T_Armature + 
+    T_Shapekeys + T_ShapeDrivers + T_Proxy + T_Clothes + T_Rigify )
+    
+toggle = DefaultToggle
+toggleSettings = toggle
 
 #
 #    Dictionaries
@@ -188,45 +196,29 @@ Plural = {
 }
 
 #
-#    checkBlenderVersion()
-#
-
-def checkBlenderVersion():
-    print("Found Blender", bpy.app.version)
-    (A, B, C) = bpy.app.version
-    (a, b, c) = BLENDER_VERSION
-    if a <= A: return
-    if b <= B: return
-    if c <= C: return
-    msg = (
-"This version of the MHX importer only works with \n" +
-"Blender (%d, %d, %d) or later.\n" % (a, b, c) +
-"Download a more recent Blender from \n" +
-"www.blender.org or www.graphicall.org.\n"
-    )
-    MyError(msg)
-    return
-
-#
 #    readMhxFile(filePath):
 #
 
 def readMhxFile(filePath):
-    global todo, nErrors, theScale, defaultScale, One, toggle, warnedVersion
+    global todo, nErrors, theScale, theArmature, defaultScale, One
+    global toggle, warnedVersion, theMessage, alpha7, theDir
 
-    #checkBlenderVersion()    
-    
     defaultScale = theScale
     One = 1.0/theScale
+    theArmature = None
+    alpha7 = False
     warnedVersion = False
     initLoadedData()
+    theMessage = ""
 
+    theDir = os.path.dirname(filePath)
     fileName = os.path.expanduser(filePath)
-    (shortName, ext) = os.path.splitext(fileName)
+    _,ext = os.path.splitext(fileName)
     if ext.lower() != ".mhx":
-        print("Error: Not a mhx file: " + fileName)
+        print("Error: Not a mhx file: %s" % fileName.encode('utf-8', 'strict'))
         return
-    print( "Opening MHX file "+ fileName )
+    print( "Opening MHX file %s " % fileName.encode('utf-8', 'strict') )
+    print("Toggle %x" % toggle)
     time1 = time.clock()
 
     # ignore = False  # UNUSED
@@ -276,7 +268,7 @@ def readMhxFile(filePath):
                     tokens[-1][2] = sub
                 level -= 1
             except:
-                print( "Tokenizer error at or before line %d" % lineNo )
+                print( "Tokenizer error at or before line %d.\nThe mhx file has been corrupted.\nTry to export it again from MakeHuman." % lineNo )
                 print( line )
                 stack.pop()
         elif lineSplit[-1] == ';':
@@ -295,8 +287,8 @@ def readMhxFile(filePath):
     file.close()
 
     if level != 0:
-        MyError("Tokenizer out of kilter %d" % level)    
-    clearScene()
+        MyError("Tokenizer error (%d).\nThe mhx file has been corrupted.\nTry to export it again from MakeHuman." % level)    
+    scn = clearScene()
     print( "Parsing" )
     parse(tokens)
     
@@ -305,13 +297,16 @@ def readMhxFile(filePath):
             print("Doing %s" % expr)
             exec(expr, glbals, lcals)
         except:
-            msg = "Failed: \n"+expr
+            msg = "Failed: %s\n" % expr
             print( msg )
             nErrors += 1
             #MyError(msg)
 
+    scn.objects.active = theArmature
+    theArmature.MhAlpha8 = not alpha7
+    #bpy.ops.wm.properties_edit(data_path="object", property="MhxRig", value=theArmature["MhxRig"])
+        
     time2 = time.clock()
-    print("toggle = %x" % toggle)
     msg = "File %s loaded in %g s" % (fileName, time2-time1)
     if nErrors:
         msg += " but there where %d errors. " % (nErrors)
@@ -338,15 +333,15 @@ def getObject(name, var, glbals, lcals):
 def checkMhxVersion(major, minor):
     global warnedVersion
     print("MHX", (major,minor), (MAJOR_VERSION, MINOR_VERSION), warnedVersion)
-    if  major != MAJOR_VERSION or minor != MINOR_VERSION:
+    if  major != MAJOR_VERSION or minor < FROM_VERSION:
         if warnedVersion:
             return
         else:
             msg = (
 "Wrong MHX version\n" +
-"Expected MHX %d.%d but the loaded file " % (MAJOR_VERSION, MINOR_VERSION) +
-"has version MHX %d.%d\n" % (major, minor))
-            if minor < MINOR_VERSION:
+"Expected MHX %d.%02d but the loaded file " % (MAJOR_VERSION, MINOR_VERSION) +
+"has version MHX %d.%02d\n" % (major, minor))
+            if minor < FROM_VERSION:
                 msg += (
 "You can disable this error message by deselecting the \n" +
 "Enforce version option when importing. Better:\n" +
@@ -375,8 +370,7 @@ ifResult = False
 def parse(tokens):
     global MHX249, ifResult, theScale, defaultScale, One
     
-    for (key, val, sub) in tokens:    
-        print("Parse %s" % key)
+    for (key, val, sub) in tokens: 
         data = None
         if key == 'MHX':
             checkMhxVersion(int(val[0]), int(val[1]))
@@ -442,7 +436,7 @@ def parse(tokens):
             correctRig(val)
         elif key == "Rigify":
             if toggle & T_Rigify:
-                rigifyMhx(bpy.context, val[0])
+                rigifyMhx(bpy.context)
         elif key == 'AnimationData':
             try:
                 ob = loadedData['Object'][val[0]]
@@ -459,7 +453,6 @@ def parse(tokens):
             if ob:
                 bpy.context.scene.objects.active = ob
                 mat = ob.data.materials[int(val[2])]
-                print("matanim", ob, mat)
                 parseAnimationData(mat, val, sub)
         elif key == 'ShapeKeys':
             try:
@@ -472,10 +465,6 @@ def parse(tokens):
         else:
             data = parseDefaultType(key, val, sub)                
 
-        if data and key != 'Mesh':
-            print( data )
-    return
-
 #
 #    parseDefaultType(typ, args, tokens):
 #
@@ -486,20 +475,15 @@ def parseDefaultType(typ, args, tokens):
     name = args[0]
     data = None
     expr = "bpy.data.%s.new('%s')" % (Plural[typ], name)
-    # print(expr)
     data = eval(expr)
-    # print("  ok", data)
 
     bpyType = typ.capitalize()
-    print(bpyType, name, data)
     loadedData[bpyType][name] = data
     if data is None:
         return None
 
     for (key, val, sub) in tokens:
-        #print("%s %s" % (key, val))
         defaultKey(key, val, sub, 'data', [], globals(), locals())
-    print("Done ", data)
     return data
     
 #
@@ -602,7 +586,6 @@ def channelFromDataPath(dataPath, index):
         expr = "ob.%s]" % (words[0])
         cwords = words[1].split('"')
         channel = cwords[1]
-    # print(expr, channel, index)
     return (expr, channel)
 
 def parseActionFCurve(act, ob, args, tokens):
@@ -652,7 +635,6 @@ def parseKeyFramePoint(pt, args, tokens):
 def parseAnimationData(rna, args, tokens):
     if not eval(args[1]):
         return
-    print("Parse Animation data")
     if rna.animation_data is None:    
         rna.animation_data_create()
     adata = rna.animation_data
@@ -661,7 +643,6 @@ def parseAnimationData(rna, args, tokens):
             fcu = parseAnimDataFCurve(adata, rna, val, sub)            
         else:
             defaultKey(key, val, sub, 'adata', [], globals(), locals())
-    print(adata)
     return adata
 
 def parseAnimDataFCurve(adata, rna, args, tokens):
@@ -697,7 +678,6 @@ def parseDriver(adata, dataPath, index, rna, args, tokens):
         expr = "rna." + words[0] + ']'
         pwords = words[1].split('"')
         prop = pwords[1]
-        #print("prop", expr, prop)
         bone = eval(expr)
         return None
     else:
@@ -708,12 +688,9 @@ def parseDriver(adata, dataPath, index, rna, args, tokens):
             expr += "." + words[n]
         expr += ".driver_add('%s', index)" % channel
     
-    #print("expr", rna, expr)
     fcu = eval(expr)
     drv = fcu.driver
-    #print("   Driver type", drv, args[0])
     drv.type = args[0]
-    #print("   ->", drv.type)
     for (key, val, sub) in tokens:
         if key == 'DriverVariable':
             var = parseDriverVariable(drv, rna, val, sub)
@@ -724,9 +701,7 @@ def parseDriver(adata, dataPath, index, rna, args, tokens):
 def parseDriverVariable(drv, rna, args, tokens):
     var = drv.variables.new()
     var.name = args[0]
-    #print("   Var type", var, args[1])
     var.type = args[1]
-    #print("   ->", var.type)
     nTarget = 0
     for (key, val, sub) in tokens:
         if key == 'Target':
@@ -757,9 +732,15 @@ def parseDriverTarget(var, nTarget, rna, args, tokens):
     dtype = args[1].capitalize()
     dtype = 'Object'
     targ.id = loadedData[dtype][name]
-    #print("    ->", targ.id)
     for (key, val, sub) in tokens:
-        defaultKey(key, val, sub, 'targ', [], globals(), locals())
+        if key == 'data_path':
+            words = val[0].split('"')
+            if len(words) > 1:
+                targ.data_path = propNames(words[1])[1]
+            else:
+                targ.data_path = propNames(val)[1]
+        else:
+            defaultKey(key, val, sub, 'targ', [], globals(), locals())
     return targ
 
     
@@ -838,7 +819,7 @@ def parseTexture(args, tokens):
             tex.use_nodes = True
             parseNodeTree(tex.node_tree, val, sub)
         else:
-            defaultKey(key, val,  sub, "tex", ['use_nodes', 'use_textures', 'contrast'], globals(), locals())
+            defaultKey(key, val,  sub, "tex", ['use_nodes', 'use_textures', 'contrast', 'use_alpha'], globals(), locals())
 
     return tex
 
@@ -921,66 +902,25 @@ def parseSocket(socket, args, tokens):
 
 
 #
-#    doLoadImage(filepath):
 #    loadImage(filepath):
 #    parseImage(args, tokens):
 #
 
-def doLoadImage(filepath):        
-    path1 = os.path.expanduser(filepath)
-    file1 = os.path.realpath(path1)
-    if os.path.isfile(file1):
-        print( "Found file "+file1 )
+def loadImage(relFilepath):
+    filepath = os.path.normpath(os.path.join(theDir, relFilepath))
+    print( "Loading %s" % filepath.encode('utf-8','strict'))
+    if os.path.isfile(filepath):
+        #print( "Found file %s." % filepath.encode('utf-8','strict') )
         try:
-            img = bpy.data.images.load(file1)
+            img = bpy.data.images.load(filepath)
             return img
         except:
             print( "Cannot read image" )
             return None
     else:
-        print( "No file "+file1 )
+        print( "No such file: %s" % filepath.encode('utf-8','strict') )
         return None
 
-
-def loadImage(filepath):
-    global TexDir, warnedTextureDir, loadedData
-
-    texDir = os.path.expanduser(TexDir)
-    path1 = os.path.expanduser(filepath)
-    file1 = os.path.realpath(path1)
-    (path, filename) = os.path.split(file1)
-    (name, ext) = os.path.splitext(filename)
-    print( "Loading ", filepath, " = ", filename )
-
-    # img = doLoadImage(texDir+"/"+name+".png")
-    # if img:
-    #    return img
-
-    img = doLoadImage(texDir+"/"+filename)
-    if img:
-        return img
-
-    # img = doLoadImage(path+"/"+name+".png")
-    # if img:
-    #    return img
-
-    img = doLoadImage(path+"/"+filename)
-    if img:
-        return img
-
-    if warnedTextureDir:
-        return None
-    warnedTextureDir = True
-    return None
-    TexDir = Draw.PupStrInput("TexDir? ", path, 100)
-
-    texDir = os.path.expanduser(TexDir)
-    img =  doLoadImage(texDir+"/"+name+".png")
-    if img:
-        return img
-
-    img = doLoadImage(TexDir+"/"+filename)
-    return img
     
 def parseImage(args, tokens):
     global todo
@@ -996,7 +936,7 @@ def parseImage(args, tokens):
                 return None
             img.name = imgName
         else:
-            defaultKey(key, val,  sub, "img", ['depth', 'dirty', 'has_data', 'size', 'type'], globals(), locals())
+            defaultKey(key, val,  sub, "img", ['depth', 'dirty', 'has_data', 'size', 'type', 'use_premultiply'], globals(), locals())
     print ("Image %s" % img )
     loadedData['Image'][imgName] = img
     return img
@@ -1033,9 +973,7 @@ def parseObject(args, tokens):
         ob = None
 
     if ob is None:
-        print("Create", name, data, datName)
         ob = createObject(typ, name, data, datName)
-        print("created", ob)
         linkObject(ob, data)
 
     for (key, val, sub) in tokens:
@@ -1051,16 +989,10 @@ def parseObject(args, tokens):
             parseDefault(ob.field, sub, {}, [])
         else:
             defaultKey(key, val, sub, "ob", ['type', 'data'], globals(), locals())
-
-    # Needed for updating layers
+            
     if bpy.context.object == ob:
-        pass
-        '''
-        if ob.data in ['MESH', 'ARMATURE']:
-            print(ob, ob.data)
-            bpy.ops.object.mode_set(mode='EDIT')
-            bpy.ops.object.mode_set(mode='OBJECT')
-        '''
+        if ob.type == 'MESH':
+            bpy.ops.object.shade_smooth()
     else:
         print("Context", ob, bpy.context.object, bpy.context.scene.objects.active)
     return
@@ -1077,7 +1009,6 @@ def linkObject(ob, data):
     #print("Data", data, ob.data)
     if data and ob.data is None:
         ob.data = data
-        print("Data linked", ob, ob.data)
     scn = bpy.context.scene
     scn.objects.link(ob)
     scn.objects.active = ob
@@ -1213,7 +1144,7 @@ def unpackList(list_of_tuples):
 #
 
 def parseMesh (args, tokens):
-    global todo
+    global todo, BMeshAware
     if verbosity > 2:
         print( "Parsing mesh %s" % args )
 
@@ -1242,14 +1173,25 @@ def parseMesh (args, tokens):
         me.from_pydata(verts, edges, [])
     me.update()
     linkObject(ob, me)
+    
+    if faces:
+        try:
+            me.polygons
+            BMeshAware = True
+        except:
+            BMeshAware = False
         
     mats = []
+    nuvlayers = 0
     for (key, val, sub) in tokens:
         if key == 'Verts' or key == 'Edges' or key == 'Faces':
             pass
         elif key == 'MeshTextureFaceLayer':
-            parseUvTexture(val, sub, me)
-        elif key == 'MeshColorLayer':
+            if BMeshAware:
+                parseUvTextureBMesh(val, sub, me)
+            else:
+                parseUvTextureNoBMesh(val, sub, me)
+        elif key == 'MeshColorLayer':            
             parseVertColorLayer(val, sub, me)
         elif key == 'VertexGroup':
             parseVertexGroup(ob, me, val, sub)
@@ -1267,8 +1209,10 @@ def parseMesh (args, tokens):
 
     for (key, val, sub) in tokens:
         if key == 'Faces':
-            parseFaces2(sub, me)
-    print(me)
+            if BMeshAware:
+                parseFaces2BMesh(sub, me)
+            else:
+                parseFaces2NoBMesh(sub, me)
     return me
 
 #
@@ -1303,7 +1247,37 @@ def parseFaces(tokens):
             faces.append(face)
     return faces
 
-def parseFaces2(tokens, me):    
+def parseFaces2BMesh(tokens, me):    
+    n = 0
+    for (key, val, sub) in tokens:
+        if key == 'ft':
+            f = me.polygons[n]
+            f.material_index = int(val[0])
+            f.use_smooth = int(val[1])
+            n += 1
+        elif key == 'ftn':
+            mn = int(val[1])
+            us = int(val[2])
+            npts = int(val[0])
+            for i in range(npts):
+                f = me.polygons[n]
+                f.material_index = mn
+                f.use_smooth = us
+                n += 1
+        elif key == 'mn':
+            fn = int(val[0])
+            mn = int(val[1])
+            f = me.polygons[fn]
+            f.material_index = mn
+        elif key == 'ftall':
+            mat = int(val[0])
+            smooth = int(val[1])
+            for f in me.polygons:
+                f.material_index = mat
+                f.use_smooth = smooth
+    return
+
+def parseFaces2NoBMesh(tokens, me):    
     n = 0
     for (key, val, sub) in tokens:
         if key == 'ft':
@@ -1335,23 +1309,51 @@ def parseFaces2(tokens, me):
 
 
 #
-#    parseUvTexture(args, tokens, me):
+#    parseUvTexture(args, tokens, me,):
 #    parseUvTexData(args, tokens, uvdata):
 #
 
-def parseUvTexture(args, tokens, me):
+def parseUvTextureBMesh(args, tokens, me):
     name = args[0]
-    me.uv_textures.new(name = name)
+    bpy.ops.mesh.uv_texture_add()
     uvtex = me.uv_textures[-1]
-    loadedData['MeshTextureFaceLayer'][name] = uvtex
+    uvtex.name = name
+    uvloop = me.uv_layers[-1]
+    loadedData['MeshTextureFaceLayer'][name] = uvloop    
     for (key, val, sub) in tokens:
         if key == 'Data':
-            parseUvTexData(val, sub, uvtex.data)
+            parseUvTexDataBMesh(val, sub, uvloop.data)
         else:
             defaultKey(key, val,  sub, "uvtex", [], globals(), locals())
     return
 
-def parseUvTexData(args, tokens, data):
+def parseUvTexDataBMesh(args, tokens, data):
+    n = 0
+    for (key, val, sub) in tokens:
+        if key == 'vt':
+            data[n].uv = (float(val[0]), float(val[1]))
+            n += 1
+            data[n].uv = (float(val[2]), float(val[3]))
+            n += 1
+            data[n].uv = (float(val[4]), float(val[5]))
+            n += 1
+            if len(val) > 6:
+                data[n].uv = (float(val[6]), float(val[7]))
+                n += 1
+    return
+
+def parseUvTextureNoBMesh(args, tokens, me):
+    name = args[0]
+    uvtex = me.uv_textures.new(name = name)
+    loadedData['MeshTextureFaceLayer'][name] = uvtex
+    for (key, val, sub) in tokens:
+        if key == 'Data':
+            parseUvTexDataNoBMesh(val, sub, uvtex.data)
+        else:
+            defaultKey(key, val,  sub, "uvtex", [], globals(), locals())
+    return
+
+def parseUvTexDataNoBMesh(args, tokens, data):
     n = 0
     for (key, val, sub) in tokens:
         if key == 'vt':
@@ -1361,10 +1363,6 @@ def parseUvTexData(args, tokens, data):
             if len(val) > 6:
                 data[n].uv4 = (float(val[6]), float(val[7]))
             n += 1    
-        else:
-            pass
-            #for i in range(n):
-            #    defaultKey(key, val,  sub, "data[i]", [], globals(), locals())
     return
 
 #
@@ -1432,10 +1430,11 @@ def parseVertexGroup(ob, me, args, tokens):
 #
 
 def doShape(name):
-    if (toggle & T_Shape+T_Face) and (name == 'Basis'):
+    if (toggle & T_Shapekeys) and (name == 'Basis'):
         return True
     else:
         return (toggle & T_Face)
+
 
 def parseShapeKeys(ob, me, args, tokens):
     for (key, val, sub) in tokens:
@@ -1444,9 +1443,26 @@ def parseShapeKeys(ob, me, args, tokens):
         elif key == 'AnimationData':
             if me.shape_keys:
                 parseAnimationData(me.shape_keys, val, sub)
+        elif key == 'Expression':
+            prop = "Mhe" + val[0].capitalize()
+            parseUnits(prop, ob, sub)
+        elif key == 'Viseme':
+            name = val[0].upper()
+            if name in ["REST", "ETC"]:
+                name = name.capitalize()
+            prop = "Mhv" + name
+            parseUnits(prop, ob, sub)            
     ob.active_shape_key_index = 0
-    print("Shapekeys parsed")
-    return
+
+            
+def parseUnits(prop, ob, sub):
+    string = ""
+    for words in sub:
+        unit = words[0].replace("-","_")
+        value = words[1][0]
+        string += "%s:%s;" % (unit, value)
+    rig = ob.parent
+    rig[prop] = string
 
 
 def parseShapeKey(ob, me, args, tokens):
@@ -1465,6 +1481,7 @@ def parseShapeKey(ob, me, args, tokens):
     else:
         MyError("ShapeKey L/R %s" % lr)
     return
+
 
 def addShapeKey(ob, name, vgroup, tokens):
     skey = ob.shape_key_add(name=name, from_mix=False)
@@ -1493,7 +1510,7 @@ def addShapeKey(ob, name, vgroup, tokens):
 #
 
 def parseArmature (args, tokens):
-    global toggle
+    global toggle, theArmature
     if verbosity > 2:
         print( "Parsing armature %s" % args )
     
@@ -1502,10 +1519,9 @@ def parseArmature (args, tokens):
     mode = args[2]
     
     amt = bpy.data.armatures.new(amtname)
-    ob = createObject('ARMATURE', obname, amt, amtname)    
-
-    linkObject(ob, amt)
-    print("Linked")
+    ob = createObject('ARMATURE', obname, amt, amtname) 
+    linkObject(ob, amt)    
+    theArmature = ob
 
     bpy.ops.object.mode_set(mode='OBJECT')
     bpy.ops.object.mode_set(mode='EDIT')
@@ -1537,6 +1553,7 @@ def parseArmature (args, tokens):
         else:
             defaultKey(key, val,  sub, "amt", ['MetaRig'], globals(), locals())
     bpy.ops.object.mode_set(mode='OBJECT')
+    
     return amt
         
 #
@@ -1555,13 +1572,6 @@ def parseBone(bone, amt, tokens, heads, tails):
         #    pass
         elif key == 'hide' and val[0] == 'True':
             name = bone.name
-            '''
-            #bpy.ops.object.mode_set(mode='OBJECT')
-            pbone = amt.bones[name]
-            pbone.hide = True
-            print("Hide", pbone, pbone.hide)
-            #bpy.ops.object.mode_set(mode='EDIT')            
-            '''
         else:
             defaultKey(key, val,  sub, "bone", [], globals(), locals())
     return bone
@@ -1589,9 +1599,7 @@ def parsePose (args, tokens):
             prop = val[1]
             value = eval(val[2])
             pb = pbones[bone]
-            print("Setting", pb, prop, val)
             pb[prop] = value
-            print("Prop set", pb[prop])
         else:
             defaultKey(key, val,  sub, "ob.pose", [], globals(), locals())
     bpy.ops.object.mode_set(mode='OBJECT')
@@ -1697,7 +1705,7 @@ def parseConstraint(constraints, pb, args, tokens):
         elif key == 'rot_lock':
             parseArray(cns, ["lock_rotation_x", "lock_rotation_y", "lock_rotation_z"], val)
         else:
-            defaultKey(key, val,  sub, "cns", [], globals(), locals())
+            defaultKey(key, val,  sub, "cns", ["use_target"], globals(), locals())
 
 
     #print("cns %s done" % cns.name)
@@ -1972,11 +1980,13 @@ def correctRig(args):
         ob = loadedData['Object'][human]
     except:
         return
+    ob.MhxShapekeyDrivers = (toggle&T_Shapekeys != 0 and toggle&T_ShapeDrivers != 0)
     bpy.context.scene.objects.active = ob
     bpy.ops.object.mode_set(mode='POSE')
     amt = ob.data
     cnslist = []
     for pb in ob.pose.bones:
+        pb.bone.select = False
         for cns in pb.constraints:
             if cns.type == 'CHILD_OF':
                 cnslist.append((pb, cns, cns.influence))
@@ -2007,7 +2017,7 @@ def postProcess(args):
     except:
         ob = None
     if toggle & T_Diamond == 0 and ob:
-        deleteDiamonds(ob)
+        deleteDiamonds(ob) 
     return            
 
 #
@@ -2032,50 +2042,127 @@ def deleteDiamonds(ob):
             break
     if invisioNum < 0:
         print("WARNING: Nu Invisio material found. Cannot delete helper geometry")
+    elif BMeshAware:        
+        for f in me.polygons:    
+            if f.material_index >= invisioNum:
+                for vn in f.vertices:
+                    me.vertices[vn].select = True
     else:        
         for f in me.faces:    
             if f.material_index >= invisioNum:
                 for vn in f.vertices:
                     me.vertices[vn].select = True
-    bpy.ops.object.mode_set(mode='EDIT')
-    bpy.ops.mesh.delete(type='VERT')
-    bpy.ops.object.mode_set(mode='OBJECT')
+    if BMeshAware and toggle&T_CrashSafe:     
+        theMessage = "\n  *** WARNING ***\nHelper deletion turned off due to Blender crash.\nHelpers can be deleted by deleting all selected vertices in Edit mode\n     **********\n"
+        print(theMessage)
+    else:
+        bpy.ops.object.mode_set(mode='EDIT')
+        print("Do delete")
+        bpy.ops.mesh.delete(type='VERT')
+        print("Verts deleted")
+        bpy.ops.object.mode_set(mode='OBJECT')
+        print("Back to object mode")
     return
   
 #
 #    defaultKey(ext, args, tokens, var, exclude, glbals, lcals):
 #
 
-thePropTip = ""
+theProperty = None
+
+def propNames(string):
+    global alpha7
+    #string = string.encode('utf-8', 'strict')
+    
+    # Alpha 7 compatibility
+    if string[0:2] == "&_":
+        string = "Mhf"+string[2:]
+        alpha7 = True
+    elif string[0] == "&":
+        string = "Mha"+string[1:]
+        alpha7 = True
+    elif string[0] == "*":
+        string = "Mhs"+string[1:]
+        alpha7 = True
+    elif len(string) > 4 and string[0:4] == "Hide":
+        string = "Mhh"+string[4:]
+        alpha7 = True
+    
+    if string[0] == "_":
+        return None,None
+    elif (len(string) > 3 and
+          string[0:3] in ["Mha", "Mhf", "Mhs", "Mhh", "Mhv", "Mhc"]):
+        name = string.replace("-","_")
+        return name, '["%s"]' % name
+    else:
+        return string, '["%s"]' % string
+        
+
+def defProp(args, var, glbals, lcals):
+    proptype = args[0]
+    name = propNames(args[1])[0]
+    value = args[2]    
+    rest = 'description="%s"' % args[3].replace("_", " ")
+    if len(args) > 4:
+        rest += ", " + args[4]
+        
+    if name:
+        #expr = 'bpy.types.Object.%s = %sProperty(%s)' % (name, proptype, rest)
+        expr = '%s["%s"] = %s' % (var, name, value)
+        exec(expr, glbals, lcals)
+        
+
+def defNewProp(name, proptype, rest):
+    expr = 'bpy.types.Object.%s = %sProperty(%s)' % (name, proptype, rest)
+    print(expr)
+    exec(expr)
+
+        
+def setProperty(args, var, glbals, lcals):
+    global theProperty
+    tip = ""
+    name = propNames(args[0])[0]
+    value = args[1]
+    if name:
+        expr = '%s["%s"] = %s' % (var, name, value)
+        exec(expr, glbals, lcals)
+        
+        if len(args) > 2:
+            tip = 'description="%s"' % args[2].replace("_", " ")
+        if value in ["True", "False"]:
+            proptype = "Bool"
+        elif value[0] in ["'",'"']:
+            proptype = "String"
+        elif "." in value:
+            proptype = "Float"
+        else:
+            proptype = "Int"
+        theProperty = (name, tip, proptype)
+
+
+def defineProperty(args):
+    global theProperty
+    if theProperty is None:
+        return
+    (name, tip, proptype) = theProperty
+    if len(args) >= 2 and proptype != "Bool":
+        if "BOOLEAN" in args[1]:
+            proptype = "Bool"
+        else:
+            tip = tip + "," + args[1].replace(":", "=").replace('"', " ")
+    expr = "bpy.types.Object.%s = %sProperty(%s)" % (name, proptype, tip)
+    theProperty = None
+
 
 def defaultKey(ext, args, tokens, var, exclude, glbals, lcals):
-    global todo, thePropTip
+    global todo
 
     if ext == 'Property':
-        thePropTip = ""
-        try:
-            expr = '%s["%s"] = %s' % (var, args[0], args[1])
-        except:
-            expr = None
-        #print("Property", expr)
-        if expr:
-            exec(expr, glbals, lcals)
-            if len(args) > 2:
-                thePropTip =  '"description":"%s"' % args[2].replace("_", " ")
-        return
+        return setProperty(args, var, glbals, lcals)        
     elif ext == 'PropKeys':
-        if len(args) < 2:
-            values = '{%s}' % thePropTip
-        else:
-            values = '{%s%s}' % (args[1], thePropTip)        
-        try:
-            expr = '%s["_RNA_UI"]["%s"] = %s' % (var, args[0], values)
-        except:
-            expr = None
-        #print("PropKeys", expr)
-        if expr:
-            exec(expr, glbals, lcals)
-        return
+        return defineProperty(args)
+    elif ext == 'DefProp':
+        return defProp(args, var, glbals, lcals)
 
     if ext == 'bpyops':
         expr = "bpy.ops.%s" % args[0]
@@ -2191,9 +2278,16 @@ def defaultKey(ext, args, tokens, var, exclude, glbals, lcals):
 
 def pushOnTodoList(var, expr, glbals, lcals):
     global todo
-    print("Tdo", var)
+    print("Unrecognized expression", expr)
+    return
     print(dir(eval(var, glbals, lcals)))
-    MyError("Todo %s" % expr)
+    MyError(
+        "Unrecognized expression %s.\n"  % expr +
+        "This can mean that Blender's python API has changed\n" +
+        "since the MHX file was exported. Try to export again\n" +
+        "from an up-to-date MakeHuman nightly build.\n" +
+        "Alternatively, your Blender version may be obsolete.\n" +
+        "Download an up-to-date version from www.graphicall.org")
     todo.append((expr, glbals, lcals))
     return
 
@@ -2249,7 +2343,7 @@ def parseCollection(data, tokens, exclude):
 #
 #    extractBpyType(data):
 #
-
+"""
 def extractBpyType(data):
     typeSplit = str(type(data)).split("'")
     if typeSplit[0] != '<class ':
@@ -2273,7 +2367,7 @@ def Bool(string):
         return False
     else:
         MyError("Bool %s?" % string)
-        
+"""        
 #
 #    invalid(condition):
 #
@@ -2331,7 +2425,8 @@ def hideLayers(args):
         sceneLayers = int(args[2], 16)
         sceneHideLayers = int(args[3], 16)
         boneLayers = int(args[4], 16)
-        boneHideLayers = int(args[5], 16)
+        # boneHideLayers = int(args[5], 16)
+        boneHideLayers = 0
     else:
         sceneLayers = 0x00ff
         sceneHideLayers = 0
@@ -2351,6 +2446,7 @@ def hideLayers(args):
         for n in hidelayers:
             if ob.layers[n]:
                 ob.hide = True
+                ob.hide_render = True
 
     if boneLayers:    
         human = args[1]
@@ -2384,7 +2480,7 @@ ConfigFile = '~/mhx_import.cfg'
 
 
 def readDefaults():
-    global toggle, theScale
+    global toggle, toggleSettings, theScale
     path = os.path.realpath(os.path.expanduser(ConfigFile))
     try:
         fp = open(path, 'rU')
@@ -2402,10 +2498,11 @@ def readDefaults():
             except:
                 print('Configuration file "%s" is corrupt' % path)                
     fp.close()
+    toggleSettings = toggle
     return
 
 def writeDefaults():
-    global toggle, theScale
+    global toggleSettings, theScale
     path = os.path.realpath(os.path.expanduser(ConfigFile))
     try:
         fp = open(path, 'w')
@@ -2413,7 +2510,7 @@ def writeDefaults():
     except:
         print('Cannot open "%s" for writing' % path)
         return
-    fp.write("%x %f Graphicall" % (toggle, theScale))
+    fp.write("%x %f Graphicall" % (toggleSettings, theScale))
     fp.close()
     return
 
@@ -2421,294 +2518,318 @@ def writeDefaults():
 #
 #   Postprocessing of rigify rig
 #
-#   rigifyMhx(context, name):
+#   rigifyMhx(context):
 #
 ###################################################################################
 
-def rigifyMhx(context, name):
+class RigifyBone:
+    def __init__(self, eb):
+        self.name = eb.name
+        self.realname = None
+        self.realname1 = None
+        self.realname2 = None
+        self.fkname = None
+        self.ikname = None
+        
+        self.head = eb.head.copy()
+        self.tail = eb.tail.copy()
+        self.roll = eb.roll
+        self.deform = eb.use_deform
+        self.parent = None
+        self.child = None
+        self.connect = False
+        self.original = False
+        self.extra = (eb.name in ["spine-1"])        
+        
+    def __repr__(self):
+        return ("<RigifyBone %s %s %s>" % (self.name, self.realname, self.realname1))
+        
+    
+def rigifyMhx(context):
+    from collections import OrderedDict
+
     print("Modifying MHX rig to Rigify")
     scn = context.scene 
-    mhx = loadedData['Object'][name]
-    mhx['MhxRigify'] = True
-    bpy.context.scene.objects.active = mhx
-
-    # Delete old widgets
-    """
-    for ob in scn.objects:
-        if ob.type == 'MESH' and ob.name[0:3] == "WGT":
-            scn.objects.unlink(ob)
-    """
-
-    # Save mhx bone locations    
-    heads = {}
-    tails = {}
-    rolls = {}
-    parents = {}
-    extras = {}
-    bpy.ops.object.mode_set(mode='EDIT')
-
-    newParents = {
-        'head' : 'DEF-head',
-        'ribs' : 'DEF-ribs',
-        'upper_arm.L' : 'DEF-upper_arm.L.02',
-        'thigh.L' : 'DEF-thigh.L.02',
-        'upper_arm.R' : 'DEF-upper_arm.R.02',
-        'thigh.R' : 'DEF-thigh.R.02',
-    }
-
-    for eb in mhx.data.edit_bones:
-        heads[eb.name] = eb.head.copy()
-        tails[eb.name] = eb.tail.copy()
-        rolls[eb.name] = eb.roll
-        if eb.parent:            
-            par = eb.parent.name
-            # print(eb.name, par)
-            try:
-                parents[eb.name] = newParents[par]
-            except:
-                parents[eb.name] = par
-        else:
-            parents[eb.name] = None
-        extras[eb.name] = not eb.layers[16]
-    bpy.ops.object.mode_set(mode='OBJECT')
-   
-    # Find corresponding meshes. Can be several (clothes etc.)   
-    meshes = []
-    for ob in scn.objects:
-        for mod in ob.modifiers:
-            if (mod.type == 'ARMATURE' and mod.object == mhx):
-                meshes.append((ob, mod))
-    if meshes == []:
-        MyError("Did not find matching mesh")
+    ob = context.object
+    if ob.type == 'ARMATURE':
+        rig = ob
+    elif ob.type == 'MESH':
+        rig = ob.parent
+    else:
+        rig = None
+    if not(rig and rig.type == 'ARMATURE'):
+        raise NameError("Rigify: %s is neither an armature nor has armature parent" % ob)
+    rig.MhxRigify = True
+    scn.objects.active = rig
+    
+    group = None
+    for grp in bpy.data.groups:
+        if rig.name in grp.objects:
+            group = grp
+            break
+    print("Group: %s" % group)        
         
-    # Rename Head vertex group    
-    for (mesh, mod) in meshes:
-        try:
-            vg = mesh.vertex_groups['DfmHead']
-            vg.name = 'DEF-head'
-        except:
-            pass
-
-    # Change meta bone locations    
-    scn.objects.active = None 
+    # Setup info about MHX bones    
+    bones = OrderedDict()
+    bpy.ops.object.mode_set(mode='EDIT')
+    for eb in rig.data.edit_bones:
+        bone = bones[eb.name] = RigifyBone(eb)
+        if eb.parent:        
+            bone.parent = eb.parent.name
+            bones[bone.parent].child = eb.name
+    bpy.ops.object.mode_set(mode='OBJECT')   
+    
+    # Create metarig    
     try:
-        bpy.ops.object.armature_human_advanced_add()
-        success = True
-    except:
-        success = False
-    if not success:
-        MyError("Unable to create advanced human. \n" \
-                "Make sure that the Rigify addon is enabled. \n" \
-                "It is found under Rigging.")
-        return
-
+        bpy.ops.object.armature_human_metarig_add()
+    except AttributeError:
+        raise MyError("The Rigify add-on is not enabled. It is found under rigging.")
+    bpy.ops.object.location_clear()
+    bpy.ops.object.rotation_clear()
+    bpy.ops.object.scale_clear()
+    bpy.ops.transform.resize(value=(100, 100, 100))
+    bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
+    
+    # Fit metarig to default MHX rig    
     meta = context.object
     bpy.ops.object.mode_set(mode='EDIT')
-    for eb in meta.data.edit_bones:
-        eb.head = heads[eb.name]
-        eb.tail = tails[eb.name]
-        eb.roll = rolls[eb.name]
-        extras[eb.name] = False
-
-    fingerPlanes = [
-        ('UP-thumb.L', 'thumb.01.L', 'thumb.03.L', ['thumb.02.L']),
-        ('UP-index.L', 'finger_index.01.L', 'finger_index.03.L', ['finger_index.02.L']),
-        ('UP-middle.L', 'finger_middle.01.L', 'finger_middle.03.L', ['finger_middle.02.L']),
-        ('UP-ring.L', 'finger_ring.01.L', 'finger_ring.03.L', ['finger_ring.02.L']),
-        ('UP-pinky.L', 'finger_pinky.01.L', 'finger_pinky.03.L', ['finger_pinky.02.L']),
-        ('UP-thumb.R', 'thumb.01.R', 'thumb.03.R', ['thumb.02.R']),
-        ('UP-index.R', 'finger_index.01.R', 'finger_index.03.R', ['finger_index.02.R']),
-        ('UP-middle.R', 'finger_middle.01.R', 'finger_middle.03.R', ['finger_middle.02.R']),
-        ('UP-ring.R', 'finger_ring.01.R', 'finger_ring.03.R', ['finger_ring.02.R']),
-        ('UP-pinky.R', 'finger_pinky.01.R', 'finger_pinky.03.R', ['finger_pinky.02.R']),
-    ]
-
-    for (upbone, first, last, middles) in fingerPlanes:
-        extras[upbone] = False
-        #lineateChain(upbone, first, last, middles, 0.01, meta, heads, tails)
-
-    ikPlanes = [
-        ('UP-leg.L', 'thigh.L', 'shin.L'),
-        ('UP-arm.L', 'upper_arm.L', 'forearm.L'),
-        ('UP-leg.R', 'thigh.R', 'shin.R'),
-        ('UP-arm.R', 'upper_arm.R', 'forearm.R'),
-    ]
-
-    for (upbone, first, last) in ikPlanes:
-        extras[upbone] = False
-        lineateChain(upbone, first, last, [], 0.1, meta, heads, tails)
-
+    extra = []
+    for bone in bones.values():  
+        try:
+            eb = meta.data.edit_bones[bone.name]
+        except KeyError:
+            eb = None
+        if eb:
+            eb.head = bone.head
+            eb.tail = bone.tail
+            eb.roll = bone.roll
+            bone.original = True
+        elif bone.extra:
+            extra.append(bone.name)
+            bone.original = True
+            eb = meta.data.edit_bones.new(bone.name)
+            eb.use_connect = False
+            eb.head = bones[bone.parent].tail
+            eb.tail = bones[bone.child].head
+            eb.roll = bone.roll
+            parent = meta.data.edit_bones[bone.parent]
+            child = meta.data.edit_bones[bone.child]
+            child.parent = eb
+            child.head = bones[bone.child].head
+            parent.tail = bones[bone.parent].tail
+            eb.parent = parent
+            eb.use_connect = True
+    
+    # Add rigify properties to extra bones
     bpy.ops.object.mode_set(mode='OBJECT')
-
+    for bname in extra:
+        pb = meta.pose.bones[bname]
+        pb["rigify_type"] = ""    
+        
     # Generate rigify rig    
     bpy.ops.pose.rigify_generate()
+    gen = context.object
+    print("Generated", gen)
     scn.objects.unlink(meta)
-    rigify = context.object
-    rigify.name = name+"Rig"
-    layers = 20*[False]
-    layers[1] = True        
-    rigify.layers = layers
-    rigify.show_x_ray = True
-    for (mesh, mod) in meshes:
-        mod.object = rigify
+    del meta
+    
+    for bone in bones.values():
+        if bone.original:
+            setBoneName(bone, gen)
+            
+    # Add extra bone to generated rig    
+    bpy.ops.object.mode_set(mode='EDIT')
+    layers = 32*[False]
+    layers[1] = True
+    for bone in bones.values():
+        if not bone.original:
+            if bone.deform:
+                bone.realname = "DEF-" + bone.name
+            else:
+                bone.realname = "MCH-" + bone.name
+            eb = gen.data.edit_bones.new(bone.realname)
+            eb.head = bone.head
+            eb.tail = bone.tail
+            eb.roll = bone.roll
+            eb.use_deform = bone.deform
+            if bone.parent:
+                parent = bones[bone.parent]
+                if parent.realname:
+                    eb.parent = gen.data.edit_bones[parent.realname]
+                elif parent.realname1:
+                    eb.parent = gen.data.edit_bones[parent.realname1]
+                else:
+                    print(bone)
+            eb.use_connect = (eb.parent != None and eb.parent.tail == eb.head)
+            eb.layers = layers
 
-    grp = loadedData['Group'][name]
-    grp.objects.link(rigify)
+    bpy.ops.object.mode_set(mode='OBJECT')
+    for bone in bones.values():
+        if not bone.original:
+            pb = gen.pose.bones[bone.realname]
+            db = rig.pose.bones[bone.name]
+            pb.rotation_mode = db.rotation_mode
+            for cns1 in db.constraints:
+                cns2 = pb.constraints.new(cns1.type)
+                fixConstraint(cns1, cns2, gen, bones)                
+    
+    # Add MHX properties    
+    for key in rig.keys():
+        gen[key] = rig[key]
+    
+    # Copy MHX bone drivers    
+    if rig.animation_data:
+        for fcu1 in rig.animation_data.drivers:
+            rna,channel = fcu1.data_path.rsplit(".", 1)
+            pb = eval("gen.%s" % rna)
+            fcu2 = pb.driver_add(channel, fcu1.array_index)
+            copyDriver(fcu1, fcu2, gen)    
+
+    # Copy MHX morph drivers and change armature modifier
+    for ob in rig.children:
+        if ob.type == 'MESH':
+            ob.parent = gen
+            
+            if ob.data.animation_data:
+                for fcu in ob.data.animation_data.drivers:
+                    print(ob, fcu.data_path)
+                    changeDriverTarget(fcu, gen)                     
+            
+            if ob.data.shape_keys and ob.data.shape_keys.animation_data:
+                for fcu in ob.data.shape_keys.animation_data.drivers:
+                    print(skey, fcu.data_path)
+                    changeDriverTarget(fcu, gen)                     
+            
+            for mod in ob.modifiers:
+                if mod.type == 'ARMATURE' and mod.object == rig:
+                    mod.object = gen                    
+
+    if group:
+        group.objects.link(gen)
 
     # Parent widgets under empty
     empty = bpy.data.objects.new("Widgets", None)
     scn.objects.link(empty)
     empty.layers = 20*[False]
     empty.layers[19] = True
-    empty.parent = rigify
+    empty.parent = gen
     for ob in scn.objects:
         if ob.type == 'MESH' and ob.name[0:4] == "WGT-" and not ob.parent:
             ob.parent = empty
             grp.objects.link(ob)
-        elif ob.parent == mhx:
-            ob.parent = rigify
-
-    # Copy extra bones to rigify rig
-    bpy.ops.object.mode_set(mode='EDIT')
-    for name in heads.keys():
-        if extras[name]:
-            eb = rigify.data.edit_bones.new(name)
-            eb.head = heads[name]
-            eb.tail = tails[name]
-            eb.roll = rolls[name]            
-    for name in heads.keys():
-        if extras[name] and parents[name]:
-            eb = rigify.data.edit_bones[name]
-            eb.parent = rigify.data.edit_bones[parents[name]]
-
-    # Copy constraints etc.
-    bpy.ops.object.mode_set(mode='POSE')
-    for name in heads.keys():
-        if extras[name]:
-            pb1 = mhx.pose.bones[name]
-            pb2 = rigify.pose.bones[name]
-            pb2.custom_shape = pb1.custom_shape
-            pb2.lock_location = pb1.lock_location
-            pb2.lock_rotation = pb1.lock_rotation
-            pb2.lock_scale = pb1.lock_scale
-            b1 = pb1.bone
-            b2 = pb2.bone
-            b2.use_deform = b1.use_deform
-            b2.hide_select = b1.hide_select
-            b2.show_wire = b1.show_wire
-            layers = 32*[False]
-            if b1.layers[8]:
-                layers[28] = True
-            else:
-                layers[29] = True
-            if b1.layers[10]:
-                layers[2] = True
-            b2.layers = layers
-            for cns1 in pb1.constraints:
-                cns2 = copyConstraint(cns1, pb1, pb2, mhx, rigify)    
-                if cns2.type == 'CHILD_OF':
-                    rigify.data.bones.active = pb2.bone
-                    bpy.ops.constraint.childof_set_inverse(constraint=cns2.name, owner='BONE')    
     
-    # Create animation data
-    if mhx.animation_data:
-        for fcu in mhx.animation_data.drivers:
-            rigify.animation_data.drivers.from_existing(src_driver=fcu)
+    #Clean up    
+    gen.show_x_ray = True
+    gen.data.draw_type = 'STICK'
+    gen.MhxRigify = False    
+    name = rig.name
+    scn.objects.unlink(rig)
+    del rig
+    gen.name = name
+    bpy.ops.object.mode_set(mode='POSE')
+    print("MHX rig %s successfully rigified" % name)
+    
+    
 
-    fixDrivers(rigify.animation_data, mhx, rigify)
-    for (mesh, mod) in meshes:
-        mesh.parent = rigify
-        skeys = mesh.data.shape_keys
-        if skeys:
-            fixDrivers(skeys.animation_data, mhx, rigify)
+def setBoneName(bone, gen):
+    fkname = bone.name.replace(".", ".fk.")
+    try:
+        gen.data.bones[fkname]
+        bone.fkname = fkname
+        bone.ikname = fkname.replace(".fk.", ".ik")
+    except KeyError:
+        pass
 
-    scn.objects.unlink(mhx)
-    print("Rigify rig complete")    
-    return
-
-#
-#   lineateChain(upbone, first, last, middles, minDist, rig, heads, tails):
-#   lineate(pt, start, minDist, normal, offVector):
-#
-
-def lineateChain(upbone, first, last, middles, minDist, rig, heads, tails):
-    fb = rig.data.edit_bones[first]
-    lb = rig.data.edit_bones[last]
-    uhead = heads[upbone]
-    utail = tails[upbone]
-    tang = lb.tail - fb.head
-    tangent = tang/tang.length
-    up = (uhead+utail)/2 - fb.head
-    norm = up - tangent*tangent.dot(up)
-    normal = norm/norm.length
-    offVector = tangent.cross(normal)
-    vec = utail - uhead
-    fb.tail = lineate(fb.tail, fb.head, minDist, normal, offVector)
-    lb.head = lineate(lb.head, fb.head, minDist, normal, offVector)
-    for bone in middles:
-        mb = rig.data.edit_bones[bone]
-        mb.head = lineate(mb.head, fb.head, minDist, normal, offVector)
-        mb.tail = lineate(mb.tail, fb.head, minDist, normal, offVector)
-    return
-
-def lineate(pt, start, minDist, normal, offVector):
-    diff = pt - start
-    diff = diff - offVector*offVector.dot(diff) 
-    dist = diff.dot(normal)
-    if dist < minDist:
-        diff += (minDist - dist)*normal
-    return start + diff
-
-#
-#   fixDrivers(adata, mhx, rigify):
-#
-
-def fixDrivers(adata, mhx, rigify):
-    if not adata:
+    defname = "DEF-" + bone.name
+    try:
+        gen.data.bones[defname]
+        bone.realname = defname
         return
-    for fcu in adata.drivers:
-        for var in fcu.driver.variables:
-            for targ in var.targets:
-                if targ.id == mhx:
-                    targ.id = rigify
-    return
+    except KeyError:
+        pass
+        
+    defname1 = "DEF-" + bone.name + ".01"
+    try:
+        gen.data.bones[defname1]
+        bone.realname1 = defname1
+        bone.realname2 = defname1.replace(".01.", ".02.")
+        return
+    except KeyError:
+        pass
 
-#
-#   copyConstraint(cns1, pb1, pb2, mhx, rigify):
-#
+    defname1 = "DEF-" + bone.name.replace(".", ".01.")
+    try:
+        gen.data.bones[defname1]
+        bone.realname1 = defname1
+        bone.realname2 = defname1.replace(".01.", ".02")
+        return
+    except KeyError:
+        pass
 
-def copyConstraint(cns1, pb1, pb2, mhx, rigify):
-    substitute = {
-        'Head' : 'DEF-head',
-        'MasterFloor' : 'root',
-        'upper_arm.L' : 'DEF-upper_arm.L.01',
-        'upper_arm.R' : 'DEF-upper_arm.R.01',
-        'thigh.L' : 'DEF-thigh.L.01',
-        'thigh.R' : 'DEF-thigh.R.01',
-        'shin.L' : 'DEF-shin.L.01',
-        'shin.R' : 'DEF-shin.R.01'
-    }
+    try:
+        gen.data.edit_bones[bone.name]
+        bone.realname = bone.name
+    except KeyError:
+        pass
 
-    cns2 = pb2.constraints.new(cns1.type)
-    for prop in dir(cns1):
-        if prop == 'target':
-            if cns1.target == mhx:
-                cns2.target = rigify
-            else:
-                cns2.target = cns1.target
-        elif prop == 'subtarget':
-            try:
-                cns2.subtarget = substitute[cns1.subtarget]
-            except:
-                cns2.subtarget = cns1.subtarget
-        elif prop[0] != '_':
-            try:
-                expr = "cns2.%s = cns1.%s" % (prop, prop)
-                #print(pb1.name, expr)
-                exec(expr)
-            except:
-                pass
-    return cns2
+
+def fixConstraint(cns1, cns2, gen, bones):
+    for key in dir(cns1):
+        if ((key[0] != "_") and
+            (key not in ["bl_rna", "type", "rna_type", "is_valid", "error_location", "error_rotation"])):
+            expr = ("cns2.%s = cns1.%s" % (key, key))
+            exec(expr)
+
+    cns2.target = gen
+    
+    if cns1.type == 'STRETCH_TO':
+        bone = bones[cns1.subtarget]
+        if bone.realname:
+            cns2.subtarget = bone.realname
+            cns2.head_tail = cns1.head_tail
+        elif not bone.realname1:
+            print(bone)
+            halt
+        elif cns1.head_tail < 0.5:
+            cns2.subtarget = bone.realname1
+            cns2.head_tail = 2*cns1.head_tail
+        else:
+            cns2.subtarget = bone.realname2
+            cns2.head_tail = 2*cns1.head_tail-1
+
+    elif cns1.type == 'TRANSFORM':
+        bone = bones[cns1.subtarget]
+        if bone.fkname:
+            cns2.subtarget = bone.fkname
+        elif bone.ikname:
+            cns2.subtarget = bone.ikname
+        else:
+            cns2.subtarget = bone.realname
+
+
+def copyDriver(fcu1, fcu2, id):
+    drv1 = fcu1.driver
+    drv2 = fcu2.driver
+    
+    for var1 in drv1.variables:
+        var2 = drv2.variables.new()
+        var2.name = var1.name
+        var2.type = var1.type
+        targ1 = var1.targets[0]
+        targ2 = var2.targets[0]
+        targ2.id = id
+        targ2.data_path = targ1.data_path
+            
+    drv2.type = drv1.type
+    drv2.expression = drv1.expression
+    drv2.show_debug_info = drv1.show_debug_info
+
+
+def changeDriverTarget(fcu, id):
+    for var in fcu.driver.variables:
+        targ = var.targets[0]
+        targ.id = id       
+        
 
 #
 #   class OBJECT_OT_RigifyMhxButton(bpy.types.Operator):
@@ -2720,7 +2841,7 @@ class OBJECT_OT_RigifyMhxButton(bpy.types.Operator):
     bl_options = {'UNDO'}
 
     def execute(self, context):
-        rigifyMhx(context, context.object.name)
+        rigifyMhx(context)
         return{'FINISHED'}    
     
 #
@@ -2735,10 +2856,7 @@ class RigifyMhxPanel(bpy.types.Panel):
     @classmethod
     def poll(cls, context):
         if context.object:
-            try:
-                return context.object['MhxRigify']
-            except:
-                return False
+            return context.object.MhxRigify
         return False
 
     def draw(self, context):
@@ -2784,7 +2902,13 @@ def MyError(message):
     theErrorLines = message.split('\n')
     theErrorStatus = True
     bpy.ops.mhx.error('INVOKE_DEFAULT')
-    raise NameError(theMessage)
+    raise MhxError(theMessage)
+
+class MhxError(Exception):
+    def __init__(self, value):
+        self.value = value
+    def __str__(self):
+        return repr(self.value)
 
 class SuccessOperator(bpy.types.Operator):
     bl_idname = "mhx.success"
@@ -2799,7 +2923,7 @@ class SuccessOperator(bpy.types.Operator):
         return wm.invoke_props_dialog(self)
 
     def draw(self, context):
-        self.layout.label(self.message)
+        self.layout.label(self.message + theMessage)
 
 ###################################################################################
 #
@@ -2809,25 +2933,24 @@ class SuccessOperator(bpy.types.Operator):
 
 from bpy_extras.io_utils import ImportHelper
 
-
 MhxBoolProps = [
     ("enforce", "Enforce version", "Only accept MHX files of correct version", T_EnforceVersion),
+    #("crash_safe", "Crash-safe", "Disable features that have caused Blender crashes", T_CrashSafe),
     ("mesh", "Mesh", "Use main mesh", T_Mesh),
     ("proxy", "Proxies", "Use proxies", T_Proxy),
-    ("armature", "Armature", "Use armature", T_Armature),
+    #("armature", "Armature", "Use armature", T_Armature),
     #("replace", "Replace scene", "Replace scene", T_Replace),
     ("cage", "Cage", "Load mesh deform cage", T_Cage),
     ("clothes", "Clothes", "Include clothes", T_Clothes),
-    #("stretch", "Stretchy limbs", "Stretchy limbs", T_Stretch),
-    ("face", "Face shapes", "Include facial shapekeys", T_Face),
-    ("shape", "Body shapes", "Include body shapekeys", T_Shape),
+    ("shapekeys", "Shapekeys", "Include shapekeys", T_Shapekeys),
+    ("shapedrivers", "Shapekey drivers", "Include shapekey drivers", T_ShapeDrivers),
     #("symm", "Symmetric shapes", "Keep shapekeys symmetric", T_Symm),
     ("diamond", "Helper geometry", "Keep helper geometry", T_Diamond),
     ("rigify", "Rigify", "Create rigify control rig", T_Rigify),
 ]
 
 class ImportMhx(bpy.types.Operator, ImportHelper):
-    '''Import from MHX file format (.mhx)'''
+    """Import from MHX file format (.mhx)"""
     bl_idname = "import_scene.makehuman_mhx"
     bl_description = 'Import from MHX file format (.mhx)'
     bl_label = "Import MHX"
@@ -2835,39 +2958,58 @@ class ImportMhx(bpy.types.Operator, ImportHelper):
     bl_region_type = "WINDOW"
     bl_options = {'UNDO'}
 
-    scale = FloatProperty(name="Scale", description="Default meter, decimeter = 1.0", default = theScale)
     filename_ext = ".mhx"
     filter_glob = StringProperty(default="*.mhx", options={'HIDDEN'})
     filepath = StringProperty(subtype='FILE_PATH')
-
+    
+    scale = FloatProperty(name="Scale", description="Default meter, decimeter = 1.0", default = theScale)
+    advanced = BoolProperty(name="Advanced settings", description="Use advanced import settings", default=False)
     for (prop, name, desc, flag) in MhxBoolProps:
-        expr = '%s = BoolProperty(name="%s", description="%s", default=toggle&%s)' % (prop, name, desc, flag)
+        expr = '%s = BoolProperty(name="%s", description="%s", default=(toggleSettings&%s != 0))' % (prop, name, desc, flag)
         exec(expr)
+    
+    
+    def draw(self, context):
+        layout = self.layout
+        layout.prop(self, "scale")
+        layout.prop(self, "advanced")
+        if self.advanced:
+            for (prop, name, desc, flag) in MhxBoolProps:
+                layout.prop(self, prop)
+
         
     def execute(self, context):
-        global toggle, theScale, MhxBoolProps
-        toggle = 0
-        for (prop, name, desc, flag) in MhxBoolProps:
-            expr = '(%s if self.%s else 0)' % (flag, prop)
-            toggle |=  eval(expr)
+        global toggle, toggleSettings, theScale, MhxBoolProps
+        if not self.advanced:
+            toggle = DefaultToggle
+        else:
+            toggle = T_Armature
+            for (prop, name, desc, flag) in MhxBoolProps:
+                expr = '(%s if self.%s else 0)' % (flag, prop)
+                toggle |=  eval(expr)
+            toggleSettings = toggle
         print("execute flags %x" % toggle)
         theScale = self.scale
 
+        #filepathname = self.filepath.encode('utf-8', 'strict')
         try:
             readMhxFile(self.filepath)
             bpy.ops.mhx.success('INVOKE_DEFAULT', message = self.filepath)
-        except NameError:
-            print("Error when loading MHX file:\n" + theMessage)
+        except MhxError:
+            print("Error when loading MHX file %s:\n" % self.filepath + theMessage)
 
-        writeDefaults()
+        if self.advanced:
+            writeDefaults()
+            self.advanced = False
         return {'FINISHED'}
+
 
     def invoke(self, context, event):
         global toggle, theScale, MhxBoolProps
         readDefaults()
         self.scale = theScale
         for (prop, name, desc, flag) in MhxBoolProps:
-            expr = 'self.%s = toggle&%s' % (prop, flag)
+            expr = 'self.%s = (toggle&%s != 0)' % (prop, flag)
             exec(expr)
         context.window_manager.fileselect_add(self)
         return {'RUNNING_MODAL'}
@@ -2882,7 +3024,7 @@ class ImportMhx(bpy.types.Operator, ImportHelper):
 #
 #    visemes
 #
-
+"""
 stopStaringVisemes = ({
     'Rest' : [
         ('PMouth', (0,0)), 
@@ -2968,114 +3110,234 @@ stopStaringVisemes = ({
 
 bodyLanguageVisemes = ({
     'Rest' : [
-        ('PMouth', (0,0)), 
-        ('PMouthMid', (0,-0.6)), 
-        ('PUpLipMid', (0,0)), 
-        ('PLoLipMid', (0,0)), 
-        ('PJaw', (0,0)), 
-        ('PTongue', (0,0))], 
+        ('MouthWidth_L', 0), 
+        ('MouthWidth_R', 0), 
+        ('MouthNarrow_L', 0), 
+        ('MouthNarrow_R', 0), 
+        ('LipsPart', 0.6), 
+        ('UpLipsMidHeight', 0), 
+        ('LoLipsMidHeight', 0), 
+        ('LoLipsIn', 0),
+        ('MouthOpen', 0), 
+        ('TongueBackHeight', 0),
+        ('TongueHeight', 0),
+        ], 
     'Etc' : [
-        ('PMouth', (0,0)), 
-        ('PMouthMid', (0,-0.4)), 
-        ('PUpLipMid', (0,0)), 
-        ('PLoLipMid', (0,0)), 
-        ('PJaw', (0,0)), 
-        ('PTongue', (0,0))], 
+        ('MouthWidth_L', 0), 
+        ('MouthWidth_R', 0), 
+        ('MouthNarrow_L', 0), 
+        ('MouthNarrow_R', 0), 
+        ('LipsPart', 0.4), 
+        ('UpLipsMidHeight', 0), 
+        ('LoLipsMidHeight', 0), 
+        ('LoLipsIn', 0),
+        ('MouthOpen', 0), 
+        ('TongueBackHeight', 0),
+        ('TongueHeight', 0),
+        ], 
     'MBP' : [
-        ('PMouth', (0,0)), 
-        ('PMouthMid', (0,0)), 
-        ('PUpLipMid', (0,0)), 
-        ('PLoLipMid', (0,0)), 
-        ('PJaw', (0,0)), 
-        ('PTongue', (0,0))], 
+        ('MouthWidth_L', 0), 
+        ('MouthWidth_R', 0), 
+        ('MouthNarrow_L', 0), 
+        ('MouthNarrow_R', 0), 
+        ('LipsPart', 0), 
+        ('UpLipsMidHeight', 0), 
+        ('LoLipsMidHeight', 0), 
+        ('LoLipsIn', 0),
+        ('MouthOpen', 0), 
+        ('TongueBackHeight', 0),
+        ('TongueHeight', 0),
+        ], 
     'OO' : [
-        ('PMouth', (-1.0,0)), 
-        ('PMouthMid', (0,0)), 
-        ('PUpLipMid', (0,0)), 
-        ('PLoLipMid', (0,0)), 
-        ('PJaw', (0,0.4)), 
-        ('PTongue', (0,0))], 
+        ('MouthWidth_L', 0), 
+        ('MouthWidth_R', 0), 
+        ('MouthNarrow_L', 1.0), 
+        ('MouthNarrow_R', 1.0), 
+        ('LipsPart', 0), 
+        ('UpLipsMidHeight', 0), 
+        ('LoLipsMidHeight', 0), 
+        ('LoLipsIn', 0),
+        ('MouthOpen', 0.4), 
+        ('TongueBackHeight', 0),
+        ('TongueHeight', 0),
+        ], 
     'O' : [
-        ('PMouth', (-0.9,0)), 
-        ('PMouthMid', (0,0)), 
-        ('PUpLipMid', (0,0)), 
-        ('PLoLipMid', (0,0)), 
-        ('PJaw', (0,0.8)), 
-        ('PTongue', (0,0))], 
+        ('MouthWidth_L', 0), 
+        ('MouthWidth_R', 0), 
+        ('MouthNarrow_L', 0.9), 
+        ('MouthNarrow_R', 0.9), 
+        ('LipsPart', 0), 
+        ('UpLipsMidHeight', 0), 
+        ('LoLipsMidHeight', 0), 
+        ('LoLipsIn', 0),
+        ('MouthOpen', 0.8), 
+        ('TongueBackHeight', 0),
+        ('TongueHeight', 0),
+        ], 
     'R' : [
-        ('PMouth', (-0.5,0)), 
-        ('PMouthMid', (0,0)), 
-        ('PUpLipMid', (0,-0.2)), 
-        ('PLoLipMid', (0,0.2)), 
-        ('PJaw', (0,0)), 
-        ('PTongue', (0,0))], 
+        ('MouthWidth_L', 0), 
+        ('MouthWidth_R', 0), 
+        ('MouthNarrow_L', 0.5), 
+        ('MouthNarrow_R', 0.5), 
+        ('LipsPart', 0), 
+        ('UpLipsMidHeight', 0.2), 
+        ('LoLipsMidHeight', -0.2), 
+        ('LoLipsIn', 0),
+        ('MouthOpen', 0), 
+        ('TongueBackHeight', 0),
+        ('TongueHeight', 0),
+        ], 
     'FV' : [
-        ('PMouth', (-0.2,0)), 
-        ('PMouthMid', (0,1.0)), 
-        ('PUpLipMid', (0,0)), 
-        ('PLoLipMid', (-0.6,-0.3)), 
-        ('PJaw', (0,0)), 
-        ('PTongue', (0,0))], 
+        ('MouthWidth_L', 0.2), 
+        ('MouthWidth_R', 0.2), 
+        ('MouthNarrow_L', 0), 
+        ('MouthNarrow_R', 0), 
+        ('LipsPart', 1.0), 
+        ('UpLipsMidHeight', 0), 
+        ('LoLipsMidHeight', 0.3), 
+        ('LoLipsIn', 0.6),
+        ('MouthOpen', 0), 
+        ('TongueBackHeight', 0),
+        ('TongueHeight', 0),
+        ], 
     'S' : [
-        ('PMouth', (0,0)), 
-        ('PMouthMid', (0,0)), 
-        ('PUpLipMid', (0,-0.5)), 
-        ('PLoLipMid', (0,0.7)), 
-        ('PJaw', (0,0)), 
-        ('PTongue', (0,0))], 
+        ('MouthWidth_L', 0), 
+        ('MouthWidth_R', 0), 
+        ('MouthNarrow_L', 0), 
+        ('MouthNarrow_R', 0), 
+        ('LipsPart', 0), 
+        ('UpLipsMidHeight', 0.5), 
+        ('LoLipsMidHeight', -0.7), 
+        ('LoLipsIn', 0),
+        ('MouthOpen', 0), 
+        ('TongueBackHeight', 0),
+        ('TongueHeight', 0),
+        ], 
     'SH' : [
-        ('PMouth', (-0.8,0)), 
-        ('PMouthMid', (0,0)), 
-        ('PUpLipMid', (0,-1.0)), 
-        ('PLoLipMid', (0,1.0)), 
-        ('PJaw', (0,0)), 
-        ('PTongue', (0,0))], 
+        ('MouthWidth_L', 0.8), 
+        ('MouthWidth_R', 0.8), 
+        ('MouthNarrow_L', 0), 
+        ('MouthNarrow_R', 0), 
+        ('LipsPart', 0), 
+        ('UpLipsMidHeight', 1.0), 
+        ('LoLipsMidHeight', 0), 
+        ('LoLipsIn', 0),
+        ('MouthOpen', 0), 
+        ('TongueBackHeight', 0),
+        ('TongueHeight', 0),
+        ], 
     'EE' : [
-        ('PMouth', (0.2,0)), 
-        ('PMouthMid', (0,0)), 
-        ('PUpLipMid', (0,-0.6)), 
-        ('PLoLipMid', (0,0.6)), 
-        ('PJaw', (0,0.05)), 
-        ('PTongue', (0,0))], 
+        ('MouthWidth_L', 0.2), 
+        ('MouthWidth_R', 0.2), 
+        ('MouthNarrow_L', 0), 
+        ('MouthNarrow_R', 0), 
+        ('LipsPart', 0), 
+        ('UpLipsMidHeight', 0.6), 
+        ('LoLipsMidHeight', -0.6), 
+        ('LoLipsIn', 0),
+        ('MouthOpen', 0.5), 
+        ('TongueBackHeight', 0),
+        ('TongueHeight', 0),
+        ], 
     'AH' : [
-        ('PMouth', (0,0)), 
-        ('PMouthMid', (0,0)), 
-        ('PUpLipMid', (0,-0.4)), 
-        ('PLoLipMid', (0,0)), 
-        ('PJaw', (0,0.7)), 
-        ('PTongue', (0,0))], 
+        ('MouthWidth_L', 0), 
+        ('MouthWidth_R', 0), 
+        ('MouthNarrow_L', 0), 
+        ('MouthNarrow_R', 0), 
+        ('LipsPart', 0), 
+        ('UpLipsMidHeight', 0.4), 
+        ('LoLipsMidHeight', 0), 
+        ('LoLipsIn', 0),
+        ('MouthOpen', 0.7), 
+        ('TongueBackHeight', 0),
+        ('TongueHeight', 0),
+        ], 
     'EH' : [
-        ('PMouth', (0,0)), 
-        ('PMouthMid', (0,0)), 
-        ('PUpLipMid', (0,-0.5)), 
-        ('PLoLipMid', (0,0.6)), 
-        ('PJaw', (0,0.25)), 
-        ('PTongue', (0,0))], 
+        ('MouthWidth_L', 0), 
+        ('MouthWidth_R', 0), 
+        ('MouthNarrow_L', 0), 
+        ('MouthNarrow_R', 0), 
+        ('LipsPart', 0), 
+        ('UpLipsMidHeight', 0.5), 
+        ('LoLipsMidHeight', -0.6), 
+        ('LoLipsIn', 0),
+        ('MouthOpen', 0.25), 
+        ('TongueBackHeight', 0),
+        ('TongueHeight', 0),
+        ], 
     'TH' : [
-        ('PMouth', (0,0)), 
-        ('PMouthMid', (0,0)), 
-        ('PUpLipMid', (0,0)), 
-        ('PLoLipMid', (0,0)), 
-        ('PJaw', (0,0.2)), 
-        ('PTongue', (1.0,1.0))], 
+        ('MouthWidth_L', 0), 
+        ('MouthWidth_R', 0), 
+        ('MouthNarrow_L', 0), 
+        ('MouthNarrow_R', 0), 
+        ('LipsPart', 0), 
+        ('UpLipsMidHeight', 0), 
+        ('LoLipsMidHeight', 0), 
+        ('LoLipsIn', 0),
+        ('MouthOpen', 0.2), 
+        ('TongueBackHeight', 1.0),
+        ('TongueHeight', 1.0)
+        ], 
     'L' : [
-        ('PMouth', (0,0)), 
-        ('PMouthMid', (0,0)), 
-        ('PUpLipMid', (0,-0.5)), 
-        ('PLoLipMid', (0,0.5)), 
-        ('PJaw', (0,-0.2)), 
-        ('PTongue', (1.0,1.0))], 
+        ('MouthWidth_L', 0), 
+        ('MouthWidth_R', 0), 
+        ('MouthNarrow_L', 0), 
+        ('MouthNarrow_R', 0), 
+        ('LipsPart', 0), 
+        ('UpLipsMidHeight', 0.5), 
+        ('LoLipsMidHeight', -0.5), 
+        ('LoLipsIn', 0),
+        ('MouthOpen', -0.2), 
+        ('TongueBackHeight', 1.0),
+        ('TongueHeight', 1.0),
+        ], 
     'G' : [
-        ('PMouth', (0,0)), 
-        ('PMouthMid', (0,0)), 
-        ('PUpLipMid', (0,-0.5)), 
-        ('PLoLipMid', (0,0.5)), 
-        ('PJaw', (0,-0.2)), 
-        ('PTongue', (-1.0,0))], 
+        ('MouthWidth_L', 0), 
+        ('MouthWidth_R', 0), 
+        ('MouthNarrow_L', 0), 
+        ('MouthNarrow_R', 0), 
+        ('LipsPart', 0), 
+        ('UpLipsMidHeight', 0.5), 
+        ('LoLipsMidHeight', -0.5), 
+        ('LoLipsIn', 0),
+        ('MouthOpen', -0.2), 
+        ('TongueBackHeight', 1.0),
+        ('TongueHeight', 0),
+        ], 
 
-    'Blink' : [('PUpLid', (0,1.0)), ('PLoLid', (0,-1.0))], 
-    'Unblink' : [('PUpLid', (0,0)), ('PLoLid', (0,0))], 
+    'Blink' : [
+        ('UpLidUp_L', 1), 
+        ('UpLidUp_R', 1), 
+        ('LoLidDown_L', 1),
+        ('LoLidDown_R', 1)
+        ], 
+        
+    'Unblink' : [
+        ('UpLidUp_L', 0), 
+        ('UpLidUp_R', 0), 
+        ('LoLidDown_L', 0),
+        ('LoLidDown_R', 0)
+        ], 
 })
+
+VisemePanelBones = {
+    'MouthOpen' :       ('PJaw', (0,0.25)),
+    'UpLipsMidHeight' : ('PUpLipMid', (0,-0.25)),
+    'LoLipsMidHeight' : ('PLoLipMid', (0,-0.25)),
+    'LoLipsIn':         ('PLoLipMid', (-0.25,0)),
+    'MouthWidth_L' :    ('PMouth_L', (0.25,0)),
+    'MouthWidth_R' :    ('PMouth_R', (-0.25,0)),
+    'MouthNarrow_L' :   ('PMouth_L', (-0.25,0)),
+    'MouthNarrow_R' :   ('PMouth_R', (0.25,0)),
+    'LipsPart' :        ('PMouthMid', (0, -0.25)),    
+    'TongueBackHeight': ('PTongue', (-0.25, 0)),
+    'TongueHeight' :    ('PTongue', (0, -0.25)),
+    
+    'UpLidUp_L' :       ('PUpLid_L', (0,1.0)),
+    'UpLidUp_R' :       ('PUpLid_R', (0,1.0)),
+    'LoLidDown_L' :     ('PLoLid_L', (0,-1.0)), 
+    'LoLidDown_R' :     ('PLoLid_R', (0,-1.0)), 
+}    
 
 VisemeList = [
     ('Rest', 'Etc', 'AH'),
@@ -3097,94 +3359,46 @@ def makeVisemes(ob, scn):
     if not ob.data.shape_keys:
         print("%s has no shapekeys" % ob)
         return
-    adata = ob.data.shape_keys.animation_data
-    if not adata:
-        print("Shapekeys have not drivers")
-        return
     try:
         ob.data.shape_keys.key_blocks["VIS_Rest"]
         print("Visemes already created")
         return
     except:
         pass        
-    rig = ob.parent
-    scale = rig.data.bones['PFace'].length*0.2
 
-    boneShapes = {}
-    for fcu in adata.drivers:
-        name = fcu.data_path.split('"')[1]
-        for var in fcu.driver.variables:
-            if var.type == 'TRANSFORMS':
-                targ = var.targets[0]  
-                fmod = fcu.modifiers[0]
-                try:
-                    list = boneShapes[targ.bone_target]
-                except:
-                    list = []
-                    boneShapes[targ.bone_target] = list
-                list.append((targ.transform_type, fmod, ob.data.shape_keys.key_blocks[name]))
-            
     verts = ob.data.vertices            
-    for (vis,bones) in bodyLanguageVisemes.items():
+    for (vis,shapes) in bodyLanguageVisemes.items():
         if vis in ['Blink', 'Unblink']:
             continue
         vkey = ob.shape_key_add(name="VIS_%s" % vis)  
         print(vkey.name)
         for n,v in enumerate(verts):
             vkey.data[n].co = v.co
-        for (bone, xz) in bones:
-            try:
-                boneShapes[bone]
-                single = True
-            except:
-                single = False
-            if single:
-                addToVisShapeKey(boneShapes[bone], vkey, verts, xz, 1, scale)
-            else:
-                try:
-                    boneShapes[bone+"_L"]
-                    double = True
-                except:
-                    double = False
-                if double:
-                    addToVisShapeKey(boneShapes[bone+"_L"], vkey, verts, xz, 1, scale)
-                    #addToVisShapeKey(boneShapes[bone+"_R"], vkey, verts, xz, -1, scale)
+        for (name,value) in shapes:
+            if name[-2:] == "_R":
+                continue
+            skey = ob.data.shape_keys.key_blocks[name]
+            factor = 0.75*value
+            for n,v in enumerate(verts):
+                vkey.data[n].co += factor*(skey.data[n].co - v.co)
     print("Visemes made")                    
     return
-    
-def addToVisShapeKey(shapes, vkey, verts, xz, sign, scale):
-    for (typ, fmod, skey) in shapes:
-        factor = fmod.coefficients[1]*scale
-        (x,z) = xz
-        if typ == 'LOC_X':
-            k = factor*sign*x
-        elif typ == 'LOC_Z':
-            k = factor*z
-        if k < skey.slider_min:
-            k = skey.slider_min
-        if k > skey.slider_max:
-            k = skey.slider_max
-        if abs(k) < 0.001:
-            continue
-        print("  %s %.3f %.3f %.3f %.3f" % (skey.name, factor, x, z, k))
-        for n,v in enumerate(verts):
-            vkey.data[n].co += k*(skey.data[n].co - v.co)
-    return            
-       
+           
 class VIEW3D_OT_MhxMakeVisemesButton(bpy.types.Operator):
     bl_idname = "mhx.make_visemes"
     bl_label = "Generate viseme shapekeys"
+    bl_options = {'UNDO'}
 
     def execute(self, context):
         makeVisemes(context.object, context.scene)
         return{'FINISHED'}    
-       
+"""       
 #
 #    mohoVisemes
 #    magpieVisemes
 #
 
-mohoVisemes = dict({
+MohoVisemes = dict({
     'rest' : 'Rest', 
     'etc' : 'Etc', 
     'AI' : 'AH', 
@@ -3197,16 +3411,16 @@ mohoVisemes = dict({
     'FV' : 'FV', 
 })
 
-magpieVisemes = dict({
-    "CONS" : "t,d,k,g,T,D,s,z,S,Z,h,n,N,j,r,tS", 
-    "AI" : "i,&,V,aU,I,0,@,aI", 
-    "E" : "eI,3,e", 
-    "O" : "O,@U,oI", 
-    "UW" : "U,u,w", 
-    "MBP" : "m,b,p", 
-    "L" : "l", 
-    "FV" : "f,v", 
-    "Sh" : "dZ", 
+MagpieVisemes = dict({
+    "CONS" : "Etc", 
+    "AI" : 'AH', 
+    "E" : "EH", 
+    "O" : "O", 
+    "UW" : "AH", 
+    "MBP" : "MBP", 
+    "L" : "L", 
+    "FV" : "FV", 
+    "Sh" : "SH", 
 })
 
 #
@@ -3214,7 +3428,7 @@ magpieVisemes = dict({
 #    setBoneLocation(context, pbone, loc, mirror, setKey, frame):
 #    class VIEW3D_OT_MhxVisemeButton(bpy.types.Operator):
 #
-
+"""
 def getVisemeSet(context, rig):
     try:
         visset = rig['MhxVisemeSet']
@@ -3225,184 +3439,195 @@ def getVisemeSet(context, rig):
     elif visset == 'BodyLanguage':
         return bodyLanguageVisemes
     else:
-        raise NameError("Unknown viseme set %s" % visset)
+        raise MhxError("Unknown viseme set %s" % visset)
 
-def setViseme(context, vis, setKey, frame):
-    rig = getMhxRig(context.object)
-    pbones = rig.pose.bones
-    try:
-        scale = pbones['PFace'].bone.length
-    except:
-        return
-    visemes = getVisemeSet(context, rig)
-    for (b, (x, z)) in visemes[vis]:
-        loc = mathutils.Vector((float(x),0,float(z)))
+
+def setVisemeAlpha7(context, vis, visemes, setKey, frame):
+    (rig, mesh) = getMhxRigMesh(context.object)
+    isPanel = False
+    isProp = False
+    shapekeys = None
+    scale = 0.75
+    if rig.MhxShapekeyDrivers:
         try:
-            pb = pbones[b]
+            scale *= rig.pose.bones['PFace'].bone.length
+            isPanel = True
         except:
+            isProp = True
+    elif mesh:
+        shapekeys = mesh.data.shape_keys.key_blocks
 
-            pb = None
-            
-        if pb:
-            setBoneLocation(context, pb, scale, loc, False, setKey, frame)
-        else:
-            setBoneLocation(context, pbones[b+'_L'], scale, loc, False, setKey, frame)
-            setBoneLocation(context, pbones[b+'_R'], scale, loc, True, setKey, frame)
-    updatePose(rig)
+    for (skey, value) in visemes[vis]:
+        if isPanel:
+            (b, (x,z)) = VisemePanelBones[skey]
+            loc = mathutils.Vector((float(x*value),0,float(z*value)))            
+            pb = rig.pose.bones[b]
+            pb.location = loc*scale
+            if setKey or context.tool_settings.use_keyframe_insert_auto:
+                for n in range(3):
+                    pb.keyframe_insert('location', index=n, frame=frame, group=pb.name)
+        elif isProp:
+            skey = 'Mhf' + skey
+            try:
+                prop = rig[skey]
+            except:
+                continue
+            rig[skey] = value*scale
+            if setKey or context.tool_settings.use_keyframe_insert_auto:
+                rig.keyframe_insert('["%s"]' % skey, frame=frame, group="Visemes")    
+        elif shapekeys:
+            try:
+                shapekeys[skey].value = value*scale
+            except:
+                continue
+            if setKey or context.tool_settings.use_keyframe_insert_auto:
+                shapekeys[skey].keyframe_insert("value", frame=frame)            
+    updatePose(context)
     return
 
-def setBoneLocation(context, pb, scale, loc, mirror, setKey, frame):
-    if mirror:
-        loc[0] = -loc[0]
-    pb.location = loc*scale*0.2
-
-    if setKey or context.tool_settings.use_keyframe_insert_auto:
-        for n in range(3):
-            pb.keyframe_insert('location', index=n, frame=frame, group=pb.name)
-    return
 
 class VIEW3D_OT_MhxVisemeButton(bpy.types.Operator):
     bl_idname = 'mhx.pose_viseme'
     bl_label = 'Viseme'
+    bl_options = {'UNDO'}
     viseme = StringProperty()
 
     def invoke(self, context, event):
-        setViseme(context, self.viseme, False, context.scene.frame_current)
+        (rig, mesh) = getMhxRigMesh(context.object)
+        visemes = getVisemeSet(context, rig)
+        setVisemeAlpha7(context, self.viseme, visemes, False, context.scene.frame_current)
         return{'FINISHED'}
 
+"""
 
 
-#
-#    openFile(context, filepath):
-#    readMoho(context, filepath, offs):
-#    readMagpie(context, filepath, offs):
-#
-
-def openFile(context, filepath):
-    (path, fileName) = os.path.split(filepath)
-    (name, ext) = os.path.splitext(fileName)
-    return open(filepath, "rU")
-
-def readMoho(context, filepath, offs):
-    rig = getMhxRig(context.object)
+def readLipsync(context, filepath, offs, struct):
+    (rig, mesh) = getMhxRigMesh(context.object)
+    if rig.MhAlpha8:
+        props = getProps(rig, "Mhv")
+        visemes = {}
+        oldKeys = []
+        for prop in props:
+            dummy,units = getUnitsFromString("x;"+rig[prop])
+            visemes[prop] = units
+        props = getProps(rig, "Mhsmouth")
+        auto = context.tool_settings.use_keyframe_insert_auto
+        auto = True
+        factor = rig.MhxStrength
+        shapekeys = getMhmShapekeys(rig, mesh)        
+    else:
+        visemes = getVisemeSet(context, rig)    
     context.scene.objects.active = rig
     bpy.ops.object.mode_set(mode='POSE')    
-    fp = openFile(context, filepath)        
+    
+    fp = open(filepath, "rU")
     for line in fp:
         words= line.split()
         if len(words) < 2:
-            pass
+            continue
         else:
-            vis = mohoVisemes[words[1]]
-            setViseme(context, vis, True, int(words[0])+offs)
+            vis = "Mhv" + struct[words[1]]
+            frame = int(words[0])+offs
+        if rig.MhAlpha8:
+            setMhmProps(rig, shapekeys, "Mhsmouth", visemes[vis], factor, auto, frame)
+        else:
+            setVisemeAlpha7(context, vis, visemes, True, frame)
     fp.close()
-    setInterpolation(rig)
-    updatePose(rig)
-    print("Moho file %s loaded" % filepath)
-    return
+    
+    #setInterpolation(rig)
+    updatePose(context)
+    print("Lipsync file %s loaded" % filepath)
 
-def readMagpie(context, filepath, offs):
-    rig = getMhxRig(context.object)
-    context.scene.objects.active = rig
-    bpy.ops.object.mode_set(mode='POSE')    
-    fp = openFile(context, filepath)        
-    for line in fp: 
-        words= line.split()
-        if len(words) < 3:
-            pass
-        elif words[2] == 'X':
-            vis = magpieVisemes[words[3]]
-            setViseme(context, vis, True, int(words[0])+offs)
-    fp.close()
-    setInterpolation(rig)
-    updatePose(rig)
-    print("Magpie file %s loaded" % filepath)
-    return
 
-# 
-#    class VIEW3D_OT_MhxLoadMohoButton(bpy.types.Operator):
-#
-
-class VIEW3D_OT_MhxLoadMohoButton(bpy.types.Operator):
+class VIEW3D_OT_MhxMohoButton(bpy.types.Operator, ImportHelper):
     bl_idname = "mhx.pose_load_moho"
-    bl_label = "Moho (.dat)"
-    filepath = StringProperty(subtype='FILE_PATH')
-    startFrame = IntProperty(name="Start frame", description="First frame to import", default=1)
+    bl_label = "Load Moho (.dat)"
+    bl_options = {'UNDO'}
+    
+    filename_ext = ".dat"
+    filter_glob = StringProperty(default="*.dat", options={'HIDDEN'})
+    filepath = StringProperty(subtype='FILE_PATH')    
 
-    def execute(self, context):
-        import bpy, os, mathutils
-        readMoho(context, self.properties.filepath, self.properties.startFrame-1)        
+    def execute(self, context):        
+        readLipsync(context, self.properties.filepath, context.scene.frame_start - 1, MohoVisemes)        
         return{'FINISHED'}    
 
     def invoke(self, context, event):
         context.window_manager.fileselect_add(self)
         return {'RUNNING_MODAL'}    
 
-#
-#    class VIEW3D_OT_MhxLoadMagpieButton(bpy.types.Operator):
-#
-
-class VIEW3D_OT_MhxLoadMagpieButton(bpy.types.Operator):
-    bl_idname = "mhx.pose_load_magpie"
-    bl_label = "Magpie (.mag)"
-    filepath = StringProperty(subtype='FILE_PATH')
-    startFrame = IntProperty(name="Start frame", description="First frame to import", default=1)
-
-    def execute(self, context):
-        import bpy, os, mathutils
-        readMagpie(context, self.properties.filepath, self.properties.startFrame-1)        
-        return{'FINISHED'}    
-
-    def invoke(self, context, event):
-        context.window_manager.fileselect_add(self)
-        return {'RUNNING_MODAL'}    
-
-#
-#    class MhxLipsyncPanel(bpy.types.Panel):
-#
 
 class MhxLipsyncPanel(bpy.types.Panel):
     bl_label = "MHX Lipsync"
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
-    
+    bl_options = {'DEFAULT_CLOSED'}
+
     @classmethod
     def poll(cls, context):
-        return context.object
+        return pollMhx(context.object)
 
     def draw(self, context):
-        rig = getMhxRig(context.object)
+        rig,mesh = getMhxRigMesh(context.object)
         if not rig:
+            layout.label("No MHX rig found")
             return
-
         layout = self.layout        
-        layout.label(text="Visemes")
-        for (vis1, vis2, vis3) in VisemeList:
+        
+        if rig.MhAlpha8:
+            visemes = getProps(rig, "Mhv")
+            if not visemes:
+                layout.label("No visemes found")
+                return
+            
+            layout.operator("mhx.pose_reset_expressions", text="Reset visemes").prefix="Mhsmouth"
+            layout.operator("mhx.pose_key_expressions", text="Key visemes").prefix="Mhsmouth"
+            layout.prop(rig, "MhxStrength")
+            layout.separator()
+            n = 0
+            for prop in visemes:
+                if n % 3 == 0:
+                    row = layout.row()
+                    n = 0
+                row.operator("mhx.pose_mhm", text=prop[3:]).data="Mhsmouth;"+rig[prop]        
+                n += 1
+            while n % 3 != 0:
+                row.label("")
+                n += 1
+            layout.separator()
             row = layout.row()
-            row.operator("mhx.pose_viseme", text=vis1).viseme = vis1
-            row.operator("mhx.pose_viseme", text=vis2).viseme = vis2
-            row.operator("mhx.pose_viseme", text=vis3).viseme = vis3
+            row.operator("mhx.pose_mhm", text="Blink").data="Mhsmouth;eye_left_closure:1;eye_right_closure:1"        
+            row.operator("mhx.pose_mhm", text="Unblink").data="Mhsmouth;eye_left_closure:0;eye_right_closure:0"        
+        else:   
+            layout.label("Lipsync disabled for alpha7 mhx files")
+            return
+            for (vis1, vis2, vis3) in VisemeList:
+                row = layout.row()
+                row.operator("mhx.pose_viseme", text=vis1).viseme = vis1
+                row.operator("mhx.pose_viseme", text=vis2).viseme = vis2
+                row.operator("mhx.pose_viseme", text=vis3).viseme = vis3
+            layout.separator()
+            row = layout.row()
+            row.operator("mhx.pose_viseme", text="Blink").viseme = 'Blink'
+            row.operator("mhx.pose_viseme", text="Unblink").viseme = 'Unblink'
+            layout.separator()
+            layout.operator("mhx.make_visemes")
+            
         layout.separator()
-        row = layout.row()
-        row.operator("mhx.pose_viseme", text="Blink").viseme = 'Blink'
-        row.operator("mhx.pose_viseme", text="Unblink").viseme = 'Unblink'
-        layout.label(text="Load file")
         row = layout.row()
         row.operator("mhx.pose_load_moho")
-        row.operator("mhx.pose_load_magpie")
-        layout.operator("mhx.update")
-        layout.separator()
-        layout.operator("mhx.make_visemes")
-        return
-        
+        #layout.operator("mhx.update")
+
 #
-#   updatePose(rig):
+#   updatePose(context):
 #   class VIEW3D_OT_MhxUpdateButton(bpy.types.Operator):
 #
 
-def updatePose(rig):
-    pb = rig.pose.bones["PFaceDisp"]
-    pb.location = pb.location
+def updatePose(context):
+    scn = context.scene
+    scn.frame_current = scn.frame_current
+    bpy.ops.object.posemode_toggle()
+    bpy.ops.object.posemode_toggle()
     return
 
 class VIEW3D_OT_MhxUpdateButton(bpy.types.Operator):
@@ -3410,123 +3635,652 @@ class VIEW3D_OT_MhxUpdateButton(bpy.types.Operator):
     bl_label = "Update"
 
     def execute(self, context):
-        rig = getMhxRig(context.object)
-        updatePose(rig)
+        updatePose(context)
         return{'FINISHED'}    
         
 
 ###################################################################################    
 #
-#    Expression panel
+#    Expression panels
 #
 ###################################################################################    
-#
-#    class VIEW3D_OT_MhxResetExpressionsButton(bpy.types.Operator):
-#
 
 class VIEW3D_OT_MhxResetExpressionsButton(bpy.types.Operator):
     bl_idname = "mhx.pose_reset_expressions"
     bl_label = "Reset expressions"
+    bl_options = {'UNDO'}
+    prefix = StringProperty()
 
     def execute(self, context):
-        rig = getMhxRig(context.object)
-        props = getShapeProps(rig)
-        for (prop, name) in props:
-            rig[prop] = 0.0
-        updatePose(rig)
+        rig,mesh = getMhxRigMesh(context.object)
+        shapekeys = getMhmShapekeys(rig, mesh)
+        clearMhmProps(rig, shapekeys, self.prefix, context.tool_settings.use_keyframe_insert_auto, context.scene.frame_current)
+        updatePose(context)
         return{'FINISHED'}    
 
-#
-#    class VIEW3D_OT_MhxKeyExpressionButton(bpy.types.Operator):
-#
 
 class VIEW3D_OT_MhxKeyExpressionsButton(bpy.types.Operator):
     bl_idname = "mhx.pose_key_expressions"
     bl_label = "Key expressions"
+    bl_options = {'UNDO'}
+    prefix = StringProperty()
 
     def execute(self, context):
-        rig = getMhxRig(context.object)
-        props = getShapeProps(rig)
+        rig,mesh = getMhxRigMesh(context.object)
+        props = getProps(rig, self.prefix)
         frame = context.scene.frame_current
-        for (prop, name) in props:
-            rig.keyframe_insert('["%s"]' % prop, frame=frame)
-        updatePose(rig)
-        return{'FINISHED'}    
-#
-#    class VIEW3D_OT_MhxPinExpressionButton(bpy.types.Operator):
-#
+        for prop in props:
+            rig.keyframe_insert('["%s"]'%prop, frame=frame)
+        updatePose(context)
+        return{'FINISHED'}   
+        
 
 class VIEW3D_OT_MhxPinExpressionButton(bpy.types.Operator):
     bl_idname = "mhx.pose_pin_expression"
     bl_label = "Pin"
-    expression = StringProperty()
+    bl_options = {'UNDO'}
+    data = StringProperty()
 
     def execute(self, context):
-        rig = getMhxRig(context.object)
-        props = getShapeProps(rig)
+        rig,mesh = getMhxRigMesh(context.object)
+        words = self.data.split(";")
+        prefix = words[0]
+        expression = words[1]
+        
+        props = getProps(rig, prefix)
         if context.tool_settings.use_keyframe_insert_auto:
             frame = context.scene.frame_current
-            for (prop, name) in props:
+            for prop in props:
                 old = rig[prop]
-                if prop == self.expression:
+                if prop == expression:
                     rig[prop] = 1.0
                 else:
                     rig[prop] = 0.0
                 if abs(rig[prop] - old) > 1e-3:
-                    rig.keyframe_insert('["%s"]' % prop, frame=frame)
+                    rig.keyframe_insert('["%s"]'%prop, frame=frame)
         else:                    
-            for (prop, name) in props:
-                if prop == self.expression:
+            for prop in props:
+                if prop == expression:
                     rig[prop] = 1.0
                 else:
                     rig[prop] = 0.0
-        updatePose(rig)
+        updatePose(context)
         return{'FINISHED'}    
 
-#
-#   getShapeProps(ob):        
-#
 
-def getShapeProps(rig):
-    props = []        
-    plist = list(rig.keys())
-    plist.sort()
-    for prop in plist:
-        if prop[0] == '*':
-            props.append((prop, prop[1:]))
-    return props                
+def getMhmShapekeys(rig, mesh):
+    if rig.MhxShapekeyDrivers:
+        return None
+    else:
+        return mesh.data.shape_keys.key_blocks
+    
 
-#
-#    class MhxExpressionsPanel(bpy.types.Panel):
-#
+def setMhmProps(rig, shapekeys, prefix, units, factor, auto, frame):
+    clearMhmProps(rig, shapekeys, prefix, auto, frame)
+    for (prop, value) in units:
+        if shapekeys:
+            skey = prop[3:].replace("_","-")
+            shapekeys[skey].value = factor*value
+            if auto:
+                shapekeys[skey].keyframe_insert("value", frame=frame)            
+        else:
+            rig[prop] = factor*value
+            if auto:
+                rig.keyframe_insert('["%s"]'%prop, frame=frame)    
+    
+    
+def clearMhmProps(rig, shapekeys, prefix, auto, frame):
+    props = getProps(rig, prefix)
+    for prop in props:
+        if shapekeys:
+            skey = prop[3:].replace("_","-")
+            shapekeys[skey].value = 0.0
+            if auto:
+                shapekeys[skey].keyframe_insert("value", frame=frame)            
+        else:
+            rig[prop] = 0.0
+            if auto:
+                rig.keyframe_insert('["%s"]'%prop, frame=frame)   
+
+
+def getUnitsFromString(string):    
+    words = string.split(";")
+    prefix = words[0]
+    units = []
+    for word in words[1:]:
+        if word == "":
+            continue
+        unit = word.split(":") 
+        prop = "Mhs" + unit[0]
+        value = float(unit[1])
+        units.append((prop, value))
+    return prefix,units            
+            
+
+class VIEW3D_OT_MhxMhmButton(bpy.types.Operator):
+    bl_idname = "mhx.pose_mhm"
+    bl_label = "Mhm"
+    bl_options = {'UNDO'}
+    data = StringProperty()
+
+    def execute(self, context):   
+        rig,mesh = getMhxRigMesh(context.object)
+        auto = context.tool_settings.use_keyframe_insert_auto
+        frame = context.scene.frame_current
+        shapekeys = getMhmShapekeys(rig, mesh)
+        prefix,units = getUnitsFromString(self.data)        
+        setMhmProps(rig, shapekeys, prefix, units, rig.MhxStrength, auto, frame)
+        updatePose(context)
+        return{'FINISHED'}  
+                
+                
+def getProps(rig, prefix):
+    props = []
+    for prop in rig.keys():
+        if prop.startswith(prefix):
+            props.append(prop)
+    props.sort()            
+    return props
+
 
 class MhxExpressionsPanel(bpy.types.Panel):
     bl_label = "MHX Expressions"
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
+    bl_options = {'DEFAULT_CLOSED'}
     
     @classmethod
     def poll(cls, context):
-        return context.object
+        return pollMhx(context.object)
 
     def draw(self, context):
-        rig = getMhxRig(context.object)
-        if not rig:
-            return
-        props = getShapeProps(rig)
-        if not props:
-            return
         layout = self.layout
-        layout.label(text="Expressions")
-        layout.operator("mhx.pose_reset_expressions")
-        layout.operator("mhx.pose_key_expressions")
-        #layout.operator("mhx.update")
+        rig,mesh = getMhxRigMesh(context.object)
+        if not rig:
+            layout.label("No MHX rig found")
+            return
+        exprs = getProps(rig, "Mhe")
+        if not exprs:
+            layout.label("No expressions found")
+            return
+            
+        layout.operator("mhx.pose_reset_expressions").prefix="Mhs"
+        layout.operator("mhx.pose_key_expressions").prefix="Mhs"
+        layout.prop(rig, "MhxStrength")
         layout.separator()
-        for (prop, name) in props:
-            row = layout.split(0.85)
-            row.prop(rig, '["%s"]' % prop, text=name)
-            row.operator("mhx.pose_pin_expression", text="", icon='UNPINNED').expression = prop
+        for prop in exprs:
+            layout.operator("mhx.pose_mhm", text=prop[3:]).data="Mhs;"+rig[prop]
+
+
+def drawShapePanel(self, context, prefix, name):
+    layout = self.layout
+    rig,mesh = getMhxRigMesh(context.object)
+    if not rig:
+        print("No MHX rig found")
         return
+    if not rig.MhxShapekeyDrivers:
+        layout.label("No shapekey drivers.")
+        layout.label("Set %s values in mesh context instead" % name)
+        return
+    props = getProps(rig, prefix)
+    if not props:
+        layout.label("No %ss found" % name)
+        return
+        
+    layout.operator("mhx.pose_reset_expressions", text="Reset %ss" % name).prefix=prefix
+    layout.operator("mhx.pose_key_expressions", text="Key %ss" % name).prefix=prefix
+    #layout.operator("mhx.update")
+
+    layout.separator()
+    for prop in props:
+        row = layout.split(0.85)
+        row.prop(rig, '["%s"]' % prop, text=prop[3:])
+        row.operator("mhx.pose_pin_expression", text="", icon='UNPINNED').data = (prefix + ";" + prop)
+    return
+
+
+class MhxExpressionUnitsPanel(bpy.types.Panel):
+    bl_label = "MHX Expression Tuning"
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "UI"
+    bl_options = {'DEFAULT_CLOSED'}
+    
+    @classmethod
+    def poll(cls, context):
+        return pollMhx(context.object)
+
+    def draw(self, context):
+        drawShapePanel(self, context, "Mhs", "expression")
+
+
+class MhxCustomShapePanel(bpy.types.Panel):
+    bl_label = "MHX Custom Shapes"
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "UI"
+    bl_options = {'DEFAULT_CLOSED'}
+    
+    @classmethod
+    def poll(cls, context):
+        return pollMhx(context.object)
+
+    def draw(self, context):
+        drawShapePanel(self, context, "Mhc", "custom shape")
+
+
+#########################################
+#
+#   FK-IK snapping. 
+#
+#########################################
+
+def getPoseMatrix(mat, pb):
+    restInv = pb.bone.matrix_local.inverted()
+    if pb.parent:
+        parInv = pb.parent.matrix.inverted()
+        parRest = pb.parent.bone.matrix_local
+        return restInv * (parRest * (parInv * mat))
+    else:
+        return restInv * mat
+
+        
+def getGlobalMatrix(mat, pb):
+    gmat = pb.bone.matrix_local * mat
+    if pb.parent:
+        parMat = pb.parent.matrix
+        parRest = pb.parent.bone.matrix_local
+        return parMat * (parRest.inverted() * gmat)
+    else:
+        return gmat
+
+
+def matchPoseTranslation(pb, fkPb, auto):
+    mat = getPoseMatrix(fkPb.matrix, pb)
+    insertLocation(pb, mat, auto)
+    
+
+def insertLocation(pb, mat, auto):    
+    pb.location = mat.to_translation()
+    if auto:
+        pb.keyframe_insert("location", group=pb.name)
+    bpy.ops.object.mode_set(mode='OBJECT')
+    bpy.ops.object.mode_set(mode='POSE')
+
+
+def matchPoseRotation(pb, fkPb, auto):
+    mat = getPoseMatrix(fkPb.matrix, pb)
+    insertRotation(pb, mat, auto)
+    
+
+def insertRotation(pb, mat, auto):    
+    q = mat.to_quaternion()
+    if pb.rotation_mode == 'QUATERNION':
+        pb.rotation_quaternion = q
+        if auto:
+            pb.keyframe_insert("rotation_quaternion", group=pb.name)
+    else:
+        pb.rotation_euler = q.to_euler(pb.rotation_mode)
+        if auto:
+            pb.keyframe_insert("rotation_euler", group=pb.name)
+    bpy.ops.object.mode_set(mode='OBJECT')
+    bpy.ops.object.mode_set(mode='POSE')
+
+
+def matchPoseReverse(pb, fkPb, auto):
+    bpy.ops.object.mode_set(mode='OBJECT')
+    bpy.ops.object.mode_set(mode='POSE')
+    gmat = fkPb.matrix * Matrix.Rotation(math.pi, 4, 'Z')
+    offs = pb.bone.length * fkPb.matrix.col[1]    
+    gmat[0][3] += offs[0]
+    gmat[1][3] += offs[1]
+    gmat[2][3] += offs[2]    
+    mat = getPoseMatrix(gmat, pb)
+    pb.matrix_basis = mat
+    insertLocation(pb, mat, auto)
+    insertRotation(pb, mat, auto)
+    
+
+def matchPoseScale(pb, fkPb, auto):
+    mat = getPoseMatrix(fkPb.matrix, pb)
+    pb.scale = mat.to_scale()
+    if auto:
+        pb.keyframe_insert("scale", group=pb.name)
+    bpy.ops.object.mode_set(mode='OBJECT')
+    bpy.ops.object.mode_set(mode='POSE')
+
+
+def fk2ikArm(context, suffix):
+    rig = context.object
+    auto = context.scene.tool_settings.use_keyframe_insert_auto
+    print("Snap FK Arm%s" % suffix)
+    snapIk,cnsIk = getSnapBones(rig, "ArmIK", suffix)
+    (uparmIk, loarmIk, elbow, elbowPt, wrist) = snapIk
+    snapFk,cnsFk = getSnapBones(rig, "ArmFK", suffix)
+    (uparmFk, loarmFk, elbowPtFk, handFk) = snapFk
+    muteConstraints(cnsFk, True)
+
+    matchPoseRotation(uparmFk, uparmFk, auto)
+    matchPoseScale(uparmFk, uparmFk, auto)
+
+    matchPoseRotation(loarmFk, loarmFk, auto)
+    matchPoseScale(loarmFk, loarmFk, auto)
+
+    if rig["MhaHandFollowsWrist" + suffix]:
+        matchPoseRotation(handFk, wrist, auto)
+        matchPoseScale(handFk, wrist, auto)
+
+    muteConstraints(cnsFk, False)
+    return
+
+
+def ik2fkArm(context, suffix):
+    rig = context.object
+    scn = context.scene
+    auto = scn.tool_settings.use_keyframe_insert_auto
+    print("Snap IK Arm%s" % suffix)
+    snapIk,cnsIk = getSnapBones(rig, "ArmIK", suffix)
+    (uparmIk, loarmIk, elbow, elbowPt, wrist) = snapIk
+    snapFk,cnsFk = getSnapBones(rig, "ArmFK", suffix)
+    (uparmFk, loarmFk, elbowPtFk, handFk) = snapFk
+    muteConstraints(cnsIk, True)
+
+    #rig["MhaElbowFollowsShoulder" + suffix] = False
+    #rig["MhaElbowFollowsWrist" + suffix] = False
+    
+    matchPoseTranslation(wrist, handFk, auto)
+    matchPoseRotation(wrist, handFk, auto)  
+    matchPoseTranslation(elbow, elbowPtFk, auto)
+    matchPoseTranslation(elbowPt, elbowPtFk, auto)
+    setInverse(rig, elbowPt)
+    muteConstraints(cnsIk, False)
+    return
+
+
+def fk2ikLeg(context, suffix):
+    rig = context.object
+    auto = context.scene.tool_settings.use_keyframe_insert_auto
+    print("Snap FK Leg%s" % suffix)
+    snapIk,cnsIk = getSnapBones(rig, "LegIK", suffix)
+    (uplegIk, lolegIk, kneePt, ankleIk, legIk, legFk, footIk, toeIk) = snapIk
+    snapFk,cnsFk = getSnapBones(rig, "LegFK", suffix)
+    (uplegFk, lolegFk, kneePtFk, footFk, toeFk) = snapFk
+    muteConstraints(cnsFk, True)
+    
+    if not rig["MhaLegIkToAnkle" + suffix]:
+        matchPoseRotation(footFk, footFk, auto)
+        matchPoseRotation(toeFk, toeFk, auto)
+    
+    matchPoseRotation(uplegFk, uplegFk, auto)
+    matchPoseScale(uplegFk, uplegFk, auto)
+
+    matchPoseRotation(lolegFk, lolegFk, auto)
+    matchPoseScale(lolegFk, lolegFk, auto)
+    
+    muteConstraints(cnsFk, False)
+    return
+
+
+def ik2fkLeg(context, suffix):
+    rig = context.object
+    scn = context.scene
+    auto = scn.tool_settings.use_keyframe_insert_auto
+    print("Snap IK Leg%s" % suffix)
+    snapIk,cnsIk = getSnapBones(rig, "LegIK", suffix)
+    (uplegIk, lolegIk, kneePt, ankleIk, legIk, legFk, footIk, toeIk) = snapIk
+    snapFk,cnsFk = getSnapBones(rig, "LegFK", suffix)
+    (uplegFk, lolegFk, kneePtFk, footFk, toeFk) = snapFk
+    muteConstraints(cnsIk, True)
+
+    #rig["MhaKneeFollowsHip" + suffix] = False
+    #rig["MhaKneeFollowsFoot" + suffix] = False
+    
+    legIkToAnkle = rig["MhaLegIkToAnkle" + suffix]
+    if legIkToAnkle:
+        matchPoseTranslation(ankleIk, footFk, auto)
+    matchPoseTranslation(legIk, legFk, auto)
+    matchPoseRotation(legIk, legFk, auto)  
+    matchPoseReverse(toeIk, toeFk, auto)
+    matchPoseReverse(footIk, footFk, auto)
+    setInverse(rig, ankleIk)
+    matchPoseTranslation(kneePt, kneePtFk, auto)
+    setInverse(rig, kneePt)
+    if not legIkToAnkle:
+        matchPoseTranslation(ankleIk, footFk, auto)
+
+    muteConstraints(cnsIk, False)
+    return
+
+
+#
+#   setInverse(rig, pb):
+#
+
+def setInverse(rig, pb):
+    rig.data.bones.active = pb.bone
+    pb.bone.select = True
+    bpy.ops.object.mode_set(mode='OBJECT')
+    bpy.ops.object.mode_set(mode='POSE')
+    for cns in pb.constraints:
+        if cns.type == 'CHILD_OF':
+            bpy.ops.constraint.childof_set_inverse(constraint=cns.name, owner='BONE')
+    bpy.ops.object.mode_set(mode='OBJECT')
+    bpy.ops.object.mode_set(mode='POSE')
+    return
+
+#
+#
+#
+
+SnapBones = {
+    "ArmFK" : ["UpArm", "LoArm", "ElbowPTFK", "Hand"],
+    "ArmIK" : ["UpArmIK", "LoArmIK", "Elbow", "ElbowPT", "Wrist"],
+    "LegFK" : ["UpLeg", "LoLeg", "KneePTFK", "Foot", "Toe"],
+    "LegIK" : ["UpLegIK", "LoLegIK", "KneePT", "Ankle", "LegIK", "LegFK", "FootRev", "ToeRev"],
+}
+
+
+def getSnapBones(rig, key, suffix):
+    names = SnapBones[key]
+    pbones = []
+    constraints = []
+    for name in names:
+        pb = rig.pose.bones[name+suffix]
+        pbones.append(pb)
+        for cns in pb.constraints:
+            if cns.type == 'LIMIT_ROTATION' and not cns.mute:
+                constraints.append(cns)
+    return tuple(pbones),constraints
+
+
+def muteConstraints(constraints, value):
+    for cns in constraints:
+        cns.mute = value
+
+
+class VIEW3D_OT_MhxSnapFk2IkButton(bpy.types.Operator):
+    bl_idname = "mhx.snap_fk_ik"
+    bl_label = "Snap FK"
+    bl_options = {'UNDO'}
+    data = StringProperty()    
+
+    def execute(self, context):
+        bpy.ops.object.mode_set(mode='POSE')
+        rig = context.object
+        if rig.MhxSnapExact:
+            rig["MhaRotationLimits"] = 0.0
+        (prop, old) = setSnapProp(rig, self.data, 1.0, context, False)
+        if prop[:6] == "MhaArm":
+            fk2ikArm(context, prop[-2:])
+        elif prop[:6] == "MhaLeg":
+            fk2ikLeg(context, prop[-2:])
+        restoreSnapProp(rig, prop, old, context)
+        return{'FINISHED'}    
+
+
+class VIEW3D_OT_MhxSnapIk2FkButton(bpy.types.Operator):
+    bl_idname = "mhx.snap_ik_fk"
+    bl_label = "Snap IK"
+    bl_options = {'UNDO'}
+    data = StringProperty()    
+
+    def execute(self, context):
+        bpy.ops.object.mode_set(mode='POSE')
+        rig = context.object
+        if rig.MhxSnapExact:
+            rig["MhaRotationLimits"] = 0.0
+        (prop, old) = setSnapProp(rig, self.data, 0.0, context, True)
+        if prop[:6] == "MhaArm":
+            ik2fkArm(context, prop[-2:])
+        elif prop[:6] == "MhaLeg":
+            ik2fkLeg(context, prop[-2:])
+        restoreSnapProp(rig, prop, old, context)
+        return{'FINISHED'}    
+
+
+def setSnapProp(rig, data, value, context, isIk):
+    words = data.split()
+    prop = words[0]
+    oldValue = rig[prop]
+    rig[prop] = value
+    ik = int(words[1])
+    fk = int(words[2])
+    extra = int(words[3])
+    oldIk = rig.data.layers[ik]
+    oldFk = rig.data.layers[fk]
+    oldExtra = rig.data.layers[extra]
+    rig.data.layers[ik] = True
+    rig.data.layers[fk] = True
+    rig.data.layers[extra] = True
+    updatePose(context)
+    if isIk:
+        oldValue = 1.0
+        oldIk = True
+        oldFk = False
+    else:
+        oldValue = 0.0
+        oldIk = False
+        oldFk = True
+        oldExtra = False
+    return (prop, (oldValue, ik, fk, extra, oldIk, oldFk, oldExtra))
+
+    
+def restoreSnapProp(rig, prop, old, context):
+    updatePose(context)
+    (oldValue, ik, fk, extra, oldIk, oldFk, oldExtra) = old
+    rig[prop] = oldValue
+    rig.data.layers[ik] = oldIk
+    rig.data.layers[fk] = oldFk
+    rig.data.layers[extra] = oldExtra
+    return
+
+
+class VIEW3D_OT_MhxToggleFkIkButton(bpy.types.Operator):
+    bl_idname = "mhx.toggle_fk_ik"
+    bl_label = "FK - IK"
+    bl_options = {'UNDO'}
+    toggle = StringProperty()    
+
+    def execute(self, context):
+        words = self.toggle.split()
+        rig = context.object
+        prop = words[0]
+        value = float(words[1]) 
+        onLayer = int(words[2])
+        offLayer = int(words[3])
+        rig.data.layers[onLayer] = True
+        rig.data.layers[offLayer] = False
+        rig[prop] = value
+        # Don't do autokey - confusing.
+        #if context.tool_settings.use_keyframe_insert_auto:
+        #    rig.keyframe_insert('["%s"]' % prop, frame=scn.frame_current)        
+        updatePose(context)
+        return{'FINISHED'}    
+
+
+#
+#   MHX FK/IK Switch panel
+#
+
+class MhxFKIKPanel(bpy.types.Panel):
+    bl_label = "MHX FK/IK Switch"
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "UI"
+    #bl_options = {'DEFAULT_CLOSED'}
+    
+    @classmethod
+    def poll(cls, context):
+        return (context.object and context.object.MhxRig == 'MHX')
+
+    def draw(self, context):
+        rig = context.object
+        layout = self.layout        
+
+        row = layout.row()
+        row.label("")
+        row.label("Left")
+        row.label("Right")
+
+        layout.label("FK/IK switch")
+        row = layout.row()
+        row.label("Arm")
+        self.toggleButton(row, rig, "MhaArmIk_L", " 3", " 2")
+        self.toggleButton(row, rig, "MhaArmIk_R", " 19", " 18")
+        row = layout.row()
+        row.label("Leg")
+        self.toggleButton(row, rig, "MhaLegIk_L", " 5", " 4")
+        self.toggleButton(row, rig, "MhaLegIk_R", " 21", " 20")
+        
+        layout.label("IK Influence")
+        row = layout.row()
+        row.label("Arm")
+        row.prop(rig, '["MhaArmIk_L"]', text="")
+        row.prop(rig, '["MhaArmIk_R"]', text="")
+        row = layout.row()
+        row.label("Leg")
+        row.prop(rig, '["MhaLegIk_L"]', text="")
+        row.prop(rig, '["MhaLegIk_R"]', text="")
+        
+        try:
+            ok = (rig["MhxVersion"] >= 12)
+        except:
+            ok = False
+        if not ok:
+            layout.label("Snapping only works with MHX version 1.12 and later.")
+            return
+        
+        layout.separator()
+        layout.label("Snapping")
+        row = layout.row()
+        row.label("Rotation Limits")
+        row.prop(rig, '["MhaRotationLimits"]', text="")
+        row.prop(rig, "MhxSnapExact", text="Exact Snapping")
+        
+        layout.label("Snap Arm bones")
+        row = layout.row()
+        row.label("FK Arm")
+        row.operator("mhx.snap_fk_ik", text="Snap L FK Arm").data = "MhaArmIk_L 2 3 12"
+        row.operator("mhx.snap_fk_ik", text="Snap R FK Arm").data = "MhaArmIk_R 18 19 28"
+        row = layout.row()
+        row.label("IK Arm")
+        row.operator("mhx.snap_ik_fk", text="Snap L IK Arm").data = "MhaArmIk_L 2 3 12"
+        row.operator("mhx.snap_ik_fk", text="Snap R IK Arm").data = "MhaArmIk_R 18 19 28"
+
+        layout.label("Snap Leg bones")
+        row = layout.row()
+        row.label("FK Leg")
+        row.operator("mhx.snap_fk_ik", text="Snap L FK Leg").data = "MhaLegIk_L 4 5 12"
+        row.operator("mhx.snap_fk_ik", text="Snap R FK Leg").data = "MhaLegIk_R 20 21 28"
+        row = layout.row()
+        row.label("IK Leg")
+        row.operator("mhx.snap_ik_fk", text="Snap L IK Leg").data = "MhaLegIk_L 4 5 12"
+        row.operator("mhx.snap_ik_fk", text="Snap R IK Leg").data = "MhaLegIk_R 20 21 28"
+
+
+    def toggleButton(self, row, rig, prop, fk, ik):
+        if rig[prop] > 0.5:
+            row.operator("mhx.toggle_fk_ik", text="IK").toggle = prop + " 0" + fk + ik
+        else:
+            row.operator("mhx.toggle_fk_ik", text="FK").toggle = prop + " 1" + ik + fk
+            
 
 ###################################################################################    
 #
@@ -3541,38 +4295,60 @@ class MhxDriversPanel(bpy.types.Panel):
     bl_label = "MHX Drivers"
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
+    bl_options = {'DEFAULT_CLOSED'}
     
     @classmethod
     def poll(cls, context):
-        return pollMhxRig(context.object)
+        return (context.object and context.object.MhxRig)
 
     def draw(self, context):
-        lProps = []
-        rProps = []
+        lrProps = []
         props = []
+        lrFaceProps = []
+        faceProps = []
         plist = list(context.object.keys())
         plist.sort()
         for prop in plist:
-            if prop[0] == '&':
-                prop1 = prop[1:]
-            else:
-                continue
-            if prop[-2:] == '_L':
-                lProps.append((prop, prop1[:-2]))
-            elif prop[-2:] == '_R':
-                rProps.append((prop, prop1[:-2]))
-            else:
-                props.append((prop, prop1))
+            if prop[0:3] == 'Mha':
+                if prop[-2:] == '_L':
+                    lrProps.append(prop[:-2])
+                elif prop[-2:] != '_R':
+                    props.append(prop)
+            elif prop[0:3] == 'Mhf':
+                if prop[-2:] == '_L':
+                    lrFaceProps.append(prop[:-2])
+                elif prop[-2:] != '_R':
+                    faceProps.append(prop)
+                    
         ob = context.object
         layout = self.layout
-        for (prop, pname) in props:
-            layout.prop(ob, '["%s"]' % prop, text=pname)
-        layout.label("Left")
-        for (prop, pname) in lProps:
-            layout.prop(ob, '["%s"]' % prop, text=pname)
-        layout.label("Right")
-        for (prop, pname) in rProps:
-            layout.prop(ob, '["%s"]' % prop, text=pname)
+        for prop in props:
+            layout.prop(ob, '["%s"]' % prop, text=prop[3:])
+
+        layout.separator()
+        row = layout.row()
+        row.label("Left")
+        row.label("Right")
+        for prop in lrProps:
+            row = layout.row()
+            row.prop(ob, '["%s"]' % (prop+"_L"), text=prop[3:])
+            row.prop(ob, '["%s"]' % (prop+"_R"), text=prop[3:])
+
+        if faceProps:
+            layout.separator()
+            layout.label("Face shapes")
+            for prop in faceProps:
+                layout.prop(ob, '["%s"]' % prop, text=prop[3:])
+
+            layout.separator()
+            row = layout.row()
+            row.label("Left")
+            row.label("Right")
+            for prop in lrFaceProps:
+                row = layout.row()
+                row.prop(ob, '["%s"]' % (prop+"_L"), text=prop[3:])
+                row.prop(ob, '["%s"]' % (prop+"_R"), text=prop[3:])
+     
         return
 
 ###################################################################################    
@@ -3588,20 +4364,89 @@ class MhxVisibilityPanel(bpy.types.Panel):
     bl_label = "MHX Visibility"
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
+    bl_options = {'DEFAULT_CLOSED'}
     
     @classmethod
     def poll(cls, context):
-        return pollMhxRig(context.object)
+        return (context.object and context.object.MhxRig)
 
     def draw(self, context):
         ob = context.object
+        layout = self.layout
         props = list(ob.keys())
         props.sort()
         for prop in props:
-            if prop[0:4] == "Hide": 
-                self.layout.prop(ob, '["%s"]' % prop)
+            if prop[0:3] == "Mhh": 
+                layout.prop(ob, '["%s"]' % prop, text="Hide %s" % prop[3:])
+        layout.separator()
+        layout.operator("mhx.update_textures")
+        layout.separator()
+        layout.operator("mhx.add_hiders")
+        layout.operator("mhx.remove_hiders")
         return
 
+class VIEW3D_OT_MhxUpdateTexturesButton(bpy.types.Operator):
+    bl_idname = "mhx.update_textures"
+    bl_label = "Update"
+    bl_options = {'UNDO'}
+
+    def execute(self, context):
+        scn = context.scene
+        for mat in bpy.data.materials:
+            if mat.animation_data:
+                try:
+                    mat["MhxDriven"]
+                except:
+                    continue
+                for driver in mat.animation_data.drivers:
+                    prop = mat.path_resolve(driver.data_path)
+                    value = driver.evaluate(scn.frame_current)
+                    prop[driver.array_index] = value
+        return{'FINISHED'}    
+        
+class VIEW3D_OT_MhxAddHidersButton(bpy.types.Operator):
+    bl_idname = "mhx.add_hiders"
+    bl_label = "Add Hide Property"
+    bl_options = {'UNDO'}
+
+    def execute(self, context):
+        rig = context.object
+        for ob in context.scene.objects:
+            if ob.select and ob != rig:
+                prop = "Mhh%s" % ob.name        
+                defNewProp(prop, "Bool", "default=False")
+                rig[prop] = False        
+                addHider(ob, "hide", rig, prop)
+                addHider(ob, "hide_render", rig, prop)
+        return{'FINISHED'}    
+                
+def addHider(ob, attr, rig, prop):
+    fcu = ob.driver_add(attr)
+    drv = fcu.driver
+    drv.type = 'SCRIPTED'
+    drv.expression = "x"
+    drv.show_debug_info = True
+    var = drv.variables.new()
+    var.name = "x"
+    targ = var.targets[0]
+    targ.id = rig
+    targ.data_path = '["%s"]' % prop
+    return
+
+class VIEW3D_OT_MhxRemoveHidersButton(bpy.types.Operator):
+    bl_idname = "mhx.remove_hiders"
+    bl_label = "Remove Hide Property"
+    bl_options = {'UNDO'}
+
+    def execute(self, context):
+        rig = context.object
+        for ob in context.scene.objects:
+            if ob.select and ob != rig:
+                ob.driver_remove("hide")
+                ob.driver_remove("hide_render")
+                del rig["Mhh%s" % ob.name]
+        return{'FINISHED'}    
+        
 ###################################################################################    
 #
 #    Layers panel
@@ -3644,10 +4489,14 @@ class MhxLayersPanel(bpy.types.Panel):
     bl_label = "MHX Layers"
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
+    #bl_options = {'DEFAULT_CLOSED'}
     
     @classmethod
     def poll(cls, context):
-        return pollMhxRig(context.object)
+        ob = context.object
+        if (ob and ob.MhxRig == 'MHX'):
+            return True
+        return False
 
     def draw(self, context):
         layout = self.layout
@@ -3667,9 +4516,10 @@ class MhxLayersPanel(bpy.types.Panel):
 class VIEW3D_OT_MhxEnableAllLayersButton(bpy.types.Operator):
     bl_idname = "mhx.pose_enable_all_layers"
     bl_label = "Enable all layers"
+    bl_options = {'UNDO'}
 
     def execute(self, context):
-        rig = getMhxRig(context.object)
+        rig,mesh = getMhxRigMesh(context.object)
         for (left,right) in MhxLayers:
             if type(left) != str:
                 for (n, name, prop) in [left,right]:
@@ -3679,9 +4529,10 @@ class VIEW3D_OT_MhxEnableAllLayersButton(bpy.types.Operator):
 class VIEW3D_OT_MhxDisableAllLayersButton(bpy.types.Operator):
     bl_idname = "mhx.pose_disable_all_layers"
     bl_label = "Disable all layers"
+    bl_options = {'UNDO'}
 
     def execute(self, context):
-        rig = getMhxRig(context.object)
+        rig,mesh = getMhxRigMesh(context.object)
         layers = 32*[False]
         pb = context.active_pose_bone
         if pb:
@@ -3691,7 +4542,8 @@ class VIEW3D_OT_MhxDisableAllLayersButton(bpy.types.Operator):
                     break
         else:
             layers[0] = True
-        rig.data.layers = layers            
+        if rig:
+            rig.data.layers = layers
         return{'FINISHED'}    
                 
 ###################################################################################    
@@ -3700,30 +4552,36 @@ class VIEW3D_OT_MhxDisableAllLayersButton(bpy.types.Operator):
 #
 ###################################################################################    
 #
-#   pollMhxRig(ob):
-#   getMhxRig(ob):
+#   getMhxRigMesh(ob):
 #
 
-def pollMhxRig(ob):
-    try:
-        return (ob["MhxRig"] == "MHX")
-    except:
+def pollMhx(ob):        
+    if not ob:
         return False
-        
-def getMhxRig(ob):
-    if ob.type == 'ARMATURE':
-        rig = ob
+    elif ob.type == 'ARMATURE':
+        return ob.MhxRig
     elif ob.type == 'MESH':
-        rig = ob.parent
+        par = ob.parent
+        return (par and (par.type == 'ARMATURE') and par.MhxRig)
     else:
-        return None
-    try:        
-        if (rig["MhxRig"] == "MHX"):
-            return rig
+        return False
+
+def getMhxRigMesh(ob):
+    if ob.type == 'ARMATURE':
+        for mesh in ob.children:
+            if mesh.MhxMesh and ob.MhxRig:
+                return (ob, mesh)
+        return (ob, None)                
+    elif ob.type == 'MESH':
+        par = ob.parent
+        if (par and par.type == 'ARMATURE' and par.MhxRig):
+            if ob.MhxMesh:
+                return (par, ob)
+            else:
+                return (par, None)
         else:
-            return None
-    except:
-        return None
+            return (None, None)
+    return (None, None)
     
         
 #
@@ -3742,7 +4600,6 @@ def setInterpolation(rig):
         fcu.extrapolation = 'CONSTANT'
     return
     
-
 ###################################################################################    
 #
 #    initialize and register
@@ -3753,18 +4610,32 @@ def menu_func(self, context):
     self.layout.operator(ImportMhx.bl_idname, text="MakeHuman (.mhx)...")
 
 def register():
+    bpy.types.Object.MhAlpha8 = BoolProperty(default=True)
+    bpy.types.Object.MhxMesh = BoolProperty(default=False)
+    bpy.types.Object.MhxRig = StringProperty(default="")
+    bpy.types.Object.MhxRigify = BoolProperty(default=False)
+    bpy.types.Object.MhxSnapExact = BoolProperty(default=False)
+    bpy.types.Object.MhxShapekeyDrivers = BoolProperty(default=True)
+    bpy.types.Object.MhxStrength = FloatProperty(
+        name = "Expression strength",
+        description = "Multiply expression with this factor",
+        default=1.0, min=-1.0, max=2.0
+        )
     bpy.utils.register_module(__name__)
     bpy.types.INFO_MT_file_import.append(menu_func)
 
 def unregister():
-    bpy.utils.unregister_module(__name__)
-    bpy.types.INFO_MT_file_import.remove(menu_func)
-
-if __name__ == "__main__":
     try:
-        unregister()
+        bpy.utils.unregister_module(__name__)
     except:
         pass
+    try:
+        bpy.types.INFO_MT_file_import.remove(menu_func)
+    except:
+        pass
+
+if __name__ == "__main__":
+    unregister()
     register()
 
 

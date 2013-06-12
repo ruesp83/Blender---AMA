@@ -20,11 +20,11 @@ bl_info = {
     "name": "3D-Coat Applink",
     "author": "Kalle-Samuli Riihikoski (haikalle)",
     "version": (3, 5, 20),
-    "blender": (2, 5, 9),
+    "blender": (2, 59, 0),
     "location": "Scene > 3D-Coat Applink",
     "description": "Transfer data between 3D-Coat/Blender",
     "warning": "",
-    "wiki_url": "http://wiki.blender.org/index.php/Extensions:2.5/Py/" \
+    "wiki_url": "http://wiki.blender.org/index.php/Extensions:2.6/Py/" \
         "Scripts/Import-Export/3dcoat_applink",
     "tracker_url": "https://projects.blender.org/tracker/?"\
         "func=detail&aid=24446",

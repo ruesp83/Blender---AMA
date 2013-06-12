@@ -75,11 +75,13 @@ def write(filepath,
             is_tmp_mesh = True
         else:
             me = obj.data
+            if not me.tessfaces and me.polygons:
+                me.calc_tessface()
             is_tmp_mesh = False
 
         if me is not None:
             matrix = obj.matrix_world.copy()
-            for face in me.faces:
+            for face in me.tessfaces:
                 fv = faceValues(face, me, matrix)
                 if triangulate:
                     faces.extend(faceToTriangles(fv))

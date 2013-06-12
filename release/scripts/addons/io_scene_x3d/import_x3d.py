@@ -22,12 +22,13 @@ DEBUG = False
 
 # This should work without a blender at all
 import os
+import shlex
 
 
 def imageConvertCompat(path):
 
     if os.sep == '\\':
-        return path  # assime win32 has quicktime, dont convert
+        return path  # assume win32 has quicktime, dont convert
 
     if path.lower().endswith('.gif'):
         path_to = path[:-3] + 'png'
@@ -55,9 +56,9 @@ def imageConvertCompat(path):
 # =============================== VRML Spesific
 
 def vrmlFormat(data):
-    '''
+    """
     Keep this as a valid vrml file, but format in a way we can predict.
-    '''
+    """
     # Strip all commends - # not in strings - warning multiline strings are ignored.
     def strip_comment(l):
         #l = ' '.join(l.split())
@@ -84,7 +85,7 @@ def vrmlFormat(data):
                 q = not q  # invert
 
             elif c == '#':
-                if q == False:
+                if q is False:
                     return l[:i - 1]
 
         return l
@@ -270,9 +271,9 @@ def is_nodeline(i, words):
 
 
 def is_numline(i):
-    '''
+    """
     Does this line start with a number?
-    '''
+    """
 
     # Works but too slow.
     '''
@@ -490,7 +491,7 @@ class vrmlNode(object):
                 return child
 
     def getSerialized(self, results, ancestry):
-        ''' Return this node and all its children in a flat list '''
+        """ Return this node and all its children in a flat list """
         ancestry = ancestry[:]  # always use a copy
 
         # self_real = self.getRealNode()
@@ -531,7 +532,7 @@ class vrmlNode(object):
             child.searchNodeTypeID(node_spec, results)
         return results
 
-    def getFieldName(self, field, ancestry, AS_CHILD=False):
+    def getFieldName(self, field, ancestry, AS_CHILD=False, SPLIT_COMMAS=False):
         self_real = self.getRealNode()  # in case we're an instance
 
         for f in self_real.fields:
@@ -720,9 +721,9 @@ class vrmlNode(object):
             return default
 
     def getFieldAsArray(self, field, group, ancestry):
-        '''
+        """
         For this parser arrays are children
-        '''
+        """
 
         def array_as_number(array_string):
             array_data = []
@@ -738,7 +739,7 @@ class vrmlNode(object):
 
         self_real = self.getRealNode()  # in case we're an instance
 
-        child_array = self_real.getFieldName(field, ancestry, True)
+        child_array = self_real.getFieldName(field, ancestry, True, SPLIT_COMMAS=True)
 
         #if type(child_array)==list: # happens occasionaly
         #   array_data = child_array
@@ -746,23 +747,15 @@ class vrmlNode(object):
         if child_array is None:
             # For x3d, should work ok with vrml too
             # for x3d arrays are fields, vrml they are nodes, annoying but not tooo bad.
-            data_split = self.getFieldName(field, ancestry)
+            data_split = self.getFieldName(field, ancestry, SPLIT_COMMAS=True)
             if not data_split:
                 return []
-            array_data = ' '.join(data_split)
-            if array_data is None:
-                return []
-
-            array_data = array_data.replace(',', ' ')
-            data_split = array_data.split()
 
             array_data = array_as_number(data_split)
 
         elif type(child_array) == list:
             # x3d creates these
-            data_split = [w.strip(",") for w in child_array]
-
-            array_data = array_as_number(data_split)
+            array_data = array_as_number(child_array)
         else:
             # print(child_array)
             # Normal vrml
@@ -813,9 +806,9 @@ class vrmlNode(object):
         return new_array
 
     def getFieldAsStringArray(self, field, ancestry):
-        '''
+        """
         Get a list of strings
-        '''
+        """
         self_real = self.getRealNode()  # in case we're an instance
 
         child_array = None
@@ -1173,7 +1166,8 @@ class vrmlNode(object):
                             else:
                                 value += '\n' + l
 
-                    value_all = value.split()
+                    # use shlex so we get '"a b" "b v"' --> '"a b"', '"b v"'
+                    value_all = shlex.split(value, posix=False)
 
                     def iskey(k):
                         if k[0] != '"' and k[0].isalpha() and k.upper() not in {'TRUE', 'FALSE'}:
@@ -1181,10 +1175,10 @@ class vrmlNode(object):
                         return False
 
                     def split_fields(value):
-                        '''
+                        """
                         key 0.0 otherkey 1,2,3 opt1 opt1 0.0
                             -> [key 0.0], [otherkey 1,2,3], [opt1 opt1 0.0]
-                        '''
+                        """
                         field_list = []
                         field_context = []
 
@@ -1243,10 +1237,10 @@ def gzipOpen(path):
 
 
 def vrml_parse(path):
-    '''
+    """
     Sets up the root node and returns it so load_web3d() can deal with the blender side of things.
     Return root (vrmlNode, '') or (None, 'Error String')
-    '''
+    """
     data = gzipOpen(path)
 
     if data is None:
@@ -1342,7 +1336,7 @@ class x3dNode(vrmlNode):
 
     # Other funcs operate from vrml, but this means we can wrap XML fields, still use nice utility funcs
     # getFieldAsArray getFieldAsBool etc
-    def getFieldName(self, field, ancestry, AS_CHILD=False):
+    def getFieldName(self, field, ancestry, AS_CHILD=False, SPLIT_COMMAS=False):
         # ancestry and AS_CHILD are ignored, only used for VRML now
 
         self_real = self.getRealNode()  # in case we're an instance
@@ -1352,16 +1346,18 @@ class x3dNode(vrmlNode):
 
             # We may want to edit. for x3d specific stuff
             # Sucks a bit to return the field name in the list but vrml excepts this :/
+            if SPLIT_COMMAS:
+                value = value.replace(",", " ")
             return value.split()
         else:
             return None
 
 
 def x3d_parse(path):
-    '''
+    """
     Sets up the root node and returns it so load_web3d() can deal with the blender side of things.
     Return root (x3dNode, '') or (None, 'Error String')
-    '''
+    """
 
     try:
         import xml.dom.minidom
@@ -1385,6 +1381,8 @@ def x3d_parse(path):
         x3dnode = doc.getElementsByTagName('X3D')[0]
     except:
         return None, 'Not a valid x3d document, cannot import'
+
+    bpy.ops.object.select_all(action='DESELECT')
 
     root = x3dNode(None, NODE_NORMAL, x3dnode)
     root.setRoot(path)  # so images and Inline's we load have a relative path
@@ -1420,7 +1418,7 @@ GLOBALS = {'CIRCLE_DETAIL': 16}
 
 
 def translateRotation(rot):
-    ''' axis, angle '''
+    """ axis, angle """
     return Matrix.Rotation(rot[3], 4, Vector(rot[:3]))
 
 
@@ -1574,7 +1572,8 @@ def importMesh_IndexedFaceSet(geom, bpyima, ancestry):
         coords_tex = geom.getChildBySpec('TextureCoordinate')
 
         if coords_tex:
-            ifs_texpoints = coords_tex.getFieldAsArray('point', 2, ancestry)
+            ifs_texpoints = [(0, 0)] # EEKADOODLE - vertex start at 1
+            ifs_texpoints.extend(coords_tex.getFieldAsArray('point', 2, ancestry))
             ifs_texfaces = geom.getFieldAsArray('texCoordIndex', 0, ancestry)
 
             if not ifs_texpoints:
@@ -1667,18 +1666,19 @@ def importMesh_IndexedFaceSet(geom, bpyima, ancestry):
     # print(len(ifs_points), faces, edges, ngons)
 
     try:
-        bpymesh.faces.add(len(faces))
-        bpymesh.faces.foreach_set("vertices_raw", [a for f in faces for a in (f + [0] if len(f) == 3 else f)])  # XXX25 speed
+        bpymesh.tessfaces.add(len(faces))
+        bpymesh.tessfaces.foreach_set("vertices_raw", [a for f in faces for a in (f + [0] if len(f) == 3 else f)])  # XXX25 speed
     except KeyError:
         print("one or more vert indices out of range. corrupt file?")
         #for f in faces:
-        #   bpymesh.faces.extend(faces, smooth=True)
+        #   bpymesh.tessfaces.extend(faces, smooth=True)
 
     bpymesh.validate()
-    bpymesh.update()
+    # bpymesh.update()  # cant call now, because it would convert tessface
 
-    if len(bpymesh.faces) != len(faces):
+    if len(bpymesh.tessfaces) != len(faces):
         print('\tWarning: adding faces did not work! file is invalid, not adding UVs or vcolors')
+        bpymesh.update()
         return bpymesh, ccw
 
     # Apply UVs if we have them
@@ -1687,7 +1687,7 @@ def importMesh_IndexedFaceSet(geom, bpyima, ancestry):
     if coords_tex:
         #print(ifs_texpoints)
         # print(geom)
-        uvlay = bpymesh.uv_textures.new()
+        uvlay = bpymesh.tessface_uv_textures.new()
 
         for i, f in enumerate(uvlay.data):
             f.image = bpyima
@@ -1695,24 +1695,24 @@ def importMesh_IndexedFaceSet(geom, bpyima, ancestry):
             for j, uv in enumerate(f.uv):
                 # print(fuv, j, len(ifs_texpoints))
                 try:
-                    f.uv[j] = ifs_texpoints[fuv[j]]  # XXX25, speedup
+                    f.uv[j] = ifs_texpoints[fuv[j] + 1]  # XXX25, speedup
                 except:
                     print('\tWarning: UV Index out of range')
                     f.uv[j] = ifs_texpoints[0]  # XXX25, speedup
 
-    elif bpyima and len(bpymesh.faces):
+    elif bpyima and len(bpymesh.tessfaces):
         # Oh Bugger! - we cant really use blenders ORCO for for texture space since texspace dosnt rotate.
         # we have to create VRML's coords as UVs instead.
 
         # VRML docs
-        '''
+        """
         If the texCoord field is NULL, a default texture coordinate mapping is calculated using the local
         coordinate system bounding box of the shape. The longest dimension of the bounding box defines the S coordinates,
         and the next longest defines the T coordinates. If two or all three dimensions of the bounding box are equal,
         ties shall be broken by choosing the X, Y, or Z dimension in that order of preference.
         The value of the S coordinate ranges from 0 to 1, from one end of the bounding box to the other.
         The T coordinate ranges between 0 and the ratio of the second greatest dimension of the bounding box to the greatest dimension.
-        '''
+        """
 
         # Note, S,T == U,V
         # U gets longest, V gets second longest
@@ -1762,13 +1762,13 @@ def importMesh_IndexedFaceSet(geom, bpyima, ancestry):
             # This should be safe because when 2 axies have the same length, the lower index will be used.
             axis_v += 1
 
-        uvlay = bpymesh.uv_textures.new()
+        uvlay = bpymesh.tessface_uv_textures.new()
 
         # HACK !!! - seems to be compatible with Cosmo though.
         depth_v = depth_u = max(depth_v, depth_u)
 
         bpymesh_vertices = bpymesh.vertices[:]
-        bpymesh_faces = bpymesh.faces[:]
+        bpymesh_faces = bpymesh.tessfaces[:]
 
         for j, f in enumerate(uvlay.data):
             f.image = bpyima
@@ -1782,10 +1782,10 @@ def importMesh_IndexedFaceSet(geom, bpyima, ancestry):
     # Add vcote
     if vcolor:
         # print(ifs_vcol)
-        collay = bpymesh.vertex_colors.new()
+        collay = bpymesh.tessface_vertex_colors.new()
 
         for f_idx, f in enumerate(collay.data):
-            fv = bpymesh.faces[f_idx].vertices[:]
+            fv = bpymesh.tessfaces[f_idx].vertices[:]
             if len(fv) == 3:  # XXX speed
                 fcol = f.color1, f.color2, f.color3
             else:
@@ -1818,6 +1818,8 @@ def importMesh_IndexedFaceSet(geom, bpyima, ancestry):
                             color_index = 0
                         else:
                             color_index = ifs_color_index[color_index]
+                    # skip eedadoodle vert
+                    color_index += 1
                     try:
                         col = ifs_vcol[color_index]
                     except IndexError:
@@ -1828,6 +1830,9 @@ def importMesh_IndexedFaceSet(geom, bpyima, ancestry):
 
     # XXX25
     # bpymesh.vertices.delete([0, ])  # EEKADOODLE
+
+    bpymesh.update()
+    bpymesh.validate()
 
     return bpymesh, ccw
 
@@ -1933,7 +1938,7 @@ def importMesh_Cylinder(geom, ancestry):
     bpy.ops.mesh.primitive_cylinder_add(vertices=GLOBALS['CIRCLE_DETAIL'],
                                         radius=diameter,
                                         depth=height,
-                                        cap_ends=True,
+                                        end_fill_type='NGON',
                                         view_align=False,
                                         enter_editmode=False,
                                         )
@@ -1961,7 +1966,7 @@ def importMesh_Cylinder(geom, ancestry):
     if not side:
         # remove all quads
         # XXX25
-        # bpymesh.faces.delete(1, [f for f in bpymesh.faces if len(f) == 4])
+        # bpymesh.tessfaces.delete(1, [f for f in bpymesh.tessfaces if len(f) == 4])
         pass
 
     return bpymesh
@@ -1975,9 +1980,10 @@ def importMesh_Cone(geom, ancestry):
     # bpymesh = Mesh.Primitives.Cone(GLOBALS['CIRCLE_DETAIL'], diameter, height)
 
     bpy.ops.mesh.primitive_cone_add(vertices=GLOBALS['CIRCLE_DETAIL'],
-                                    radius=diameter,
+                                    radius1=diameter,
+                                    radius2=0,
                                     depth=height,
-                                    cap_end=True,
+                                    end_fill_type='NGON',
                                     view_align=False,
                                     enter_editmode=False,
                                     )
@@ -2040,7 +2046,8 @@ def importShape(node, ancestry, global_matrix):
         bpyima = None
         texmtx = None
 
-        depth = 0  # so we can set alpha face flag later
+        image_depth = 0  # so we can set alpha face flag later
+        is_vcol = (geom.getChildBySpec('Color') is not None)
 
         if appr:
 
@@ -2066,7 +2073,7 @@ def importShape(node, ancestry, global_matrix):
                     mat = ima  # This is a bit dumb, but just means we use default values for all
 
                 # all values between 0.0 and 1.0, defaults from VRML docs
-                bpymat = bpy.data.materials.new("XXX")
+                bpymat = bpy.data.materials.new(vrmlname)
                 bpymat.ambient = mat.getFieldAsFloat('ambientIntensity', 0.2, ancestry)
                 bpymat.diffuse_color = mat.getFieldAsFloatTuple('diffuseColor', [0.8, 0.8, 0.8], ancestry)
 
@@ -2081,41 +2088,54 @@ def importShape(node, ancestry, global_matrix):
                 bpymat.alpha = 1.0 - mat.getFieldAsFloat('transparency', 0.0, ancestry)
                 if bpymat.alpha < 0.999:
                     bpymat.use_transparency = True
+                if is_vcol:
+                    bpymat.use_vertex_color_paint = True
 
             if ima:
-                ima_url = ima.getFieldAsString('url', None, ancestry)
+                ima_urls = ima.getFieldAsString('url', None, ancestry)
 
-                if ima_url is None:
+                if ima_urls is None:
                     try:
-                        ima_url = ima.getFieldAsStringArray('url', ancestry)[0]  # in some cases we get a list of images.
+                        ima_urls = ima.getFieldAsStringArray('url', ancestry)  # in some cases we get a list of images.
                     except:
-                        ima_url = None
+                        ima_urls = None
+                else:
+                    if '" "' in ima_urls:
+                        # '"foo" "bar"' --> ['foo', 'bar']
+                        ima_urls = [w.strip('"') for w in ima_urls.split('" "')]
+                    else:
+                        ima_urls = [ima_urls]
+                # ima_urls is a list or None
 
-                if ima_url is None:
+                if ima_urls is None:
                     print("\twarning, image with no URL, this is odd")
                 else:
-                    bpyima = image_utils.load_image(ima_url, os.path.dirname(node.getFilename()), place_holder=False, recursive=False, convert_callback=imageConvertCompat)
+                    bpyima = None
+                    for f in ima_urls:
+                        bpyima = image_utils.load_image(f, os.path.dirname(node.getFilename()), place_holder=False, recursive=False, convert_callback=imageConvertCompat)
+                        if bpyima:
+                            break
+
                     if bpyima:
-                        texture = bpy.data.textures.new("XXX", 'IMAGE')
+                        texture = bpy.data.textures.new(bpyima.name, 'IMAGE')
                         texture.image = bpyima
 
                         # Adds textures for materials (rendering)
                         try:
-                            depth = bpyima.depth
+                            image_depth = bpyima.depth
                         except:
-                            depth = -1
+                            image_depth = -1
 
-                        if depth == 32:
-                            # Image has alpha
-                            bpymat.setTexture(0, texture, Texture.TexCo.UV, Texture.MapTo.COL | Texture.MapTo.ALPHA)
-                            texture.setImageFlags('MipMap', 'InterPol', 'UseAlpha')
-                            bpymat.mode |= Material.Modes.ZTRANSP
-                            bpymat.alpha = 0.0
-                        else:
-                            mtex = bpymat.texture_slots.add()
-                            mtex.texture = texture
-                            mtex.texture_coords = 'UV'
-                            mtex.use_map_diffuse = True
+                        mtex = bpymat.texture_slots.add()
+                        mtex.texture = texture
+
+                        mtex.texture_coords = 'UV'
+                        mtex.use_map_diffuse = True
+
+                        if image_depth in {32, 128}:
+                            bpymat.use_transparency = True
+                            mtex.use_map_alpha = True
+                            mtex.alpha_factor = 0.0
 
                         ima_repS = ima.getFieldAsBool('repeatS', True, ancestry)
                         ima_repT = ima.getFieldAsBool('repeatT', True, ancestry)
@@ -2155,7 +2175,7 @@ def importShape(node, ancestry, global_matrix):
             bpydata.name = vrmlname
 
             bpyob = node.blendObject = bpy.data.objects.new(vrmlname, bpydata)
-            bpy.context.scene.objects.link(bpyob)
+            bpy.context.scene.objects.link(bpyob).select = True
 
             if type(bpydata) == bpy.types.Mesh:
                 is_solid = geom.getFieldAsBool('solid', True, ancestry)
@@ -2169,17 +2189,17 @@ def importShape(node, ancestry, global_matrix):
                 if bpymat:
                     bpydata.materials.append(bpymat)
 
-                if bpydata.uv_textures:
+                if bpydata.tessface_uv_textures:
 
-                    if depth == 32:  # set the faces alpha flag?
+                    if image_depth in {32, 128}:  # set the faces alpha flag?
                         transp = Mesh.FaceTranspModes.ALPHA
-                        for f in bpydata.uv_textures.active.data:
+                        for f in bpydata.tessface_uv_textures.active.data:
                             f.blend_type = 'ALPHA'
 
                     if texmtx:
                         # Apply texture transform?
                         uv_copy = Vector()
-                        for f in bpydata.uv_textures.active.data:
+                        for f in bpydata.tessface_uv_textures.active.data:
                             fuv = f.uv
                             for i, uv in enumerate(fuv):
                                 uv_copy.x = uv[0]
@@ -2296,7 +2316,7 @@ def importLamp(node, spec, ancestry, global_matrix):
         raise ValueError
 
     bpyob = node.blendObject = bpy.data.objects.new("TODO", bpylamp)
-    bpy.context.scene.objects.link(bpyob)
+    bpy.context.scene.objects.link(bpyob).select = True
 
     bpyob.matrix_world = getFinalMatrix(node, mtx, ancestry, global_matrix)
 
@@ -2319,7 +2339,7 @@ def importViewpoint(node, ancestry, global_matrix):
     mtx = Matrix.Translation(Vector(position)) * translateRotation(orientation)
 
     bpyob = node.blendObject = bpy.data.objects.new(name, bpycam)
-    bpy.context.scene.objects.link(bpyob)
+    bpy.context.scene.objects.link(bpyob).select = True
     bpyob.matrix_world = getFinalMatrix(node, mtx, ancestry, global_matrix)
 
 
@@ -2329,7 +2349,7 @@ def importTransform(node, ancestry, global_matrix):
         name = 'Transform'
 
     bpyob = node.blendObject = bpy.data.objects.new(name, None)
-    bpy.context.scene.objects.link(bpyob)
+    bpy.context.scene.objects.link(bpyob).select = True
 
     bpyob.matrix_world = getFinalMatrix(node, None, ancestry, global_matrix)
 
@@ -2416,10 +2436,10 @@ def translateScalarInterpolator(node, action, ancestry):
 
 
 def translateTimeSensor(node, action, ancestry):
-    '''
+    """
     Apply a time sensor to an action, VRML has many combinations of loop/start/stop/cycle times
     to give different results, for now just do the basics
-    '''
+    """
 
     # XXX25 TODO
     if 1:
@@ -2446,9 +2466,9 @@ def translateTimeSensor(node, action, ancestry):
 
 
 def importRoute(node, ancestry):
-    '''
+    """
     Animation route only at the moment
-    '''
+    """
 
     if not hasattr(node, 'fields'):
         return
@@ -2464,7 +2484,7 @@ def importRoute(node, ancestry):
 
     # for getting definitions
     defDict = node.getDefDict()
-    '''
+    """
     Handles routing nodes to eachother
 
 ROUTE vpPI.value_changed TO champFly001.set_position
@@ -2472,7 +2492,7 @@ ROUTE vpOI.value_changed TO champFly001.set_orientation
 ROUTE vpTs.fraction_changed TO vpPI.set_fraction
 ROUTE vpTs.fraction_changed TO vpOI.set_fraction
 ROUTE champFly001.bindTime TO vpTs.set_startTime
-    '''
+    """
 
     #from_id, from_type = node.id[1].split('.')
     #to_id, to_type = node.id[3].split('.')
@@ -2588,7 +2608,7 @@ def load_web3d(path,
                 node = defDict[key]
                 if node.blendObject is None:  # Add an object if we need one for animation
                     node.blendObject = bpy.data.objects.new('AnimOb', None)  # , name)
-                    bpy.context.scene.objects.link(node.blendObject)
+                    bpy.context.scene.objects.link(node.blendObject).select = True
 
                 if node.blendObject.animation_data is None:
                     node.blendObject.animation_data_create()
@@ -2596,7 +2616,7 @@ def load_web3d(path,
                 node.blendObject.animation_data.action = action
 
     # Add in hierarchy
-    if PREF_FLAT == False:
+    if PREF_FLAT is False:
         child_dict = {}
         for node, ancestry in all_nodes:
             if node.blendObject:

@@ -19,24 +19,24 @@
 # <pep8 compliant>
 
 bl_info = {
-    'name': 'Copy Attributes Menu',
-    'author': 'Bassam Kurdali, Fabian Fricke, wiseman303',
-    'version': (0, 4, 6),
-    "blender": (2, 6, 1),
-    'location': 'View3D > Ctrl-C',
-    'description': 'Copy Attributes Menu from Blender 2.4',
-    'wiki_url': 'http://wiki.blender.org/index.php/Extensions:2.5/Py/'
-                'Scripts/3D_interaction/Copy_Attributes_Menu',
-    'tracker_url': 'https://projects.blender.org/tracker/index.php?'
-                   'func=detail&aid=22588',
-    'category': '3D View'}
+    "name": "Copy Attributes Menu",
+    "author": "Bassam Kurdali, Fabian Fricke, Adam Wiseman",
+    "version": (0, 4, 7),
+    "blender": (2, 63, 0),
+    "location": "View3D > Ctrl-C",
+    "description": "Copy Attributes Menu from Blender 2.4",
+    "wiki_url": "http://wiki.blender.org/index.php/Extensions:2.6/Py/"
+                "Scripts/3D_interaction/Copy_Attributes_Menu",
+    "tracker_url": "https://projects.blender.org/tracker/index.php?"
+                   "func=detail&aid=22588",
+    "category": "3D View"}
 
 import bpy
-from mathutils import Matrix, Vector
+from mathutils import Matrix
 
 
 def build_exec(loopfunc, func):
-    '''Generator function that returns exec functions for operators '''
+    """Generator function that returns exec functions for operators """
 
     def exec_func(self, context):
         loopfunc(self, context, func)
@@ -45,7 +45,7 @@ def build_exec(loopfunc, func):
 
 
 def build_invoke(loopfunc, func):
-    '''Generator function that returns invoke functions for operators'''
+    """Generator function that returns invoke functions for operators"""
 
     def invoke_func(self, context, event):
         loopfunc(self, context, func)
@@ -54,7 +54,7 @@ def build_invoke(loopfunc, func):
 
 
 def build_op(idname, label, description, fpoll, fexec, finvoke):
-    '''Generator function that returns the basic operator'''
+    """Generator function that returns the basic operator"""
 
     class myopic(bpy.types.Operator):
         bl_idname = idname
@@ -67,7 +67,7 @@ def build_op(idname, label, description, fpoll, fexec, finvoke):
 
 
 def genops(copylist, oplist, prefix, poll_func, loopfunc):
-    '''Generate ops from the copy list and its associated functions '''
+    """Generate ops from the copy list and its associated functions """
     for op in copylist:
         exec_func = build_exec(loopfunc, op[3])
         invoke_func = build_invoke(loopfunc, op[3])
@@ -77,7 +77,7 @@ def genops(copylist, oplist, prefix, poll_func, loopfunc):
 
 
 def generic_copy(source, target, string=""):
-    ''' copy attributes from source to target that have string in them '''
+    """ copy attributes from source to target that have string in them """
     for attr in dir(source):
         if attr.find(string) > -1:
             try:
@@ -88,9 +88,9 @@ def generic_copy(source, target, string=""):
 
 
 def getmat(bone, active, context, ignoreparent):
-    '''Helper function for visual transform copy,
+    """Helper function for visual transform copy,
        gets the active transform in bone space
-    '''
+    """
     obj_act = context.active_object
     data_bone = obj_act.data.bones[bone.name]
     #all matrices are in armature space unless commented otherwise
@@ -111,7 +111,7 @@ def getmat(bone, active, context, ignoreparent):
 
 
 def rotcopy(item, mat):
-    '''copy rotation to item from matrix mat depending on item.rotation_mode'''
+    """copy rotation to item from matrix mat depending on item.rotation_mode"""
     if item.rotation_mode == 'QUATERNION':
         item.rotation_quaternion = mat.to_3x3().to_quaternion()
     elif item.rotation_mode == 'AXIS_ANGLE':
@@ -122,7 +122,7 @@ def rotcopy(item, mat):
 
 
 def pLoopExec(self, context, funk):
-    '''Loop over selected bones and execute funk on them'''
+    """Loop over selected bones and execute funk on them"""
     active = context.active_pose_bone
     selected = context.selected_pose_bones
     selected.remove(active)
@@ -217,7 +217,7 @@ def pose_invoke_func(self, context, event):
 
 
 class CopySelectedPoseConstraints(bpy.types.Operator):
-    ''' Copy Chosen constraints from active to selected'''
+    """Copy Chosen constraints from active to selected"""
     bl_idname = "pose.copy_selected_constraints"
     bl_label = "Copy Selected Constraints"
     selection = bpy.props.BoolVectorProperty(size=32)
@@ -262,7 +262,7 @@ class VIEW3D_MT_posecopypopup(bpy.types.Menu):
 
 
 def obLoopExec(self, context, funk):
-    '''Loop over selected objects and execute funk on them'''
+    """Loop over selected objects and execute funk on them"""
     active = context.active_object
     selected = context.selected_objects[:]
     selected.remove(active)
@@ -273,7 +273,7 @@ def obLoopExec(self, context, funk):
 
 
 def world_to_basis(active, ob, context):
-    '''put world coords of active as basis coords of ob'''
+    """put world coords of active as basis coords of ob"""
     local = ob.parent.matrix_world.inverted() * active.matrix_world
     P = ob.matrix_basis * ob.matrix_local.inverted()
     mat = P * local
@@ -357,8 +357,7 @@ def obLok(ob, active, context):
         ob.lock_location[index] = state
     for index, state in enumerate(active.lock_rotation):
         ob.lock_rotation[index] = state
-    for index, state in enumerate(active.lock_rotations_4d):
-        ob.lock_rotations_4d[index] = state
+    ob.lock_rotations_4d = active.lock_rotations_4d
     ob.lock_rotation_w = active.lock_rotation_w
     for index, state in enumerate(active.lock_scale):
         ob.lock_scale[index] = state
@@ -452,7 +451,8 @@ def obWei(ob, active, context):
                                    vgroupIndex_weight[i][1], "REPLACE")
     return('INFO', "weights copied")
 
-object_copies = ( # ('obj_loc', "Location",
+object_copies = (
+                #('obj_loc', "Location",
                 #"Copy Location from Active to Selected", obLoc),
                 #('obj_rot', "Rotation",
                 #"Copy Rotation from Active to Selected", obRot),
@@ -516,7 +516,7 @@ def object_invoke_func(self, context, event):
 
 
 class CopySelectedObjectConstraints(bpy.types.Operator):
-    ''' Copy Chosen constraints from active to selected'''
+    """Copy Chosen constraints from active to selected"""
     bl_idname = "object.copy_selected_constraints"
     bl_label = "Copy Selected Constraints"
     selection = bpy.props.BoolVectorProperty(size=32)
@@ -546,7 +546,7 @@ class CopySelectedObjectConstraints(bpy.types.Operator):
 
 
 class CopySelectedObjectModifiers(bpy.types.Operator):
-    ''' Copy Chosen modifiers from active to selected'''
+    """Copy Chosen modifiers from active to selected"""
     bl_idname = "object.copy_selected_modifiers"
     bl_label = "Copy Selected Modifiers"
     selection = bpy.props.BoolVectorProperty(size=32)
@@ -606,16 +606,24 @@ class MESH_MT_CopyFaceSettings(bpy.types.Menu):
         vc = len(mesh.vertex_colors) > 1
         layout = self.layout
 
-        layout.operator(MESH_OT_CopyFaceSettings.bl_idname,
-                        text="Copy Material")['mode'] = 'MAT'
+        op = layout.operator(MESH_OT_CopyFaceSettings.bl_idname,
+                        text="Copy Material")
+        op['layer'] = ''
+        op['mode'] = 'MAT'
         if mesh.uv_textures.active:
-            layout.operator(MESH_OT_CopyFaceSettings.bl_idname,
-                            text="Copy Image")['mode'] = 'IMAGE'
-            layout.operator(MESH_OT_CopyFaceSettings.bl_idname,
-                            text="Copy UV Coords")['mode'] = 'UV'
+            op = layout.operator(MESH_OT_CopyFaceSettings.bl_idname,
+                            text="Copy Image")
+            op['layer'] = ''
+            op['mode'] = 'IMAGE'
+            op = layout.operator(MESH_OT_CopyFaceSettings.bl_idname,
+                            text="Copy UV Coords")
+            op['layer'] = ''
+            op['mode'] = 'UV'
         if mesh.vertex_colors.active:
-            layout.operator(MESH_OT_CopyFaceSettings.bl_idname,
-                            text="Copy Vertex Colors")['mode'] = 'VCOL'
+            op = layout.operator(MESH_OT_CopyFaceSettings.bl_idname,
+                            text="Copy Vertex Colors")
+            op['layer'] = ''
+            op['mode'] = 'VCOL'
         if uv or vc:
             layout.separator()
             if uv:
@@ -682,55 +690,69 @@ class MESH_OT_CopyFaceSettings(bpy.types.Operator):
         return context.mode == 'EDIT_MESH'
 
     def execute(self, context):
+        mode = getattr(self, 'mode', '')
+        if not mode in {'MAT', 'VCOL', 'IMAGE', 'UV'}:
+            self.report({'ERROR'}, "No mode specified or invalid mode.")
+            return self._end(context, {'CANCELLED'})
+        layername = getattr(self, 'layer', '')
         mesh = context.object.data
-        mode = getattr(self, 'mode', 'MODE')
-        layername = getattr(self, 'layer', None)
 
         # Switching out of edit mode updates the selected state of faces and
         # makes the data from the uv texture and vertex color layers available.
         bpy.ops.object.editmode_toggle()
 
+        polys = mesh.polygons
         if mode == 'MAT':
-            from_data = mesh.faces
-            to_data = from_data
+            to_data = from_data = polys
         else:
             if mode == 'VCOL':
                 layers = mesh.vertex_colors
                 act_layer = mesh.vertex_colors.active
-            else:
+            elif mode == 'IMAGE':
                 layers = mesh.uv_textures
                 act_layer = mesh.uv_textures.active
+            elif mode == 'UV':
+                layers = mesh.uv_layers
+                act_layer = mesh.uv_layers.active
             if not layers or (layername and not layername in layers):
-                return _end({'CANCELLED'})
+                self.report({'ERROR'}, "Invalid UV or color layer.")
+                return self._end(context, {'CANCELLED'})
             from_data = layers[layername or act_layer.name].data
             to_data = act_layer.data
-        from_face = from_data[mesh.faces.active]
+        from_index = polys.active
 
-        for f in mesh.faces:
+        for f in polys:
             if f.select:
                 if to_data != from_data:
-                    from_face = from_data[f.index]
+                    # Copying from another layer.
+                    # from_face is to_face's counterpart from other layer.
+                    from_index = f.index
+                elif f.index == from_index:
+                    # Otherwise skip copying a face to itself.
+                    continue
                 if mode == 'MAT':
-                    f.material_index = from_face.material_index
+                    f.material_index = polys[from_index].material_index
                     continue
-                to_face = to_data[f.index]
-                if to_face is from_face:
+                elif mode == 'IMAGE':
+                    to_data[f.index].image = from_data[from_index].image
                     continue
-                if mode == 'VCOL':
-                    to_face.color1 = from_face.color1
-                    to_face.color2 = from_face.color2
-                    to_face.color3 = from_face.color3
-                    to_face.color4 = from_face.color4
-                elif mode in {'UV', 'IMAGE'}:
-                    attr = mode.lower()
-                    setattr(to_face, attr, getattr(from_face, attr))
-        return _end({'FINISHED'})
+                if len(f.loop_indices) != len(polys[from_index].loop_indices):
+                    self.report({'WARNING'}, "Different number of vertices.")
+                for i in range(len(f.loop_indices)):
+                    to_vertex = f.loop_indices[i]
+                    from_vertex = polys[from_index].loop_indices[i]
+                    if mode == 'VCOL':
+                        to_data[to_vertex].color = from_data[from_vertex].color
+                    elif mode == 'UV':
+                        to_data[to_vertex].uv = from_data[from_vertex].uv
 
+        return self._end(context, {'FINISHED'})
 
-def _end(retval):
-    # Clean up by returning to edit mode like it was before.
-    bpy.ops.object.editmode_toggle()
-    return(retval)
+    def _end(self, context, retval):
+        if context.mode != 'EDIT_MESH':
+            # Clean up by returning to edit mode like it was before.
+            bpy.ops.object.editmode_toggle()
+        return(retval)
 
 
 def register():
@@ -779,7 +801,7 @@ def unregister():
                 if kmi.properties.name == 'MESH_MT_CopyFaceSettings':
                     km.keymap_items.remove(kmi)
 
-        km = kc.addon.keymaps['Object Mode']
+        km = kc.keymaps['Object Mode']
         for kmi in km.keymap_items:
             if kmi.idname == 'wm.call_menu':
                 if kmi.properties.name == 'VIEW3D_MT_copypopup':

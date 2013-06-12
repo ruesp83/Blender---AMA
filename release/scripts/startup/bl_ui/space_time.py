@@ -81,10 +81,12 @@ class TIME_HT_header(Header):
 
         row = layout.row(align=True)
         row.prop(toolsettings, "use_keyframe_insert_auto", text="", toggle=True)
-        row.prop(toolsettings, "use_keyframe_insert_keyingset", text="", toggle=True)
-        if screen.is_animation_playing and toolsettings.use_keyframe_insert_auto:
-            subsub = row.row()
-            subsub.prop(toolsettings, "use_record_with_nla", toggle=True)
+        if toolsettings.use_keyframe_insert_auto:
+            row.prop(toolsettings, "use_keyframe_insert_keyingset", text="", toggle=True)
+
+            if screen.is_animation_playing:
+                subsub = row.row()
+                subsub.prop(toolsettings, "use_record_with_nla", toggle=True)
 
         row = layout.row(align=True)
         row.prop_search(scene.keying_sets_all, "active", scene, "keying_sets_all", text="")
@@ -125,6 +127,11 @@ class TIME_MT_view(Menu):
 
         layout.operator("marker.camera_bind")
 
+        layout.separator()
+
+        layout.operator("screen.area_dupli")
+        layout.operator("screen.screen_full_area")
+
 
 class TIME_MT_cache(Menu):
     bl_label = "Cache"
@@ -145,6 +152,7 @@ class TIME_MT_cache(Menu):
         col.prop(st, "cache_cloth")
         col.prop(st, "cache_smoke")
         col.prop(st, "cache_dynamicpaint")
+        col.prop(st, "cache_rigidbody")
 
 
 class TIME_MT_frame(Menu):
@@ -158,8 +166,7 @@ class TIME_MT_frame(Menu):
 
         layout.separator()
 
-        sub = layout.row()
-        sub.menu("TIME_MT_autokey")
+        layout.menu("TIME_MT_autokey")
 
 
 class TIME_MT_playback(Menu):
@@ -207,7 +214,7 @@ def marker_menu_generic(layout):
     layout.operator("marker.add", "Add Marker")
     layout.operator("marker.duplicate", text="Duplicate Marker")
 
-    if(len(bpy.data.scenes) > 10):
+    if len(bpy.data.scenes) > 10:
         layout.operator_context = 'INVOKE_DEFAULT'
         layout.operator("marker.make_links_scene", text="Duplicate Marker to Scene...", icon='OUTLINER_OB_EMPTY')
     else:

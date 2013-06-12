@@ -24,11 +24,11 @@ bl_info = {
     "name": "Scene Information",
     "author": "uselessdreamer",
     "version": (0,3),
-    "blender": (2, 5, 9),
+    "blender": (2, 59, 0),
     "location": "Properties > Scene > Blend Info Panel",
     "description": "Show information about the .blend",
     "warning": "",
-    "wiki_url": 'http://wiki.blender.org/index.php/Extensions:2.5/Py/' \
+    "wiki_url": 'http://wiki.blender.org/index.php/Extensions:2.6/Py/' \
         'Scripts/System/Blend Info',
     "tracker_url": "https://projects.blender.org/tracker/index.php?" \
         "func=detail&aid=22102",
@@ -125,6 +125,12 @@ class OBJECT_PT_blendinfo(bpy.types.Panel):
         num = len(empties)
         row.label(text=quantity_string(num, "Empty", "Empties"),
             icon='EMPTY_DATA')
+
+        row = ob_cols[1].row()
+        empties = [o for o in objects.values() if o.type == 'SPEAKER']
+        num = len(empties)
+        row.label(text=quantity_string(num, "Speaker", "Speakers"),
+            icon='OUTLINER_OB_SPEAKER')
 
         layout.separator()
         

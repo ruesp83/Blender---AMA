@@ -90,6 +90,10 @@ def suffix_quoted_str(value, suffix):
     return value[:-1] + suffix + value[-1:]
 
 
+def bool_as_str(value):
+    return ('false', 'true')[bool(value)]
+
+
 def clean_def(txt):
     # see report [#28256]
     if not txt:
@@ -239,7 +243,7 @@ def h3d_is_object_view(scene, obj):
 def export(file,
            global_matrix,
            scene,
-           use_apply_modifiers=False,
+           use_mesh_modifiers=False,
            use_selection=True,
            use_triangulate=False,
            use_normals=False,
@@ -256,8 +260,6 @@ def export(file,
     from bpy_extras.io_utils import unique_name
     from xml.sax.saxutils import quoteattr, escape
 
-    
-    
     if name_decorations:
         # If names are decorated, the uuid map can be split up
         # by type for efficiency of collision testing
@@ -280,7 +282,7 @@ def export(file,
         group_ = 'group_'
     else:
         # If names are not decorated, it may be possible for two objects to
-        # have the same name, so there has to be a unified dictionary to 
+        # have the same name, so there has to be a unified dictionary to
         # prevent uuid collisions.
         uuid_cache = {}
         uuid_cache_object = uuid_cache           # object
@@ -299,7 +301,7 @@ def export(file,
         MA_ = ''
         LA_ = ''
         group_ = ''
-    
+
     _TRANSFORM = '_TRANSFORM'
 
     # store files to copy
@@ -371,7 +373,7 @@ def export(file,
 
         loc, rot, scale = matrix.decompose()
         rot = rot.to_axis_angle()
-        rot = rot[0][:] + (rot[1], )
+        rot = rot[0].normalized()[:] + (rot[1], )
 
         ident_step = ident + (' ' * (-len(ident) + \
         fw('%s<Viewpoint ' % ident)))
@@ -399,10 +401,10 @@ def export(file,
         else:
             return
 
-    def writeNavigationInfo(ident, scene):
+    def writeNavigationInfo(ident, scene, has_lamp):
         ident_step = ident + (' ' * (-len(ident) + \
         fw('%s<NavigationInfo ' % ident)))
-        fw('headlight="false"\n')
+        fw('headlight="%s"\n' % bool_as_str(not has_lamp))
         fw(ident_step + 'visibilityLimit="0.0"\n')
         fw(ident_step + 'type=\'"EXAMINE", "ANY"\'\n')
         fw(ident_step + 'avatarSize="0.25, 1.75, 0.75"\n')
@@ -527,7 +529,11 @@ def export(file,
         mesh_id_coords = prefix_quoted_str(mesh_id, 'coords_')
         mesh_id_normals = prefix_quoted_str(mesh_id, 'normals_')
 
-        if not mesh.faces:
+        # tessellation faces may not exist
+        if not mesh.tessfaces and mesh.polygons:
+            mesh.update(calc_tessface=True)
+
+        if not mesh.tessfaces:
             return
 
         use_collnode = bool([mod for mod in obj.modifiers
@@ -550,7 +556,7 @@ def export(file,
             fw('%s<Group DEF=%s>\n' % (ident, mesh_id_group))
             ident += '\t'
 
-            is_uv = bool(mesh.uv_textures.active)
+            is_uv = bool(mesh.tessface_uv_textures.active)
             # is_col, defined for each material
 
             is_coords_written = False
@@ -580,12 +586,16 @@ def export(file,
 
             # fast access!
             mesh_vertices = mesh.vertices[:]
-            mesh_faces = mesh.faces[:]
+            mesh_faces = mesh.tessfaces[:]
             mesh_faces_materials = [f.material_index for f in mesh_faces]
             mesh_faces_vertices = [f.vertices[:] for f in mesh_faces]
 
             if is_uv and True in mesh_materials_use_face_texture:
-                mesh_faces_image = [(fuv.image if (mesh_materials_use_face_texture[mesh_faces_materials[i]]) else mesh_material_images[mesh_faces_materials[i]]) for i, fuv in enumerate(mesh.uv_textures.active.data)]
+                mesh_faces_image = [(fuv.image
+                                     if mesh_materials_use_face_texture[mesh_faces_materials[i]]
+                                     else mesh_material_images[mesh_faces_materials[i]])
+                                     for i, fuv in enumerate(mesh.tessface_uv_textures.active.data)]
+
                 mesh_faces_image_unique = set(mesh_faces_image)
             elif len(set(mesh_material_images) | {None}) > 1:  # make sure there is at least one image
                 mesh_faces_image = [mesh_material_images[material_index] for material_index in mesh_faces_materials]
@@ -616,7 +626,7 @@ def export(file,
                     ident += '\t'
 
                     is_smooth = False
-                    is_col = (mesh.vertex_colors.active and (material is None or material.use_vertex_color_paint))
+                    is_col = (mesh.tessface_vertex_colors.active and (material is None or material.use_vertex_color_paint))
 
                     # kludge but as good as it gets!
                     for i in face_group:
@@ -693,8 +703,8 @@ def export(file,
                     ident = ident[:-1]
                     fw('%s</Appearance>\n' % ident)
 
-                    mesh_faces_col = mesh.vertex_colors.active.data if is_col else None
-                    mesh_faces_uv = mesh.uv_textures.active.data if is_uv else None
+                    mesh_faces_col = mesh.tessface_vertex_colors.active.data if is_col else None
+                    mesh_faces_uv = mesh.tessface_uv_textures.active.data if is_uv else None
 
                     #-- IndexedFaceSet or IndexedLineSet
                     if use_triangulate:
@@ -702,7 +712,7 @@ def export(file,
                         fw('%s<IndexedTriangleSet ' % ident)))
 
                         # --- Write IndexedTriangleSet Attributes (same as IndexedFaceSet)
-                        fw('solid="%s"\n' % ('true' if mesh.show_double_sided else 'false'))
+                        fw('solid="%s"\n' % bool_as_str(material and material.game_settings.use_backface_culling))
 
                         if use_normals or is_force_normals:
                             fw(ident_step + 'normalPerVertex="true"\n')
@@ -744,7 +754,7 @@ def export(file,
                         # build a mesh mapping dict
                         vertex_hash = [{} for i in range(len(mesh.vertices))]
                         # worst case every face is a quad
-                        face_tri_list = [[None, None, None] for i in range(len(mesh.faces) * 2)]
+                        face_tri_list = [[None, None, None] for i in range(len(mesh.tessfaces) * 2)]
                         vert_tri_list = []
                         totvert = 0
                         totface = 0
@@ -845,9 +855,11 @@ def export(file,
                         fw('%s<IndexedFaceSet ' % ident)))
 
                         # --- Write IndexedFaceSet Attributes (same as IndexedTriangleSet)
-                        fw('solid="%s"\n' % ('true' if mesh.show_double_sided else 'false'))
+                        fw('solid="%s"\n' % bool_as_str(material and material.game_settings.use_backface_culling))
                         if is_smooth:
-                            fw(ident_step + 'creaseAngle="%.4f"\n' % mesh.auto_smooth_angle)
+                            # use Auto-Smooth angle, if enabled. Otherwise make
+                            # the mesh perfectly smooth by creaseAngle > pi.
+                            fw(ident_step + 'creaseAngle="%.4f"\n' % (mesh.auto_smooth_angle if mesh.use_auto_smooth else 4.0))
 
                         if use_normals:
                             # currently not optional, could be made so:
@@ -1294,13 +1306,14 @@ def export(file,
             images = [
                 filepath_ref,
                 filepath_base,
-                filepath_full,
             ]
+            if path_mode != 'RELATIVE':
+                images.append(filepath_full)
 
             images = [f.replace('\\', '/') for f in images]
             images = [f for i, f in enumerate(images) if f not in images[:i]]
 
-            fw(ident_step + "url='%s' " % ' '.join(['"%s"' % escape(f) for f in images]))
+            fw(ident_step + "url='%s'\n" % ' '.join(['"%s"' % escape(f) for f in images]))
             fw(ident_step + '/>\n')
 
     def writeBackground(ident, world):
@@ -1327,9 +1340,9 @@ def export(file,
         # Blend Gradient
         elif blending == (True, False, False):
             fw(ident_step + 'groundColor="%.3f %.3f %.3f, %.3f %.3f %.3f"\n' % (grd_triple + mix_triple))
-            fw(ident_step + 'groundAngle="1.57, 1.57"\n')
+            fw(ident_step + 'groundAngle="1.57"\n')
             fw(ident_step + 'skyColor="%.3f %.3f %.3f, %.3f %.3f %.3f"\n' % (sky_triple + mix_triple))
-            fw(ident_step + 'skyAngle="1.57, 1.57"\n')
+            fw(ident_step + 'skyAngle="1.57"\n')
         # Blend+Real Gradient Inverse
         elif blending == (True, False, True):
             fw(ident_step + 'groundColor="%.3f %.3f %.3f, %.3f %.3f %.3f"\n' % (sky_triple + grd_triple))
@@ -1343,9 +1356,9 @@ def export(file,
         # Blend+Real+Paper - komplex gradient
         elif blending == (True, True, True):
             fw(ident_step + 'groundColor="%.3f %.3f %.3f, %.3f %.3f %.3f"\n' % (sky_triple + grd_triple))
-            fw(ident_step + 'groundAngle="1.57, 1.57"\n')
+            fw(ident_step + 'groundAngle="1.57"\n')
             fw(ident_step + 'skyColor="%.3f %.3f %.3f, %.3f %.3f %.3f"\n' % (sky_triple + grd_triple))
-            fw(ident_step + 'skyAngle="1.57, 1.57"\n')
+            fw(ident_step + 'skyAngle="1.57"\n')
         # Any Other two colors
         else:
             fw(ident_step + 'groundColor="%.3f %.3f %.3f"\n' % grd_triple)
@@ -1391,12 +1404,17 @@ def export(file,
 
             ident = writeTransform_begin(ident, obj_main_matrix if obj_main_parent else global_matrix * obj_main_matrix, suffix_quoted_str(obj_main_id, _TRANSFORM))
 
+        # Set here just incase we dont enter the loop below.
+        is_dummy_tx = False
+
         for obj, obj_matrix in (() if derived is None else derived):
             obj_type = obj.type
 
             if use_hierarchy:
                 # make transform node relative
                 obj_matrix = obj_main_matrix_world_invert * obj_matrix
+            else:
+                obj_matrix = global_matrix * obj_matrix
 
             # H3D - use for writing a dummy transform parent
             is_dummy_tx = False
@@ -1415,9 +1433,9 @@ def export(file,
                     ident += '\t'
 
             elif obj_type in {'MESH', 'CURVE', 'SURFACE', 'FONT'}:
-                if (obj_type != 'MESH') or (use_apply_modifiers and obj.is_modified(scene, 'PREVIEW')):
+                if (obj_type != 'MESH') or (use_mesh_modifiers and obj.is_modified(scene, 'PREVIEW')):
                     try:
-                        me = obj.to_mesh(scene, use_apply_modifiers, 'PREVIEW')
+                        me = obj.to_mesh(scene, use_mesh_modifiers, 'PREVIEW')
                     except:
                         me = None
                     do_remove = True
@@ -1489,20 +1507,20 @@ def export(file,
         bpy.data.materials.tag(False)
         bpy.data.images.tag(False)
 
-        print('Info: starting X3D export to %r...' % file.name)
-        ident = ''
-        ident = writeHeader(ident)
-
-        writeNavigationInfo(ident, scene)
-        writeBackground(ident, world)
-        writeFog(ident, world)
-
-        ident = '\t\t'
-
         if use_selection:
             objects = [obj for obj in scene.objects if obj.is_visible(scene) and obj.select]
         else:
             objects = [obj for obj in scene.objects if obj.is_visible(scene)]
+
+        print('Info: starting X3D export to %r...' % file.name)
+        ident = ''
+        ident = writeHeader(ident)
+
+        writeNavigationInfo(ident, scene, any(obj.type == 'LAMP' for obj in objects))
+        writeBackground(ident, world)
+        writeFog(ident, world)
+
+        ident = '\t\t'
 
         if use_hierarchy:
             objects_hierarchy = build_hierarchy(objects)
@@ -1536,9 +1554,26 @@ def export(file,
 ##########################################################
 
 
+def gzip_open_utf8(filepath, mode):
+    """Workaround for py3k only allowing binary gzip writing"""
+
+    import gzip
+
+    # need to investigate encoding
+    file = gzip.open(filepath, mode)
+    write_real = file.write
+
+    def write_wrap(data):
+        return write_real(data.encode("utf-8"))
+
+    file.write = write_wrap
+
+    return file
+
+
 def save(operator, context, filepath="",
          use_selection=True,
-         use_apply_modifiers=False,
+         use_mesh_modifiers=False,
          use_triangulate=False,
          use_normals=False,
          use_compress=False,
@@ -1555,9 +1590,7 @@ def save(operator, context, filepath="",
         bpy.ops.object.mode_set(mode='OBJECT')
 
     if use_compress:
-        import gzip
-        # need to investigate encoding
-        file = gzip.open(filepath, 'w')
+        file = gzip_open_utf8(filepath, 'w')
     else:
         file = open(filepath, 'w', encoding='utf-8')
 
@@ -1567,7 +1600,7 @@ def save(operator, context, filepath="",
     export(file,
            global_matrix,
            context.scene,
-           use_apply_modifiers=use_apply_modifiers,
+           use_mesh_modifiers=use_mesh_modifiers,
            use_selection=use_selection,
            use_triangulate=use_triangulate,
            use_normals=use_normals,

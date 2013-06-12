@@ -128,6 +128,19 @@ class Object(bpy_types.ID):
                      if self in scene.objects[:])
 
 
+class WindowManager(bpy_types.ID):
+    __slots__ = ()
+
+    def popup_menu(self, draw_func, title="", icon='NONE'):
+        import bpy
+        popup = self.pupmenu_begin__internal(title, icon)
+
+        try:
+            draw_func(popup, bpy.context)
+        finally:
+            self.pupmenu_end__internal(popup)
+
+
 class _GenericBone:
     """
     functions for bones, common between Armature/Pose/Edit bones.
@@ -304,7 +317,7 @@ class EditBone(StructRNA, _GenericBone, metaclass=StructMetaPropGroup):
         Align this bone to another by moving its tail and settings its roll
         the length of the other bone is not used.
         """
-        vec = other.vector.normalize() * self.length
+        vec = other.vector.normalized() * self.length
         self.tail = self.head + vec
         self.roll = other.roll
 
@@ -366,14 +379,15 @@ class Mesh(bpy_types.ID):
         :type edges: iterable object
         :arg faces:
 
-           iterator of faces, each faces contains three or four indices to
+           iterator of faces, each faces contains three or more indices to
            the *vertices* argument. eg: [(5, 6, 8, 9), (1, 2, 3), ...]
 
         :type faces: iterable object
         """
         self.vertices.add(len(vertices))
         self.edges.add(len(edges))
-        self.faces.add(len(faces))
+        self.loops.add(sum((len(f) for f in faces)))
+        self.polygons.add(len(faces))
 
         vertices_flat = [f for v in vertices for f in v]
         self.vertices.foreach_set("co", vertices_flat)
@@ -383,19 +397,19 @@ class Mesh(bpy_types.ID):
         self.edges.foreach_set("vertices", edges_flat)
         del edges_flat
 
-        def treat_face(f):
-            if len(f) == 3:
-                if f[2] == 0:
-                    return f[2], f[0], f[1], 0
-                else:
-                    return f[0], f[1], f[2], 0
-            elif f[2] == 0 or f[3] == 0:
-                return f[2], f[3], f[0], f[1]
-            return f
+        # this is different in bmesh
+        loop_index = 0
+        for i, p in enumerate(self.polygons):
+            f = faces[i]
+            loop_len = len(f)
+            p.loop_start = loop_index
+            p.loop_total = loop_len
+            p.vertices = f
+            loop_index += loop_len
 
-        faces_flat = [v for f in faces for v in treat_face(f)]
-        self.faces.foreach_set("vertices_raw", faces_flat)
-        del faces_flat
+        # if no edges - calculate them
+        if faces and (not edges):
+            self.update(calc_edges=True)
 
     @property
     def edge_keys(self):
@@ -410,7 +424,7 @@ class MeshEdge(StructRNA):
         return ord_ind(*tuple(self.vertices))
 
 
-class MeshFace(StructRNA):
+class MeshTessFace(StructRNA):
     __slots__ = ()
 
     @property
@@ -446,6 +460,22 @@ class MeshFace(StructRNA):
                     )
 
 
+class MeshPolygon(StructRNA):
+    __slots__ = ()
+
+    @property
+    def edge_keys(self):
+        verts = self.vertices[:]
+        vlen = len(self.vertices)
+        return [ord_ind(verts[i], verts[(i + 1) % vlen]) for i in range(vlen)]
+
+    @property
+    def loop_indices(self):
+        start = self.loop_start
+        end = start + self.loop_total
+        return range(start, end)
+
+
 class Text(bpy_types.ID):
     __slots__ = ()
 
@@ -466,6 +496,7 @@ class Text(bpy_types.ID):
                      if self in [cont.text for cont in obj.game.controllers
                                  if cont.type == 'PYTHON']
                      )
+
 
 # values are module: [(cls, path, line), ...]
 TypeMap = {}
@@ -537,21 +568,21 @@ class Operator(StructRNA, metaclass=OrderedMeta):
     def __getattribute__(self, attr):
         properties = StructRNA.path_resolve(self, "properties")
         bl_rna = getattr(properties, "bl_rna", None)
-        if bl_rna and attr in bl_rna.properties:
+        if (bl_rna is not None) and (attr in bl_rna.properties):
             return getattr(properties, attr)
         return super().__getattribute__(attr)
 
     def __setattr__(self, attr, value):
         properties = StructRNA.path_resolve(self, "properties")
         bl_rna = getattr(properties, "bl_rna", None)
-        if bl_rna and attr in bl_rna.properties:
+        if (bl_rna is not None) and (attr in bl_rna.properties):
             return setattr(properties, attr, value)
         return super().__setattr__(attr, value)
 
     def __delattr__(self, attr):
         properties = StructRNA.path_resolve(self, "properties")
         bl_rna = getattr(properties, "bl_rna", None)
-        if bl_rna and attr in bl_rna.properties:
+        if (bl_rna is not None) and (attr in bl_rna.properties):
             return delattr(properties, attr)
         return super().__delattr__(attr)
 
@@ -583,6 +614,10 @@ class RenderEngine(StructRNA, metaclass=RNAMeta):
 
 
 class KeyingSetInfo(StructRNA, metaclass=RNAMeta):
+    __slots__ = ()
+
+
+class AddonPreferences(StructRNA, metaclass=RNAMeta):
     __slots__ = ()
 
 
@@ -647,6 +682,10 @@ class Panel(StructRNA, _GenericUI, metaclass=RNAMeta):
     __slots__ = ()
 
 
+class UIList(StructRNA, _GenericUI, metaclass=RNAMeta):
+    __slots__ = ()
+
+
 class Header(StructRNA, _GenericUI, metaclass=RNAMeta):
     __slots__ = ()
 
@@ -654,7 +693,9 @@ class Header(StructRNA, _GenericUI, metaclass=RNAMeta):
 class Menu(StructRNA, _GenericUI, metaclass=RNAMeta):
     __slots__ = ()
 
-    def path_menu(self, searchpaths, operator, props_default={}):
+    def path_menu(self, searchpaths, operator,
+                  props_default={}, filter_ext=None):
+
         layout = self.layout
         # hard coded to set the operators 'filepath' to the filename.
 
@@ -670,17 +711,18 @@ class Menu(StructRNA, _GenericUI, metaclass=RNAMeta):
         files = []
         for directory in searchpaths:
             files.extend([(f, os.path.join(directory, f))
-                           for f in os.listdir(directory)])
+                          for f in os.listdir(directory)
+                          if (not f.startswith("."))
+                          if ((filter_ext is None) or
+                              (filter_ext(os.path.splitext(f)[1])))
+                          ])
 
         files.sort()
 
         for f, filepath in files:
-
-            if f.startswith("."):
-                continue
-
-            preset_name = bpy.path.display_name(f)
-            props = layout.operator(operator, text=preset_name)
+            props = layout.operator(operator,
+                                    text=bpy.path.display_name(f),
+                                    translate=False)
 
             for attr, value in props_default.items():
                 setattr(props, attr, value)
@@ -697,4 +739,82 @@ class Menu(StructRNA, _GenericUI, metaclass=RNAMeta):
         """
         import bpy
         self.path_menu(bpy.utils.preset_paths(self.preset_subdir),
-                       self.preset_operator)
+                       self.preset_operator,
+                       filter_ext=lambda ext: ext.lower() in {".py", ".xml"})
+
+
+class Region(StructRNA):
+    __slots__ = ()
+
+    def callback_add(self, cb, args, draw_mode):
+        """
+        Append a draw function to this region,
+        deprecated, instead use bpy.types.SpaceView3D.draw_handler_add
+        """
+        for area in self.id_data.areas:
+            for region in area.regions:
+                if region == self:
+                    spacetype = type(area.spaces[0])
+                    return spacetype.draw_handler_add(cb, args, self.type,
+                                                      draw_mode)
+
+        return None
+
+
+class NodeTree(bpy_types.ID, metaclass=RNAMetaPropGroup):
+    __slots__ = ()
+
+
+class Node(StructRNA, metaclass=RNAMetaPropGroup):
+    __slots__ = ()
+
+    @classmethod
+    def poll(cls, ntree):
+        return True
+
+
+class NodeInternal(Node):
+    __slots__ = ()
+
+
+class NodeSocket(StructRNA, metaclass=RNAMetaPropGroup):
+    __slots__ = ()
+
+    @property
+    def links(self):
+        """List of node links from or to this socket"""
+        return tuple(link for link in self.id_data.links
+                     if (link.from_socket == self or
+                         link.to_socket == self))
+
+
+class NodeSocketInterface(StructRNA, metaclass=RNAMetaPropGroup):
+    __slots__ = ()
+
+
+# These are intermediate subclasses, need a bpy type too
+class CompositorNode(NodeInternal):
+    __slots__ = ()
+
+    @classmethod
+    def poll(cls, ntree):
+        return ntree.bl_idname == 'CompositorNodeTree'
+
+    def update(self):
+        self.tag_need_exec()
+
+
+class ShaderNode(NodeInternal):
+    __slots__ = ()
+
+    @classmethod
+    def poll(cls, ntree):
+        return ntree.bl_idname == 'ShaderNodeTree'
+
+
+class TextureNode(NodeInternal):
+    __slots__ = ()
+
+    @classmethod
+    def poll(cls, ntree):
+        return ntree.bl_idname == 'TextureNodeTree'

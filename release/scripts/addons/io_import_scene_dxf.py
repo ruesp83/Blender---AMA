@@ -17,20 +17,19 @@
 # ##### END GPL LICENSE BLOCK #####
 
 bl_info = {
-    'name': 'Import Autocad DXF Format (.dxf)',
-    'author': 'Thomas Larsson, Remigiusz Fiedler',
-    'version': (0, 1, 6),
-    "blender": (2, 6, 1),
-    'location': 'File > Import > Autocad (.dxf)',
-    'description': 'Import files in the Autocad DXF format (.dxf)',
-    'warning': 'Only a subset of DXF specification is supported now.'\
-        ' Please support further development!',
-    'wiki_url': 'http://wiki.blender.org/index.php/Extensions:2.5/Py/'\
-        'Scripts/Import-Export/DXF_Importer',
-    'tracker_url': 'https://projects.blender.org/tracker/index.php?'\
-        'func=detail&aid=23480',
-    'support': 'OFFICIAL',
-    'category': 'Import-Export',
+    "name": "Import Autocad DXF Format (.dxf)",
+    "author": "Thomas Larsson, Remigiusz Fiedler",
+    "version": (0, 1, 6),
+    "blender": (2, 63, 0),
+    "location": "File > Import > Autocad (.dxf)",
+    "description": "Import files in the Autocad DXF format (.dxf)",
+    "warning": "Under construction! Visit Wiki for details.",
+    "wiki_url": "http://wiki.blender.org/index.php/Extensions:2.6/Py/"
+                "Scripts/Import-Export/DXF_Importer",
+    "tracker_url": "https://projects.blender.org/tracker/index.php?"
+                   "func=detail&aid=23480",
+    "support": "OFFICIAL",
+    "category": "Import-Export",
     }
 
 """
@@ -107,7 +106,7 @@ T_ThicON = 0x40
 
 toggle = T_Merge | T_NewScene | T_DrawOne | T_ThicON
 theCircleRes = 32
-theMergeLimit = 1e-5
+theMergeLimit = 1e-4
 
 #
 #    class CSection:
@@ -1844,6 +1843,8 @@ def readDxfFile(fileName):
                 known = False
             elif data == 'OBJECTS':
                 parseObjects(section, statements, handles)
+            elif data == 'THUMBNAILIMAGE':
+                parseThumbnail(section, statements, handles)
             sections[data] = section
         elif code == 999:
             pass
@@ -2230,7 +2231,30 @@ def parseObjects(data, statements, handles):
                 return
 
     return
-            
+
+#    
+#    THUMBNAILIMAGE
+#     90
+#        45940
+#    310
+#    28000000B40000005500000001001800000000000000000000000000000000000000000000000000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
+#    310
+#    FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
+#    310
+#    .......
+#      0
+#    ENDSEC
+
+def parseThumbnail(section, statements, handles):
+    """ Just skip these """
+    while statements:
+        (code,data) = statements.pop()
+        if code == 0:
+            if data == 'ENDSEC':
+                return
+
+    return
+
 #
 #    buildGeometry(entities):
 #    addMesh(name, verts, edges, faces):                            
@@ -2352,7 +2376,7 @@ def removeDoubles(ob):
         scn = bpy.context.scene
         scn.objects.active = ob
         bpy.ops.object.mode_set(mode='EDIT')
-        bpy.ops.mesh.remove_doubles(limit=theMergeLimit)
+        bpy.ops.mesh.remove_doubles(threshold=theMergeLimit)
         bpy.ops.object.mode_set(mode='OBJECT')
 
 
@@ -2420,7 +2444,7 @@ def tripleList(list1):
     return list3
 
 class IMPORT_OT_autocad_dxf(bpy.types.Operator):
-    '''Import from DXF file format (.dxf)'''
+    """Import from DXF file format (.dxf)"""
     bl_idname = "import_scene.autocad_dxf"
     bl_description = 'Import from DXF file format (.dxf)'
     bl_label = "Import DXF" +' v.'+ __version__
@@ -2458,21 +2482,21 @@ class IMPORT_OT_autocad_dxf(bpy.types.Operator):
             )
     mergeLimit = FloatProperty(
             name="Limit",
-            description="Merge limit",
+            description="Merge limit * 0.0001",
             default=theMergeLimit * 1e4,
             min=1.0,
             soft_min=1.0,
-            max=100.0,
-            soft_max=100.0,
+            max=1000.0,
+            soft_max=1000.0,
             )
     draw_one = BoolProperty(
             name="Merge all",
-            description="Draw all into one mesh-object",
+            description="Draw all into one mesh object",
             default=toggle & T_DrawOne,
             )
     circleResolution = IntProperty(
             name="Circle resolution",
-            description="Circle/Arc are aproximated with this factor",
+            description="Circle/Arc are approximated with this factor",
             default=theCircleRes,
             min=4,
             soft_min=4,

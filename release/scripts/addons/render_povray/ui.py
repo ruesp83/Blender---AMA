@@ -83,6 +83,15 @@ for member in dir(properties_data_lamp):
         pass
 del properties_data_lamp
 
+from bl_ui import properties_particle as properties_particle
+for member in dir(properties_particle):  # add all "particle" panels from blender
+    subclass = getattr(properties_particle, member)
+    try:
+        subclass.COMPAT_ENGINES.add('POVRAY_RENDER')
+    except:
+        pass
+del properties_particle
+
 
 class RenderButtonsPanel():
     bl_space_type = 'PROPERTIES'
@@ -93,7 +102,7 @@ class RenderButtonsPanel():
     @classmethod
     def poll(cls, context):
         rd = context.scene.render
-        return (rd.use_game_engine == False) and (rd.engine in cls.COMPAT_ENGINES)
+        return (rd.use_game_engine is False) and (rd.engine in cls.COMPAT_ENGINES)
 
 
 class MaterialButtonsPanel():
@@ -106,7 +115,7 @@ class MaterialButtonsPanel():
     def poll(cls, context):
         mat = context.material
         rd = context.scene.render
-        return mat and (rd.use_game_engine == False) and (rd.engine in cls.COMPAT_ENGINES)
+        return mat and (rd.use_game_engine is False) and (rd.engine in cls.COMPAT_ENGINES)
 
 
 class TextureButtonsPanel():
@@ -119,7 +128,7 @@ class TextureButtonsPanel():
     def poll(cls, context):
         tex = context.texture
         rd = context.scene.render
-        return tex and (rd.use_game_engine == False) and (rd.engine in cls.COMPAT_ENGINES)
+        return tex and (rd.use_game_engine is False) and (rd.engine in cls.COMPAT_ENGINES)
 
 
 class ObjectButtonsPanel():
@@ -132,7 +141,7 @@ class ObjectButtonsPanel():
     def poll(cls, context):
         obj = context.object
         rd = context.scene.render
-        return obj and (rd.use_game_engine == False) and (rd.engine in cls.COMPAT_ENGINES)
+        return obj and (rd.use_game_engine is False) and (rd.engine in cls.COMPAT_ENGINES)
 
 
 class CameraDataButtonsPanel():
@@ -145,7 +154,7 @@ class CameraDataButtonsPanel():
     def poll(cls, context):
         cam = context.camera
         rd = context.scene.render
-        return cam and (rd.use_game_engine == False) and (rd.engine in cls.COMPAT_ENGINES)
+        return cam and (rd.use_game_engine is False) and (rd.engine in cls.COMPAT_ENGINES)
 
 
 class TextButtonsPanel():
@@ -158,7 +167,7 @@ class TextButtonsPanel():
     def poll(cls, context):
         text = context.space_data
         rd = context.scene.render
-        return text and (rd.use_game_engine == False) and (rd.engine in cls.COMPAT_ENGINES)
+        return text and (rd.use_game_engine is False) and (rd.engine in cls.COMPAT_ENGINES)
 
 
 class RENDER_PT_povray_export_settings(RenderButtonsPanel, bpy.types.Panel):
@@ -170,7 +179,7 @@ class RENDER_PT_povray_export_settings(RenderButtonsPanel, bpy.types.Panel):
 
         scene = context.scene
 
-        layout.active = scene.pov.max_trace_level
+        layout.active = (scene.pov.max_trace_level != 0)
         split = layout.split()
 
         col = split.column()
@@ -190,7 +199,7 @@ class RENDER_PT_povray_export_settings(RenderButtonsPanel, bpy.types.Panel):
 
             split = layout.split()
             split.prop(scene.pov, "indentation_character", text="Indent")
-            if scene.pov.indentation_character == "2":
+            if scene.pov.indentation_character == 'SPACE':
                 split.prop(scene.pov, "indentation_spaces", text="Spaces")
 
             row = layout.row()
@@ -207,7 +216,7 @@ class RENDER_PT_povray_render_settings(RenderButtonsPanel, bpy.types.Panel):
 
         scene = context.scene
 
-        layout.active = scene.pov.max_trace_level
+        layout.active = (scene.pov.max_trace_level != 0)
 
         col = layout.column()
 

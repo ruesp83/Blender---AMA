@@ -20,17 +20,17 @@ bl_info = {
     "name": "ANT Landscape",
     "author": "Jimmy Hazevoet",
     "version": (0,1,2),
-    "blender": (2, 6, 1),
+    "blender": (2, 61, 0),
     "location": "View3D > Add > Mesh",
     "description": "Add a landscape primitive",
     "warning": "", # used for warning icon and text in addons panel
-    "wiki_url": "http://wiki.blender.org/index.php/Extensions:2.5/Py/"\
+    "wiki_url": "http://wiki.blender.org/index.php/Extensions:2.6/Py/"\
         "Scripts/Add_Mesh/ANT_Landscape",
     "tracker_url": "https://projects.blender.org/tracker/index.php?"\
         "func=detail&aid=23130",
     "category": "Add Mesh"}
 
-'''
+"""
 Another Noise Tool: Landscape mesh generator
 
 MESH OPTIONS:
@@ -66,7 +66,7 @@ Sealevel:        Flattens terrain below sealevel.
 Platlevel:       Flattens terrain above plateau level.
 Strata:          Strata amount, number of strata/terrace layers.
 Strata type:     Strata types, Smooth, Sharp-sub, Sharp-add
-'''
+"""
 
 # import modules
 import bpy
@@ -430,7 +430,7 @@ def sphere_gen( sub_d, size_me, options ):
 ###------------------------------------------------------------
 # Add landscape
 class landscape_add(bpy.types.Operator):
-    '''Add a landscape mesh'''
+    """Add a landscape mesh"""
     bl_idname = "mesh.landscape_add"
     bl_label = "Landscape"
     bl_options = {'REGISTER', 'UNDO', 'PRESET'}
@@ -775,11 +775,13 @@ class landscape_add(bpy.types.Operator):
 
             # create mesh object
             obj = create_mesh_object(context, verts, [], faces, "Landscape")
-
+            bpy.ops.object.mode_set(mode='EDIT')
+            bpy.ops.mesh.normals_make_consistent(inside=False)
+            bpy.ops.object.mode_set(mode='OBJECT')
             # sphere, remove doubles
             if self.SphereMesh !=0:
                 bpy.ops.object.mode_set(mode='EDIT')
-                bpy.ops.mesh.remove_doubles(limit=0.0001)
+                bpy.ops.mesh.remove_doubles(threshold=0.0001)
                 bpy.ops.object.mode_set(mode='OBJECT')
 
             # Shade smooth

@@ -29,7 +29,7 @@ def write(fw, mesh, image_width, image_height, opacity, face_iter_func):
     fw('<?xml version="1.0" standalone="no"?>\n')
     fw('<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" \n')
     fw('  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">\n')
-    fw('<svg width="%dpx" height="%dpx" viewBox="0px 0px %dpx %dpx"\n' %
+    fw('<svg width="%d" height="%d" viewBox="0 0 %d %d"\n' %
        (image_width, image_height, image_width, image_height))
     fw('     xmlns="http://www.w3.org/2000/svg" version="1.1">\n')
     desc = ("%r, %s, (Blender %s)" %
@@ -47,14 +47,14 @@ def write(fw, mesh, image_width, image_height, opacity, face_iter_func):
         else:
             fill_settings.append(fill_default)
 
-    faces = mesh.faces
+    polys = mesh.polygons
     for i, uvs in face_iter_func():
         try:  # rare cases material index is invalid.
-            fill = fill_settings[faces[i].material_index]
+            fill = fill_settings[polys[i].material_index]
         except IndexError:
             fill = fill_default
 
-        fw('<polygon stroke="black" stroke-width="1px"')
+        fw('<polygon stroke="black" stroke-width="1"')
         if opacity > 0.0:
             fw(' %s fill-opacity="%.2g"' % (fill, opacity))
 

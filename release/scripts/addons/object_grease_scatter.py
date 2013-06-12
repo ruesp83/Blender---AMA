@@ -24,12 +24,12 @@ bl_info = {
     "name": "Grease Scatter Objects",
     "author": "Campbell Barton",
     "version": (0, 1),
-    "blender": (2, 5, 8),
+    "blender": (2, 58, 0),
     "location": "3D View, Add Mesh",
     "description": "Scatter a group of objects onto the active mesh using "
                    "the grease pencil lines",
     "warning": "",
-    "wiki_url": "http://wiki.blender.org/index.php/Extensions:2.5/Py/"
+    "wiki_url": "http://wiki.blender.org/index.php/Extensions:2.6/Py/"
                 "Scripts/Object/Grease_Scatter",
     "tracker_url": "https://projects.blender.org/tracker/index.php?"
                    "func=detail&aid=TODO",
@@ -71,33 +71,6 @@ def _main(self,
     if not group:
         self.report({'WARNING'}, "Group '%s' not found" % obj.name)
         return
-
-    def faces_from_hits(hit_list):
-        def from_pydata(self, verts, edges, faces):
-            """
-            Make a mesh from a list of verts/edges/faces
-            Until we have a nicer way to make geometry, use this.
-            """
-            self.add_geometry(len(verts), len(edges), len(faces))
-
-            verts_flat = [f for v in verts for f in v]
-            self.verts.foreach_set("co", verts_flat)
-            del verts_flat
-
-            edges_flat = [i for e in edges for i in e]
-            self.edges.foreach_set("verts", edges_flat)
-            del edges_flat
-
-            def treat_face(f):
-                if len(f) == 3:
-                    return f[0], f[1], f[2], 0
-                elif f[3] == 0:
-                    return f[3], f[0], f[1], f[2]
-                return f
-
-            faces_flat = [v for f in faces for v in treat_face(f)]
-            self.faces.foreach_set("verts_raw", faces_flat)
-            del faces_flat
 
     def debug_edge(v1, v2):
         mesh = bpy.data.meshes.new("Retopo")
@@ -301,7 +274,7 @@ def _main(self,
                     # align the object with worldspace
                     obj_new.matrix_world = obj_mat
 
-                    # BGE settings for testiing
+                    # BGE settings for testing
                     '''
                     inst_ob.game.physics_type = 'RIGID_BODY'
                     inst_ob.game.use_collision_bounds = True
@@ -348,7 +321,7 @@ from bpy.props import FloatProperty,  StringProperty
 
 
 class Scatter(bpy.types.Operator):
-    ''''''
+    """"""
     bl_idname = "object.scatter"
     bl_label = "Grease Pencil Scatter"
 

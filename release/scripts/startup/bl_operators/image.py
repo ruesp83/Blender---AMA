@@ -24,7 +24,7 @@ from bpy.props import StringProperty
 
 
 class EditExternally(Operator):
-    '''Edit image in an external application'''
+    """Edit image in an external application"""
     bl_idname = "image.external_edit"
     bl_label = "Image Edit Externally"
     bl_options = {'REGISTER'}
@@ -67,7 +67,7 @@ class EditExternally(Operator):
             self.report({'ERROR'}, "Image path not set")
             return {'CANCELLED'}
 
-        if not os.path.exists(filepath):
+        if not os.path.exists(filepath) or not os.path.isfile(filepath):
             self.report({'ERROR'},
                         "Image path %r not found, image may be packed or "
                         "unsaved" % filepath)
@@ -96,6 +96,10 @@ class EditExternally(Operator):
             self.report({'ERROR'}, "Context incorrect, image not found")
             return {'CANCELLED'}
 
+        if image.packed_file:
+            self.report({'ERROR'}, "Image is packed, unpack before editing")
+            return {'CANCELLED'}
+
         filepath = bpy.path.abspath(image.filepath, library=image.library)
 
         self.filepath = os.path.normpath(filepath)
@@ -114,21 +118,31 @@ class SaveDirty(Operator):
         unique_paths = set()
         for image in bpy.data.images:
             if image.is_dirty:
-                filepath = bpy.path.abspath(image.filepath)
-                if "\\" not in filepath and "/" not in filepath:
-                    self.report({'WARNING'}, "Invalid path: " + filepath)
-                elif filepath in unique_paths:
-                    self.report({'WARNING'},
-                                "Path used by more then one image: %r" %
-                                filepath)
+                if image.packed_file:
+                    if image.library:
+                        self.report({'WARNING'},
+                                    "Packed library image: %r from library %r"
+                                    " can't be re-packed" %
+                                    (image.name, image.library.filepath))
+                    else:
+                        image.pack(as_png=True)
                 else:
-                    unique_paths.add(filepath)
-                    image.save()
+                    filepath = bpy.path.abspath(image.filepath,
+                                                library=image.library)
+                    if "\\" not in filepath and "/" not in filepath:
+                        self.report({'WARNING'}, "Invalid path: " + filepath)
+                    elif filepath in unique_paths:
+                        self.report({'WARNING'},
+                                    "Path used by more than one image: %r" %
+                                    filepath)
+                    else:
+                        unique_paths.add(filepath)
+                        image.save()
         return {'FINISHED'}
 
 
 class ProjectEdit(Operator):
-    """Edit a snapshot of the viewport in an external image editor"""
+    """Edit a snapshot of the view-port in an external image editor"""
     bl_idname = "image.project_edit"
     bl_label = "Project Edit"
     bl_options = {'REGISTER'}
@@ -210,7 +224,7 @@ class ProjectApply(Operator):
         image_name = ProjectEdit._proj_hack[0]  # TODO, deal with this nicer
 
         try:
-            image = bpy.data.images[image_name]
+            image = bpy.data.images[image_name, None]
         except KeyError:
             import traceback
             traceback.print_exc()

@@ -39,11 +39,30 @@ from bpy_extras.io_utils import unpack_list, unpack_face_list
 from bpy_extras.image_utils import load_image
 
 
+def mesh_untessellate(me, fgon_edges):
+    import bmesh
+    bm = bmesh.new()
+    bm.from_mesh(me)
+    verts = bm.verts[:]
+    get = bm.edges.get
+    edges = [get((verts[key[0]], verts[key[1]])) for key in fgon_edges]
+    try:
+        bmesh.ops.dissolve_edges(bm, edges=edges, use_verts=False)
+    except:
+        # Possible dissolve fails for some edges
+        # but dont fail silently unless this is a real bug.
+        import traceback
+        traceback.print_exc()
+
+    bm.to_mesh(me)
+    bm.free()
+
+
 def line_value(line_split):
-    '''
+    """
     Returns 1 string represneting the value for this line
     None will be returned if theres only 1 word
-    '''
+    """
     length = len(line_split)
     if length == 1:
         return None
@@ -55,25 +74,28 @@ def line_value(line_split):
         return b' '.join(line_split[1:])
 
 
-def obj_image_load(imagepath, DIR, recursive):
-    '''
+def obj_image_load(imagepath, DIR, recursive, relpath):
+    """
     Mainly uses comprehensiveImageLoad
     but tries to replace '_' with ' ' for Max's exporter replaces spaces with underscores.
-    '''
+    """
     if b'_' in imagepath:
-        image = load_image(imagepath.replace(b'_', b' '), DIR, recursive=recursive)
+        image = load_image(imagepath.replace(b'_', b' '), DIR, recursive=recursive, relpath=relpath)
         if image:
             return image
 
-    return load_image(imagepath, DIR, recursive=recursive, place_holder=True)
+    return load_image(imagepath, DIR, recursive=recursive, place_holder=True, relpath=relpath)
 
 
-def create_materials(filepath, material_libs, unique_materials, unique_material_images, use_image_search):
-    '''
+def create_materials(filepath, relpath,
+                     material_libs, unique_materials, unique_material_images,
+                     use_image_search, float_func):
+    """
     Create all the used materials in this obj,
     assign colors and images to the materials from all referenced material libs
-    '''
+    """
     DIR = os.path.dirname(filepath)
+    context_material_vars = set()
 
     #==================================================================================#
     # This function sets textures defined in .mtl file                                 #
@@ -83,16 +105,20 @@ def create_materials(filepath, material_libs, unique_materials, unique_material_
         texture = bpy.data.textures.new(name=type, type='IMAGE')
 
         # Absolute path - c:\.. etc would work here
-        image = obj_image_load(imagepath, DIR, use_image_search)
+        image = obj_image_load(imagepath, DIR, use_image_search, relpath)
         has_data = False
+        image_depth = 0
 
-        if image:
+        if image is not None:
             texture.image = image
+            # note, this causes the image to load, see: [#32637]
+            # which makes the following has_data work as expected.
+            image_depth = image.depth
             has_data = image.has_data
 
         # Adds textures for materials (rendering)
         if type == 'Kd':
-            if has_data and image.depth == 32:
+            if image_depth in {32, 128}:
                 # Image has alpha
 
                 mtex = blender_material.texture_slots.add()
@@ -103,9 +129,11 @@ def create_materials(filepath, material_libs, unique_materials, unique_material_
 
                 texture.use_mipmap = True
                 texture.use_interpolation = True
-                texture.use_alpha = True
+                if image is not None:
+                    image.use_alpha = True
                 blender_material.use_transparency = True
-                blender_material.alpha = 0.0
+                if "alpha" not in context_material_vars:
+                    blender_material.alpha = 0.0
 
                 blender_material.game_settings.alpha_blend = 'ALPHA'
             else:
@@ -151,7 +179,8 @@ def create_materials(filepath, material_libs, unique_materials, unique_material_
             mtex.use_map_alpha = True
             blender_material.use_transparency = True
             blender_material.transparency_method = 'Z_TRANSPARENCY'
-            blender_material.alpha = 0.0
+            if "alpha" not in context_material_vars:
+                blender_material.alpha = 0.0
             # Todo, unset deffuse material alpha if it has an alpha channel
 
         elif type == 'refl':
@@ -159,9 +188,8 @@ def create_materials(filepath, material_libs, unique_materials, unique_material_
             mtex.use_map_color_diffuse = False
 
             mtex.texture = texture
-            mtex.texture_coords = 'UV'
-            mtex.use_map_reflect = True
-
+            mtex.texture_coords = 'REFLECTION'
+            mtex.use_map_color_diffuse = True
         else:
             raise Exception("invalid type %r" % type)
 
@@ -197,25 +225,30 @@ def create_materials(filepath, material_libs, unique_materials, unique_material_
                 elif line.startswith(b'newmtl'):
                     context_material_name = line_value(line.split())
                     context_material = unique_materials.get(context_material_name)
+                    context_material_vars.clear()
 
                 elif context_material:
                     # we need to make a material to assign properties to it.
                     line_split = line.split()
                     line_lower = line.lower().lstrip()
                     if line_lower.startswith(b'ka'):
-                        context_material.mirror_color = float(line_split[1]), float(line_split[2]), float(line_split[3])
+                        context_material.mirror_color = float_func(line_split[1]), float_func(line_split[2]), float_func(line_split[3])
                     elif line_lower.startswith(b'kd'):
-                        context_material.diffuse_color = float(line_split[1]), float(line_split[2]), float(line_split[3])
+                        context_material.diffuse_color = float_func(line_split[1]), float_func(line_split[2]), float_func(line_split[3])
                     elif line_lower.startswith(b'ks'):
-                        context_material.specular_color = float(line_split[1]), float(line_split[2]), float(line_split[3])
+                        context_material.specular_color = float_func(line_split[1]), float_func(line_split[2]), float_func(line_split[3])
                     elif line_lower.startswith(b'ns'):
-                        context_material.specular_hardness = int((float(line_split[1]) * 0.51))
+                        context_material.specular_hardness = int((float_func(line_split[1]) * 0.51))
                     elif line_lower.startswith(b'ni'):  # Refraction index
-                        context_material.raytrace_transparency.ior = max(1, min(float(line_split[1]), 3))  # between 1 and 3
-                    elif line_lower.startswith(b'd') or line_lower.startswith(b'tr'):
-                        context_material.alpha = float(line_split[1])
+                        context_material.raytrace_transparency.ior = max(1, min(float_func(line_split[1]), 3))  # between 1 and 3
+                        context_material_vars.add("ior")
+                    elif line_lower.startswith(b'd'):  # dissolve (trancparency)
+                        context_material.alpha = float_func(line_split[1])
                         context_material.use_transparency = True
                         context_material.transparency_method = 'Z_TRANSPARENCY'
+                        context_material_vars.add("alpha")
+                    elif line_lower.startswith(b'tr'):  # trancelucency
+                        context_material.translucency = float_func(line_split[1])
                     elif line_lower.startswith(b'tf'):
                         # rgb, filter color, blender has no support for this.
                         pass
@@ -300,10 +333,12 @@ def create_materials(filepath, material_libs, unique_materials, unique_material_
                         if do_transparency:
                             context_material.use_transparency = True
                             context_material.transparency_method = 'RAYTRACE' if do_raytrace else 'Z_TRANSPARENCY'
-                            context_material.alpha = 0.0
+                            if "alpha" not in context_material_vars:
+                                context_material.alpha = 0.0
 
                         if do_glass:
-                            context_material.raytrace_transparency.ior = 1.5
+                            if "ior" not in context_material_vars:
+                                context_material.raytrace_transparency.ior = 1.5
 
                         if do_fresnel:
                             context_material.raytrace_mirror.fresnel = 1.0  # could be any value for 'ON'
@@ -330,16 +365,16 @@ def create_materials(filepath, material_libs, unique_materials, unique_material_
                         img_filepath = line_value(line.split())
                         if img_filepath:
                             load_material_image(context_material, context_material_name, img_filepath, 'Kd')
-                    elif line_lower.startswith(b'map_bump') or line_lower.startswith(b'bump'):  # 'bump' is incorrect but some files use it.
+                    elif line_lower.startswith((b'map_bump', b'bump')):  # 'bump' is incorrect but some files use it.
                         img_filepath = line_value(line.split())
                         if img_filepath:
                             load_material_image(context_material, context_material_name, img_filepath, 'Bump')
-                    elif line_lower.startswith(b'map_d') or line_lower.startswith(b'map_tr'):  # Alpha map - Dissolve
+                    elif line_lower.startswith((b'map_d', b'map_tr')):  # Alpha map - Dissolve
                         img_filepath = line_value(line.split())
                         if img_filepath:
                             load_material_image(context_material, context_material_name, img_filepath, 'D')
 
-                    elif line_lower.startswith(b'refl'):  # reflectionmap
+                    elif line_lower.startswith((b'map_refl', b'refl')):  # reflectionmap
                         img_filepath = line_value(line.split())
                         if img_filepath:
                             load_material_image(context_material, context_material_name, img_filepath, 'refl')
@@ -349,10 +384,10 @@ def create_materials(filepath, material_libs, unique_materials, unique_material_
 
 
 def split_mesh(verts_loc, faces, unique_materials, filepath, SPLIT_OB_OR_GROUP):
-    '''
+    """
     Takes vert_loc and faces, and separates into multiple sets of
     (verts_loc, faces, unique_materials, dataname)
-    '''
+    """
 
     filename = os.path.splitext((os.path.basename(filepath)))[0]
 
@@ -383,7 +418,7 @@ def split_mesh(verts_loc, faces, unique_materials, filepath, SPLIT_OB_OR_GROUP):
                 faces_split = []
                 verts_split = []
                 unique_materials_split = {}
-                vert_remap = [-1] * len(verts_loc)
+                vert_remap = {}
 
                 face_split_dict[key] = (verts_split, faces_split, unique_materials_split, vert_remap)
 
@@ -393,13 +428,13 @@ def split_mesh(verts_loc, faces, unique_materials, filepath, SPLIT_OB_OR_GROUP):
 
         # Remap verts to new vert list and add where needed
         for enum, i in enumerate(face_vert_loc_indices):
-            if vert_remap[i] == -1:
-                new_index = len(verts_split)
-                vert_remap[i] = new_index  # set the new remapped index so we only add once and can reference next time.
-                face_vert_loc_indices[enum] = new_index  # remap to the local index
+            map_index = vert_remap.get(i)
+            if map_index is None:
+                map_index = len(verts_split)
+                vert_remap[i] = map_index  # set the new remapped index so we only add once and can reference next time.
                 verts_split.append(verts_loc[i])  # add the vert to the local verts
-            else:
-                face_vert_loc_indices[enum] = vert_remap[i]  # remap to the local index
+
+            face_vert_loc_indices[enum] = map_index  # remap to the local index
 
             matname = face[2]
             if matname and matname not in unique_materials_split:
@@ -424,11 +459,11 @@ def create_mesh(new_objects,
                 vertex_groups,
                 dataname,
                 ):
-    '''
+    """
     Takes all the data gathered and generates a mesh, adding the new object to new_objects
-    deals with fgons, sharp edges and assigning materials
-    '''
-    from bpy_extras.mesh_utils import ngon_tesselate
+    deals with ngons, sharp edges and assigning materials
+    """
+    from bpy_extras.mesh_utils import ngon_tessellate
 
     if not has_ngons:
         use_ngons = False
@@ -438,8 +473,8 @@ def create_mesh(new_objects,
         smooth_group_users = {context_smooth_group: {} for context_smooth_group in list(unique_smooth_groups.keys())}
         context_smooth_group_old = -1
 
-    # Split fgons into tri's
-    fgon_edges = {}  # Used for storing fgon keys
+    # Split ngons into tri's
+    fgon_edges = set()  # Used for storing fgon keys
     if use_edges:
         edges = []
 
@@ -487,10 +522,10 @@ def create_mesh(new_objects,
                     except KeyError:
                         edge_dict[i1, i2] = 1
 
-            # FGons into triangles
+            # NGons into triangles
             if has_ngons and len_face_vert_loc_indices > 4:
 
-                ngon_face_indices = ngon_tesselate(verts_loc, face_vert_loc_indices)
+                ngon_face_indices = ngon_tessellate(verts_loc, face_vert_loc_indices)
                 faces.extend([([face_vert_loc_indices[ngon[0]],
                                 face_vert_loc_indices[ngon[1]],
                                 face_vert_loc_indices[ngon[2]],
@@ -506,7 +541,7 @@ def create_mesh(new_objects,
                              for ngon in ngon_face_indices]
                             )
 
-                # edges to make fgons
+                # edges to make ngons
                 if use_ngons:
                     edge_users = {}
                     for ngon in ngon_face_indices:
@@ -523,7 +558,7 @@ def create_mesh(new_objects,
 
                     for key, users in edge_users.items():
                         if users > 1:
-                            fgon_edges[key] = None
+                            fgon_edges.add(key)
 
                 # remove all after 3, means we dont have to pop this one.
                 faces.pop(f_idx)
@@ -550,7 +585,7 @@ def create_mesh(new_objects,
         me.materials.append(material)
 
     me.vertices.add(len(verts_loc))
-    me.faces.add(len(faces))
+    me.tessfaces.add(len(faces))
 
     # verts_loc is a list of (x, y, z) tuples
     me.vertices.foreach_set("co", unpack_list(verts_loc))
@@ -558,14 +593,14 @@ def create_mesh(new_objects,
     # faces is a list of (vert_indices, texco_indices, ...) tuples
     # XXX faces should contain either 3 or 4 verts
     # XXX no check for valid face indices
-    me.faces.foreach_set("vertices_raw", unpack_face_list([f[0] for f in faces]))
+    me.tessfaces.foreach_set("vertices_raw", unpack_face_list([f[0] for f in faces]))
 
-    if verts_tex and me.faces:
-        me.uv_textures.new()
+    if verts_tex and me.tessfaces:
+        me.tessface_uv_textures.new()
 
     context_material_old = -1  # avoid a dict lookup
     mat = 0  # rare case it may be un-initialized.
-    me_faces = me.faces
+    me_faces = me.tessfaces
 
     for i, face in enumerate(faces):
         if len(face[0]) < 2:
@@ -575,7 +610,7 @@ def create_mesh(new_objects,
                 edges.append(face[0])
         else:
 
-            blender_face = me.faces[i]
+            blender_face = me.tessfaces[i]
 
             (face_vert_loc_indices,
              face_vert_tex_indices,
@@ -597,7 +632,7 @@ def create_mesh(new_objects,
 
             if verts_tex:
 
-                blender_tface = me.uv_textures[0].data[i]
+                blender_tface = me.tessface_uv_textures[0].data[i]
 
                 if context_material:
                     image, has_data = unique_material_images[context_material]
@@ -644,19 +679,28 @@ def create_mesh(new_objects,
     def edges_match(e1, e2):
         return (e1[0] == e2[0] and e1[1] == e2[1]) or (e1[0] == e2[1] and e1[1] == e2[0])
 
-    # XXX slow
-#     if use_ngons and fgon_edges:
-#         for fgon_edge in fgon_edges.keys():
-#             for ed in me.edges:
-#                 if edges_match(fgon_edge, ed.vertices):
-#                     ed.is_fgon = True
+    me.validate()
+    me.update(calc_edges=use_edges)
 
-#     if use_ngons and fgon_edges:
-#         FGON= Mesh.EdgeFlags.FGON
-#         for ed in me.findEdges( fgon_edges.keys() ):
-#             if ed is not None:
-#                 me_edges[ed].flag |= FGON
-#         del FGON
+    if unique_smooth_groups and sharp_edges:
+        import bmesh
+        bm = bmesh.new()
+        bm.from_mesh(me)
+        # to avoid slow iterator lookups later / indexing verts is slow in bmesh
+        bm_verts = bm.verts[:]
+
+        for sharp_edge in sharp_edges.keys():
+            vert1 = bm_verts[sharp_edge[0]]
+            vert2 = bm_verts[sharp_edge[1]]
+            if vert1 != vert2:
+                edge = bm.edges.get((vert1, vert2))
+                if edge is not None:
+                    me.edges[edge.index].use_edge_sharp = True
+
+        bm.free()
+        del bm
+
+    mesh_untessellate(me, fgon_edges)
 
     # XXX slow
 #     if unique_smooth_groups and sharp_edges:
@@ -672,10 +716,7 @@ def create_mesh(new_objects,
 #                 me_edges[ed].flag |= SHARP
 #         del SHARP
 
-    me.validate()
-    me.update(calc_edges=use_edges)
-
-    ob = bpy.data.objects.new("Mesh", me)
+    ob = bpy.data.objects.new(me.name, me)
     new_objects.append(ob)
 
     # Create the vertex groups. No need to have the flag passed here since we test for the
@@ -687,9 +728,9 @@ def create_mesh(new_objects,
 
 
 def create_nurbs(context_nurbs, vert_loc, new_objects):
-    '''
+    """
     Add nurbs object to blender, only support one type at the moment
-    '''
+    """
     deg = context_nurbs.get(b'deg', (3,))
     curv_range = context_nurbs.get(b'curv_range')
     curv_idx = context_nurbs.get(b'curv_idx', [])
@@ -770,10 +811,10 @@ def strip_slash(line_split):
 
 
 def get_float_func(filepath):
-    '''
+    """
     find the float function for this obj file
     - whether to replace commas or not
-    '''
+    """
     file = open(filepath, 'rb')
     for line in file:  # .readlines():
         line = line.lstrip()
@@ -799,14 +840,15 @@ def load(operator, context, filepath,
          use_split_groups=True,
          use_image_search=True,
          use_groups_as_vgroups=False,
+         relpath=None,
          global_matrix=None,
          ):
-    '''
+    """
     Called by the user interface or another script.
     load_obj(path) - should give acceptable results.
     This function passes the file and sends the data off
         to be split into objects and then converted into mesh objects
-    '''
+    """
     print('\nimporting obj %r' % filepath)
 
     filepath = os.fsencode(filepath)
@@ -1062,7 +1104,7 @@ def load(operator, context, filepath,
     time_sub = time_new
 
     print('\tloading materials and images...')
-    create_materials(filepath, material_libs, unique_materials, unique_material_images, use_image_search)
+    create_materials(filepath, relpath, material_libs, unique_materials, unique_material_images, use_image_search, float_func)
 
     time_new = time.time()
     print("%.4f sec" % (time_new - time_sub))
@@ -1140,15 +1182,3 @@ def load(operator, context, filepath,
 
     print("finished importing: %r in %.4f sec." % (filepath, (time_new - time_main)))
     return {'FINISHED'}
-
-
-# NOTES (all line numbers refer to 2.4x import_obj.py, not this file)
-# check later: line 489
-# can convert now: edge flags, edges: lines 508-528
-# ngon (uses python module BPyMesh): 384-414
-# NEXT clamp size: get bound box with RNA
-# get back to l 140 (here)
-# search image in bpy.config.textureDir - load_image
-# replaced BPyImage.comprehensiveImageLoad with a simplified version that only checks additional directory specified, but doesn't search dirs recursively (obj_image_load)
-# bitmask won't work? - 132
-# uses bpy.sys.time()

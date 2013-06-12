@@ -21,12 +21,12 @@
 bl_info = {
     "name": "Autodesk 3DS format",
     "author": "Bob Holcomb, Campbell Barton",
-    "blender": (2, 5, 7),
+    "blender": (2, 57, 0),
     "location": "File > Import-Export",
     "description": "Import-Export 3DS, meshes, uvs, materials, textures, "
                    "cameras & lamps",
     "warning": "",
-    "wiki_url": "http://wiki.blender.org/index.php/Extensions:2.5/Py/"
+    "wiki_url": "http://wiki.blender.org/index.php/Extensions:2.6/Py/"
                 "Scripts/Import-Export/Autodesk_3DS",
     "tracker_url": "",
     "support": 'OFFICIAL',
@@ -50,7 +50,7 @@ from bpy_extras.io_utils import (ImportHelper,
 
 
 class Import3DS(bpy.types.Operator, ImportHelper):
-    '''Import from 3DS file format (.3ds)'''
+    """Import from 3DS file format (.3ds)"""
     bl_idname = "import_scene.autodesk_3ds"
     bl_label = 'Import 3DS'
     bl_options = {'UNDO'}
@@ -60,21 +60,21 @@ class Import3DS(bpy.types.Operator, ImportHelper):
 
     constrain_size = FloatProperty(
             name="Size Constraint",
-            description="Scale the model by 10 until it reacehs the " \
-                        "size constraint. Zero Disables",
+            description="Scale the model by 10 until it reaches the "
+                        "size constraint (0 to disable)",
             min=0.0, max=1000.0,
             soft_min=0.0, soft_max=1000.0,
             default=10.0,
             )
     use_image_search = BoolProperty(
             name="Image Search",
-            description="Search subdirectories for any assosiated images " \
+            description="Search subdirectories for any associated images "
                         "(Warning, may be slow)",
             default=True,
             )
     use_apply_transform = BoolProperty(
             name="Apply Transform",
-            description="Workaround for object transformations " \
+            description="Workaround for object transformations "
                         "importing incorrectly",
             default=True,
             )
@@ -120,7 +120,7 @@ class Import3DS(bpy.types.Operator, ImportHelper):
 
 
 class Export3DS(bpy.types.Operator, ExportHelper):
-    '''Export to 3DS file format (.3ds)'''
+    """Export to 3DS file format (.3ds)"""
     bl_idname = "export_scene.autodesk_3ds"
     bl_label = 'Export 3DS'
 

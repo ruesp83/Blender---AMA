@@ -21,12 +21,12 @@
 bl_info = {
     "name": "UV Layout",
     "author": "Campbell Barton, Matt Ebb",
-    "version": (1, 0),
-    "blender": (2, 5, 8),
+    "version": (1, 1),
+    "blender": (2, 62, 0),
     "location": "Image-Window > UVs > Export UV Layout",
     "description": "Export the UV layout as a 2D graphic",
     "warning": "",
-    "wiki_url": "http://wiki.blender.org/index.php/Extensions:2.5/Py/"
+    "wiki_url": "http://wiki.blender.org/index.php/Extensions:2.6/Py/"
                 "Scripts/Import-Export/UV_Layout",
     "tracker_url": "https://projects.blender.org/tracker/index.php?"
                    "func=detail&aid=22837",
@@ -103,6 +103,12 @@ class ExportUVLayout(bpy.types.Operator):
             min=0.0, max=1.0,
             default=0.25,
             )
+    tessellated = BoolProperty(
+            name="Tessellated UVs",
+            description="Export tessellated UVs instead of polygons ones",
+            default=False,
+            options={'HIDDEN'},  # As not working currently :/
+            )
 
     @classmethod
     def poll(cls, context):
@@ -131,12 +137,12 @@ class ExportUVLayout(bpy.types.Operator):
 
         return image_width, image_height
 
-    def _face_uv_iter(self, context, mesh):
-        uv_layer = mesh.uv_textures.active.data
-        uv_layer_len = len(uv_layer)
+    def _face_uv_iter(self, context, mesh, tessellated):
+        uv_layer = mesh.uv_layers.active.data
+        polys = mesh.polygons
 
         if not self.export_all:
-
+            uv_tex = mesh.uv_textures.active.data
             local_image = Ellipsis
 
             if context.tool_settings.show_uv_local_view:
@@ -144,23 +150,24 @@ class ExportUVLayout(bpy.types.Operator):
                 if space_data:
                     local_image = space_data.image
 
-            faces = mesh.faces
-
-            for i in range(uv_layer_len):
-                uv_elem = uv_layer[i]
+            for i, p in enumerate(polys):
                 # context checks
-                if faces[i].select and (local_image is Ellipsis or
-                                        local_image == uv_elem.image):
-                    #~ uv = uv_elem.uv
-                    #~ if False not in uv_elem.select_uv[:len(uv)]:
-                    #~     yield (i, uv)
+                if polys[i].select and local_image in {Ellipsis,
+                                                       uv_tex[i].image}:
+                    start = p.loop_start
+                    end = start + p.loop_total
+                    uvs = tuple((uv.uv[0], uv.uv[1])
+                                for uv in uv_layer[start:end])
 
                     # just write what we see.
-                    yield (i, uv_layer[i].uv)
+                    yield (i, uvs)
         else:
             # all, simple
-            for i in range(uv_layer_len):
-                yield (i, uv_layer[i].uv)
+            for i, p in enumerate(polys):
+                start = p.loop_start
+                end = start + p.loop_total
+                uvs = tuple((uv.uv[0], uv.uv[1]) for uv in uv_layer[start:end])
+                yield (i, uvs)
 
     def execute(self, context):
 
@@ -182,7 +189,7 @@ class ExportUVLayout(bpy.types.Operator):
         elif mode == 'PNG':
             from . import export_uv_png
             func = export_uv_png.write
-        if mode == 'SVG':
+        elif mode == 'SVG':
             from . import export_uv_svg
             func = export_uv_svg.write
 
@@ -192,7 +199,7 @@ class ExportUVLayout(bpy.types.Operator):
             mesh = obj.data
 
         func(fw, mesh, self.size[0], self.size[1], self.opacity,
-             lambda: self._face_uv_iter(context, mesh))
+             lambda: self._face_uv_iter(context, mesh, self.tessellated))
 
         if self.modified:
             bpy.data.meshes.remove(mesh)

@@ -107,9 +107,7 @@ def getIslands(shard):
     vgroups = []
     fgroups = []
 
-    vgi = []
-    for v in sm.vertices:
-        vgi.append(-1)
+    vgi = [-1] * len(sm.vertices)
 
     gindex = 0
     for i in range(len(vgi)):
@@ -119,18 +117,19 @@ def getIslands(shard):
             fgroups.append([])
 
             while len(gproc) > 0:
+                # XXX - is popping the first needed? - pop() without args is fastest - campbell
                 i = gproc.pop(0)
-                for f in sm.faces:
+                for p in sm.polygons:
                     #if i in f.vertices:
-                    for v in f.vertices:
+                    for v in p.vertices:
                         if v == i:
-                            for v1 in f.vertices:
+                            for v1 in p.vertices:
                                 if vgi[v1] == -1:
                                     vgi[v1] = gindex
                                     vgroups[gindex].append(v1)
                                     gproc.append(v1)
 
-                            fgroups[gindex].append(f.index)
+                            fgroups[gindex].append(p.index)
 
             gindex += 1
 
@@ -342,7 +341,7 @@ def fracture_group(context, group):
 
 
 class FractureSimple(bpy.types.Operator):
-    '''Split object with boolean operations for simulation, uses an object'''
+    """Split object with boolean operations for simulation, uses an object"""
     bl_idname = "object.fracture_simple"
     bl_label = "Fracture Object"
     bl_options = {'REGISTER', 'UNDO'}
@@ -388,7 +387,7 @@ class FractureSimple(bpy.types.Operator):
 
 
 class FractureGroup(bpy.types.Operator):
-    '''Split object with boolean operations for simulation, uses a group'''
+    """Split object with boolean operations for simulation, uses a group"""
     bl_idname = "object.fracture_group"
     bl_label = "Fracture Object (Group)"
     bl_options = {'REGISTER', 'UNDO'}
@@ -448,7 +447,7 @@ def import_object(obname):
 
 
 class ImportFractureRecorder(bpy.types.Operator):
-    '''Imports a rigidbody recorder'''
+    """Imports a rigidbody recorder"""
     bl_idname = "object.import_fracture_recorder"
     bl_label = "Add Rigidbody Recorder (Fracture)"
     bl_options = {'REGISTER', 'UNDO'}
@@ -460,7 +459,7 @@ class ImportFractureRecorder(bpy.types.Operator):
 
 
 class ImportFractureBomb(bpy.types.Operator):
-    '''Import a bomb'''
+    """Import a bomb"""
     bl_idname = "object.import_fracture_bomb"
     bl_label = "Add Bomb (Fracture)"
     bl_options = {'REGISTER', 'UNDO'}
@@ -472,7 +471,7 @@ class ImportFractureBomb(bpy.types.Operator):
 
 
 class ImportFractureProjectile(bpy.types.Operator, ):
-    '''Imports a projectile'''
+    """Imports a projectile"""
     bl_idname = "object.import_fracture_projectile"
     bl_label = "Add Projectile (Fracture)"
     bl_options = {'REGISTER', 'UNDO'}

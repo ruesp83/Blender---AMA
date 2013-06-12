@@ -22,10 +22,10 @@ import bpy
 
 
 def create_and_link_mesh(name, faces, points):
-    '''
+    """
     Create a blender mesh and object called name from a list of
     *points* and *faces* and link it in the current scene.
-    '''
+    """
 
     mesh = bpy.data.meshes.new(name)
     mesh.from_pydata(points, [], faces)
@@ -38,35 +38,39 @@ def create_and_link_mesh(name, faces, points):
 
     obj = bpy.data.objects.new(name, mesh)
     scene.objects.link(obj)
+    scene.objects.active = obj
     obj.select = True
 
 
-def faces_from_mesh(ob, apply_modifier=False, triangulate=True):
-    '''
+def faces_from_mesh(ob, global_matrix, use_mesh_modifiers=False, triangulate=True):
+    """
     From an object, return a generator over a list of faces.
 
     Each faces is a list of his vertexes. Each vertex is a tuple of
     his coordinate.
 
-    apply_modifier
+    use_mesh_modifiers
         Apply the preview modifier to the returned liste
 
     triangulate
         Split the quad into two triangles
-    '''
+    """
+
+    # get the editmode data
+    ob.update_from_editmode()
 
     # get the modifiers
     try:
-        mesh = ob.to_mesh(bpy.context.scene, apply_modifier, "PREVIEW")
+        mesh = ob.to_mesh(bpy.context.scene, use_mesh_modifiers, "PREVIEW")
     except RuntimeError:
         raise StopIteration
 
-    mesh.transform(ob.matrix_world)
+    mesh.transform(global_matrix * ob.matrix_world)
 
     if triangulate:
         # From a list of faces, return the face triangulated if needed.
         def iter_face_index():
-            for face in mesh.faces:
+            for face in mesh.tessfaces:
                 vertices = face.vertices[:]
                 if len(vertices) == 4:
                     yield vertices[0], vertices[1], vertices[2]
@@ -75,7 +79,7 @@ def faces_from_mesh(ob, apply_modifier=False, triangulate=True):
                     yield vertices
     else:
         def iter_face_index():
-            for face in mesh.faces:
+            for face in mesh.tessfaces:
                 yield face.vertices[:]
 
     vertices = mesh.vertices

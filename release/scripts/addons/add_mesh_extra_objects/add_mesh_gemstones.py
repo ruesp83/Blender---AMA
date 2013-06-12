@@ -20,7 +20,7 @@ bl_info = {
     "name": "Gemstones",
     "author": "Pontiac, Fourmadmen, Dreampainter",
     "version": (0, 4),
-    "blender": (2, 5, 7),
+    "blender": (2, 57, 0),
     "location": "View3D > Add > Mesh > Gemstones",
     "description": "Adds various gemstone (Diamond & Gem) meshes.",
     "warning": "",
@@ -238,7 +238,7 @@ def add_diamond(segments, girdle_radius, table_radius,
 
 
 class AddDiamond(bpy.types.Operator):
-    '''Add a diamond mesh'''
+    """Add a diamond mesh"""
     bl_idname = "mesh.primitive_diamond_add"
     bl_label = "Add Diamond"
     bl_options = {'REGISTER', 'UNDO', 'PRESET'}
