@@ -30,6 +30,7 @@
  */
 
 #include <stdio.h>
+#include <time.h>
 #include <math.h>
 #include <string.h>
 
@@ -48,6 +49,7 @@
 #include "DNA_key_types.h"
 #include "DNA_mesh_types.h"
 #include "DNA_meshdata_types.h"
+#include "DNA_modifier_types.h"
 #include "DNA_scene_types.h"
 #include "DNA_vfont_types.h"
 
@@ -61,6 +63,7 @@
 #include "BKE_key.h"
 #include "BKE_lattice.h"
 #include "BKE_main.h"
+#include "BKE_material.h"
 #include "BKE_mesh.h"
 #include "BKE_object.h"
 #include "BKE_particle.h"
@@ -804,6 +807,154 @@ static void group_duplilist(ListBase *lb, Scene *scene, Object *ob, int persiste
 				copy_m4_m4(dob->ob->obmat, dob->mat);
 				object_duplilist_recursive(&group->id, scene, go->ob, lb, ob->obmat, persistent_id, level + 1, id, flag);
 				copy_m4_m4(dob->ob->obmat, dob->omat);
+			}
+		}
+	}
+}
+
+static void group_arrayduplilist(ListBase *lb, Scene *scene, Object *ob, int persistent_id[MAX_DUPLI_RECUR], 
+								  int level, short flag)
+{
+	DupliObject *dob;
+	Group *group;
+	GroupObject *go;
+	float mat[4][4], tmat[4][4], offset[4][4], rot[4][4];
+	ModifierData *md;
+	int i, cont_rnd;
+	float id, d_alp, alpha = 0;
+
+	if (ob->dup_group == NULL) 
+		return;
+	group = ob->dup_group;
+	
+	/* simple preventing of too deep nested groups */
+	if(level > MAX_DUPLI_RECUR) 
+		return;
+	
+	/* handles animated groups, and */
+
+	/* we need to check update for objects that are not in scene... */
+	if (flag & DUPLILIST_DO_UPDATE) {
+		/* note: update is optional because we don't always need object
+		 * transformations to be correct. Also fixes bug [#29616]. */
+		BKE_group_handle_recalc_and_update(scene, ob, group);
+	}
+
+	if (BKE_group_is_animated(group, ob))
+		flag |= DUPLILIST_ANIMATED;
+
+	for (md = ob->modifiers.first; md; md = md->next) {
+		if (md->type == eModifierType_Array) {
+			if (md->mode&eModifierMode_Realtime || md->mode&eModifierMode_Render) {
+				ArrayModifierData *amd = (ArrayModifierData*) md;
+
+				d_alp = 0;
+				if (amd->rays > 1)
+					alpha = (float)6.2831 / amd->rays;
+				copy_m4_m4(offset, amd->delta);
+					
+				for (i = 0; i < amd->count - 1; i++) {
+					cont_rnd = 0;
+					for (go = group->gobject.first, id = 0; go; go = go->next, id++) {
+						cont_rnd++;
+						/* note, if you check on layer here, render goes wrong...
+						 * it still deforms verts and uses parent imat */
+						if (go->ob != ob) {
+							if (amd->rand_group & MOD_ARR_RAND_GROUP) {
+								if ((amd->Mem_Ob[i].rand_group_obj != 0) && (amd->Mem_Ob[i].rand_group_obj != cont_rnd))
+									continue;
+							} 
+							else if (amd->rand_group & MOD_ARR_RAND_MAT_GROUP) {
+								/* assign_material(go->ob, *ob->mat, go->ob->totcol+1);
+								 * go->ob->actcol = BLI_rand() % ob->totcol;
+								 *
+								 * printf("Totcol=%d\n", go->ob->totcol);
+								 * printf("actcol=%d\n", go->ob->actcol); */
+							}
+							/* Group Dupli Offset, should apply after everything else */
+							if (group->dupli_ofs[0] || group->dupli_ofs[1] || group->dupli_ofs[2]) {
+								copy_m4_m4(tmat, go->ob->obmat);
+								sub_v3_v3v3(tmat[3], tmat[3], group->dupli_ofs);
+								mul_m4_m4m4(mat, ob->obmat, tmat);
+							} 
+							else
+								mul_m4_m4m4(mat, ob->obmat, go->ob->obmat);
+						
+							copy_m4_m4(tmat, mat);
+							if (amd->rays > 1) {
+								unit_m4(rot);
+								if (amd->rays_dir == MOD_ARR_RAYS_X)
+									rotate_m4(rot,'X',d_alp);
+								else if (amd->rays_dir == MOD_ARR_RAYS_Y)
+									rotate_m4(rot, 'Y', d_alp);
+								else
+									rotate_m4(rot, 'Z', d_alp);
+
+								if (d_alp == 0) {
+									mul_m4_m4m4(mat, tmat, offset);
+									copy_m4_m4(tmat, mat);
+									mul_m4_m4m4(mat, tmat, rot);
+								}
+								else {
+									mul_m4_m4m4(mat, tmat, offset);
+									copy_m4_m4(tmat, mat);
+									mul_m4_m4m4(mat, tmat, rot);
+								}
+							}
+							else
+								mul_m4_m4m4(mat, tmat, offset);
+
+							/* Noise */
+							if (amd->mode & MOD_ARR_MOD_ADV) {
+								if (amd->Mem_Ob[i].transform == 1) {
+									float app[4][4];
+									unit_m4(app);
+									loc_eul_size_to_mat4(app, amd->Mem_Ob[i].loc, amd->Mem_Ob[i].rot, 
+														 amd->Mem_Ob[i].scale);
+
+									copy_m4_m4(tmat, mat);
+									mul_m4_m4m4(mat, tmat, app);
+								}
+							}
+
+							dob = new_dupli_object(lb, go->ob, mat, ob->lay, persistent_id, level, id, OB_DUPLIARRAY,
+												   flag);
+								
+							if (!(md->mode&eModifierMode_Render))
+								dob->no_render = 1;
+							else 
+								dob->no_render = 0;
+							/* check the group instance and object layers match,
+							 * also that the object visible flags are ok. */
+							if (((dob->origlay & group->layer) == 0 ||
+								((G.is_rendering == FALSE) && dob->ob->restrictflag & OB_RESTRICT_VIEW) ||
+								((G.is_rendering == TRUE)  && dob->ob->restrictflag & OB_RESTRICT_RENDER)) || 
+								!(md->mode&eModifierMode_Realtime) || (!(md->mode&eModifierMode_Editmode) && 
+								(ob->mode == OB_MODE_EDIT)))
+							{
+								dob->no_draw = TRUE;
+							}
+							else
+								dob->no_draw = FALSE;
+
+							if (go->ob->transflag & OB_DUPLI) {
+								copy_m4_m4(dob->ob->obmat, dob->mat);
+								object_duplilist_recursive(&group->id, scene, go->ob, lb, ob->obmat, persistent_id,
+														   level + 1, id, flag);
+								copy_m4_m4(dob->ob->obmat, dob->omat);
+							}
+						}
+					}
+					/* Increment for rays */
+					if (amd->rays > 1) {
+						d_alp = d_alp + alpha;
+						if (d_alp > 6.2831)
+							d_alp = 0;
+					}
+					/* Offset for clone group */
+					if (d_alp == 0)
+						mul_m4_m4m4(offset, amd->delta, offset);
+				}
 			}
 		}
 	}
@@ -1707,6 +1858,16 @@ static void object_duplilist_recursive(ID *id, Scene *scene, Object *ob, ListBas
 		if (level == 0) {
 			for (dob = duplilist->first; dob; dob = dob->next)
 				if (dob->type == OB_DUPLIGROUP)
+					copy_m4_m4(dob->ob->obmat, dob->mat);
+		}
+	}
+	else if (ob->transflag & OB_DUPLIARRAY) {
+		DupliObject *dob;
+
+		group_arrayduplilist(duplilist, scene, ob, persistent_id, level + 1, flag);
+		if (level == 0) {
+			for (dob = duplilist->first; dob; dob = dob->next)
+				if (dob->type == OB_DUPLIARRAY)
 					copy_m4_m4(dob->ob->obmat, dob->mat);
 		}
 	}

@@ -1471,6 +1471,12 @@ static void write_modifiers(WriteData *wd, ListBase *modbase)
 			if (wmd->cmap_curve)
 				write_curvemapping(wd, wmd->cmap_curve);
 		}
+		else if (md->type == eModifierType_Array) {
+			ArrayModifierData *amd = (ArrayModifierData*) md;
+			
+			writestruct(wd, DATA, "ArrayChangeObject", amd->count, amd->Mem_Ob);
+			writedata(wd, DATA, sizeof(int) * amd->count_mc, amd->Mem_Mat_Ob.mid_cap);
+		}
 	}
 }
 

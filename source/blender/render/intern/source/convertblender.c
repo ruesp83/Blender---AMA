@@ -4913,10 +4913,11 @@ void RE_Database_Free(Render *re)
 static int allow_render_object(Render *re, Object *ob, int nolamps, int onlyselected, Object *actob)
 {
 	/* override not showing object when duplis are used with particles */
-	if (ob->transflag & OB_DUPLIPARTS) {
 		/* pass */  /* let particle system(s) handle showing vs. not showing */
-	}
-	else if ((ob->transflag & OB_DUPLI) && !(ob->transflag & OB_DUPLIFRAMES)) {
+	if (ob->transflag & OB_DUPLIPARTS)
+		; /* let particle system(s) handle showing vs. not showing */
+	else if ((ob->transflag & OB_DUPLI) && !(ob->transflag & OB_DUPLIFRAMES) &&
+			!(ob->transflag & OB_DUPLIARRAY)) {
 		return 0;
 	}
 	
@@ -5113,9 +5114,13 @@ static void database_init_objects(Render *re, unsigned int renderlay, int nolamp
 					
 					copy_m4_m4(obd->obmat, dob->mat);
 
-					/* group duplis need to set ob matrices correct, for deform. so no_draw is part handled */
-					if (!(obd->transflag & OB_RENDER_DUPLI) && dob->no_draw)
+					if(!(obd->transflag & OB_DUPLIARRAY) && dob->no_render)
 						continue;
+
+					/* group duplis need to set ob matrices correct, for deform. so no_draw is part handled */
+					if (obd->transflag & OB_DUPLIARRAY)
+						if (!(obd->transflag & OB_RENDER_DUPLI) && dob->no_draw)
+							continue;
 
 					if (obd->restrictflag & OB_RESTRICT_RENDER)
 						continue;

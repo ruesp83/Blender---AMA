@@ -305,8 +305,10 @@ typedef struct DupliObject {
 	float orco[3], uv[2];
 
 	short type; /* from Object.transflag */
-	char no_draw, animated;
-
+	short pad1;
+	char no_draw, no_render, animated;
+	char pad2;
+	int pad3;
 	/* persistent identifier for a dupli object, for inter-frame matching of
 	 * objects with motion blur, or inter-update matching for syncing */
 	int persistent_id[8]; /* MAX_DUPLI_RECUR */
@@ -371,7 +373,7 @@ typedef struct DupliObject {
 /* (short) transflag */
 /* flags 1 and 2 were unused or relics from past features */
 #define OB_NEG_SCALE		4
-#define OB_DUPLI			(8+16+256+512+2048)
+#define OB_DUPLI			(8+16+256+512+2048+4096)
 #define OB_DUPLIFRAMES		8
 #define OB_DUPLIVERTS		16
 #define OB_DUPLIROT			32
@@ -381,8 +383,9 @@ typedef struct DupliObject {
 #define OB_DUPLIFACES		512
 #define OB_DUPLIFACES_SCALE	1024
 #define OB_DUPLIPARTS		2048
-#define OB_RENDER_DUPLI		4096
-#define OB_NO_CONSTRAINTS	8192 /* runtime constraints disable */
+#define OB_DUPLIARRAY		4096
+#define OB_RENDER_DUPLI	8192
+#define OB_NO_CONSTRAINTS	16384 /* runtime constraints disable */
 #define OB_NO_PSYS_UPDATE	16384 /* hack to work around particle issue */
 
 /* (short) ipoflag */
