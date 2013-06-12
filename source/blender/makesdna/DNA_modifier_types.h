@@ -22,61 +22,63 @@
  *  \ingroup DNA
  */
 
-#ifndef DNA_MODIFIER_TYPES_H
-#define DNA_MODIFIER_TYPES_H
+#ifndef __DNA_MODIFIER_TYPES_H__
+#define __DNA_MODIFIER_TYPES_H__
 
 #include "DNA_defs.h"
 #include "DNA_listBase.h"
-
-
-#define MODSTACK_DEBUG 1
 
 /* WARNING ALERT! TYPEDEF VALUES ARE WRITTEN IN FILES! SO DO NOT CHANGE!
  * (ONLY ADD NEW ITEMS AT THE END) */
 
 typedef enum ModifierType {
-	eModifierType_None = 0,
-	eModifierType_Subsurf,
-	eModifierType_Lattice,
-	eModifierType_Curve,
-	eModifierType_Build,
-	eModifierType_Mirror,
-	eModifierType_Decimate,
-	eModifierType_Wave,
-	eModifierType_Armature,
-	eModifierType_Hook,
-	eModifierType_Softbody,
-	eModifierType_Boolean,
-	eModifierType_Array,
-	eModifierType_EdgeSplit,
-	eModifierType_Displace,
-	eModifierType_UVProject,
-	eModifierType_Smooth,
-	eModifierType_Cast,
-	eModifierType_MeshDeform,
-	eModifierType_ParticleSystem,
-	eModifierType_ParticleInstance,
-	eModifierType_Explode,
-	eModifierType_Cloth,
-	eModifierType_Collision,
-	eModifierType_Bevel,
-	eModifierType_Shrinkwrap,
-	eModifierType_Fluidsim,
-	eModifierType_Mask,
-	eModifierType_SimpleDeform,
-	eModifierType_Multires,
-	eModifierType_Surface,
-	eModifierType_Smoke,
-	eModifierType_ShapeKey,
-	eModifierType_Solidify,
-	eModifierType_Screw,
-	eModifierType_Warp,
-	eModifierType_WeightVGEdit,
-	eModifierType_WeightVGMix,
-	eModifierType_WeightVGProximity,
-	eModifierType_Ocean,
-	eModifierType_DynamicPaint,
-	eModifierType_Remesh,
+	eModifierType_None              = 0,
+	eModifierType_Subsurf           = 1,
+	eModifierType_Lattice           = 2,
+	eModifierType_Curve             = 3,
+	eModifierType_Build             = 4,
+	eModifierType_Mirror            = 5,
+	eModifierType_Decimate          = 6,
+	eModifierType_Wave              = 7,
+	eModifierType_Armature          = 8,
+	eModifierType_Hook              = 9,
+	eModifierType_Softbody          = 10,
+	eModifierType_Boolean           = 11,
+	eModifierType_Array             = 12,
+	eModifierType_EdgeSplit         = 13,
+	eModifierType_Displace          = 14,
+	eModifierType_UVProject         = 15,
+	eModifierType_Smooth            = 16,
+	eModifierType_Cast              = 17,
+	eModifierType_MeshDeform        = 18,
+	eModifierType_ParticleSystem    = 19,
+	eModifierType_ParticleInstance  = 20,
+	eModifierType_Explode           = 21,
+	eModifierType_Cloth             = 22,
+	eModifierType_Collision         = 23,
+	eModifierType_Bevel             = 24,
+	eModifierType_Shrinkwrap        = 25,
+	eModifierType_Fluidsim          = 26,
+	eModifierType_Mask              = 27,
+	eModifierType_SimpleDeform      = 28,
+	eModifierType_Multires          = 29,
+	eModifierType_Surface           = 30,
+	eModifierType_Smoke             = 31,
+	eModifierType_ShapeKey          = 32,
+	eModifierType_Solidify          = 33,
+	eModifierType_Screw             = 34,
+	eModifierType_Warp              = 35,
+	eModifierType_WeightVGEdit      = 36,
+	eModifierType_WeightVGMix       = 37,
+	eModifierType_WeightVGProximity = 38,
+	eModifierType_Ocean             = 39,
+	eModifierType_DynamicPaint      = 40,
+	eModifierType_Remesh            = 41,
+	eModifierType_Skin              = 42,
+	eModifierType_LaplacianSmooth   = 43,
+	eModifierType_Triangulate       = 44,
+	eModifierType_UVWarp            = 45,
+	eModifierType_MeshCache         = 46,
 	NUM_MODIFIER_TYPES
 } ModifierType;
 
@@ -135,6 +137,8 @@ typedef struct LatticeModifierData {
 
 	struct Object *object;
 	char name[64];			/* optional vertexgroup name, MAX_VGROUP_NAME */
+	float strength;
+	char pad[4];
 } LatticeModifierData;
 
 typedef struct CurveModifierData {
@@ -179,210 +183,63 @@ typedef struct MaskModifierData {
 /* Mask Modifier -> flag */
 #define MOD_MASK_INV			(1<<0)
 
-
-typedef struct ArrayChangeObject {
-	float rot[3];
-	float scale[3];
-	float loc[3];
-	
-	float cu_cent[3];
-	float cu_loc[4];
-	int transform; /* 0 not modified, 1 modified */
-	int id_mat;
-	int rand_group_obj;
-} ArrayChangeObject;
-
-/*typedef struct ObjectCap {
-	struct Object *ob_cap;
-	struct Object *curve;
-	int count;
-	int distribution;
-} ObjectCap;*/
-
-typedef struct Mat_ObCap {
-	int *mid_cap;
-	int start_cap;
-	int end_cap;
-} Mat_ObCap;
-
 typedef struct ArrayModifierData {
 	ModifierData modifier;
 
 	/* the object with which to cap the start of the array  */
 	struct Object *start_cap;
-	/* the object with which to cap the mid of the array  */
-	struct Object *mid_cap;
 	/* the object with which to cap the end of the array  */
 	struct Object *end_cap;
-	/* the curve object to use for MOD_ARR_MOD_CURVE */
+	/* the curve object to use for MOD_ARR_FITCURVE */
 	struct Object *curve_ob;
-	/* the curve object to use for Object Cap */
-	struct Object *curve_cap;
 	/* the object to use for object offset */
 	struct Object *offset_ob;
-	/* stores information about objects subject to random */
-	struct ArrayChangeObject *Mem_Ob;
-	/* stores the material of the "Object Cap" */
-	struct Mat_ObCap Mem_Mat_Ob;
-	/* group linked to the modifier */
-	struct Group *arr_group;
 	/* a constant duplicate offset;
-	   1 means the duplicates are 1 unit apart
-	*/
+	 * 1 means the duplicates are 1 unit apart
+	 */
 	float offset[3];
 	/* a scaled factor for duplicate offsets;
-	   1 means the duplicates are 1 object-width apart
-	*/
+	 * 1 means the duplicates are 1 object-width apart
+	 */
 	float scale[3];
-	/* Offset for clone group */
-	float delta[4][4];
 	/* the length over which to distribute the duplicates */
 	float length;
 	/* the limit below which to merge vertices in adjacent duplicates */
 	float merge_dist;
-	/* randomize Offset */
-	float loc_offset[3];
-	float rot_offset[3];
-	float scale_offset[3];
 	/* determines how duplicate count is calculated; one of:
-		  MOD_ARR_FIXEDCOUNT -> fixed
-		  MOD_ARR_FITLENGTH  -> calculated to fit a set length
-		  MOD_ARR_FITBETWEEN   -> Number of duplicates between two objects
-	*/
+	 * - MOD_ARR_FIXEDCOUNT -> fixed
+	 * - MOD_ARR_FITLENGTH  -> calculated to fit a set length
+	 * - MOD_ARR_FITCURVE   -> calculated to fit the length of a Curve object
+	 */
 	int fit_type;
 	/* flags specifying how total offset is calculated; binary OR of:
-		 MOD_ARR_OFF_CONST    -> total offset += offset
-		 MOD_ARR_OFF_RELATIVE -> total offset += relative * object width
-		 MOD_ARR_OFF_OBJ      -> total offset += offset_ob's matrix
-	   total offset is the sum of the individual enabled offsets
-	*/
+	 * - MOD_ARR_OFF_CONST    -> total offset += offset
+	 * - MOD_ARR_OFF_RELATIVE -> total offset += relative * object width
+	 * - MOD_ARR_OFF_OBJ      -> total offset += offset_ob's matrix
+	 * total offset is the sum of the individual enabled offsets
+	 */
 	int offset_type;
 	/* general flags:
-		  MOD_ARR_MERGE -> merge vertices in adjacent duplicates
-	*/
-	int flags;
-	/* The pseudo-random number generator is initialized using the argument passed as seed. 
-	 * seed[0] = transform
-	 * seed[1] = group
-	 * seed[2] = material
+	 * MOD_ARR_MERGE -> merge vertices in adjacent duplicates
 	 */
-	int seed[3];
+	int flags;
 	/* the number of duplicates to generate for MOD_ARR_FIXEDCOUNT */
 	int count;
-	/* the number of duplicates of Mid Cap and type of distribution */
-	int count_mc;
-	int dist_mc;
-	/* Indicates whether you use a random material or the original*/
-	int mat_ob;
-	/* Indicates whether to use the Start Cap and End Cap on the curve of the Mid Cap */
-	int outer_cp;
-	/* number of rays and the direction of the Clones */
-	int rays;
-	int rays_dir;
-	/* Number of copies of the same material */
-	int cont_mat;
-	/* randomizes the materials */
-	int rand_mat;
-	/* lock the noise offset */
-	int lock;
-	/* Normal Mode - Advanced Mode - Advanced Material - Advanced MidCap - Advanced Cloning */
-	int mode;
-	int displays;
-	/* indicates how the modifier should be used */
-	int type;
-	/* direction Offset */
-	int sign;
-	/* keeps the ratio on the scale */
-	int flag_offset;
-	/* how to distribute the clones on a curve */
-	int dist_cu;
-	/* ability to randomization of objects belonging to the group linked */
-	int rand_group;
 } ArrayModifierData;
 
 /* ArrayModifierData->fit_type */
-#define MOD_ARR_FIXEDCOUNT		0
-#define MOD_ARR_FITLENGTH		1
-#define MOD_ARR_FITBETWEEN		2
+#define MOD_ARR_FIXEDCOUNT 0
+#define MOD_ARR_FITLENGTH  1
+#define MOD_ARR_FITCURVE   2
 
 /* ArrayModifierData->offset_type */
-#define MOD_ARR_OFF_CONST		(1<<0)
-#define MOD_ARR_OFF_RELATIVE	(1<<1)
-#define MOD_ARR_OFF_OBJ			(1<<2)
+#define MOD_ARR_OFF_CONST    (1<<0)
+#define MOD_ARR_OFF_RELATIVE (1<<1)
+#define MOD_ARR_OFF_OBJ      (1<<2)
 
 /* ArrayModifierData->flags */
-#define MOD_ARR_MERGE      		(1<<0)
-#define MOD_ARR_MERGEFINAL 		(1<<1)
-
-/* ArrayModifierData->mat_ob */
-/* Array */
-#define MOD_ARR_AR_MAT_RND     	(1<<0)
-/* Start Cap */
-#define MOD_ARR_SC_MAT_RND     	(1<<1)
-#define MOD_ARR_SC_MAT_OR 		(1<<2)
-/* Mid Cap */
-#define MOD_ARR_MC_MAT_RND     	(1<<3)
-#define MOD_ARR_MC_MAT_OR 		(1<<4)
-/* End Cap */
-#define MOD_ARR_EC_MAT_RND     	(1<<5)
-#define MOD_ARR_EC_MAT_OR 		(1<<6)
-
-/* ArrayModifierData->type */
-#define MOD_ARR_MOD_NRM			(1<<0)
-#define MOD_ARR_MOD_CURVE		(1<<1)
-
-/* ArrayModifierData->outer_cp */
-#define MOD_ARR_CP_FIRST		(1<<0)
-#define MOD_ARR_CP_LAST			(1<<1)
-
-/* ArrayModifierData->mode */
-#define MOD_ARR_MOD_ADV			(1<<0)
-#define MOD_ARR_MOD_ADV_MAT		(1<<1)
-#define MOD_ARR_MOD_ADV_MID		(1<<3)
-#define MOD_ARR_MOD_ADV_CLONE	(1<<4)
-
-/* ArrayModifierData->displays */
-#define MOD_ARR_DIS_ADV			(1<<0)
-#define MOD_ARR_DIS_ADV_MAT		(1<<1)
-#define MOD_ARR_DIS_ADV_MID		(1<<3)
-#define MOD_ARR_DIS_ADV_CLONE	(1<<4)
-
-/* ArrayModifierData->sign */
-#define MOD_ARR_SIGN_P			(1<<0)
-#define MOD_ARR_SIGN_L			(1<<1)
-
-/* ArrayModifierData->lock */
-#define MOD_ARR_LOCK			(4+8+16+32)
-#define MOD_ARR_LOCK_LOC		4
-#define MOD_ARR_LOCK_SCALE		8
-#define MOD_ARR_LOCK_ROT		16
-#define MOD_ARR_LOCK_MAT		32
-
-/* ArrayModifierData->flag_offset */
-#define MOD_ARR_PROP			(1<<0)
-#define MOD_ARR_LOCAL			(1<<1)
-
-/* ArrayModifierData->rand_mat */
-#define MOD_ARR_MAT				(1<<0)
-#define MOD_ARR_SEQ				(1<<1)
-
-/* ArrayModifierData->rays_dir */
-#define MOD_ARR_RAYS_X			0
-#define MOD_ARR_RAYS_Y			1
-#define MOD_ARR_RAYS_Z			2
-
-/* ArrayModifierData->rand_group */
-#define MOD_ARR_RAND_GROUP		(1<<0)
-#define MOD_ARR_RAND_MAT_GROUP  (1<<1)
-
-/* ArrayModifierData->dist_cu */
-#define MOD_ARR_DIST_EVENLY		(1<<0)
-#define MOD_ARR_DIST_SEGMENT	(1<<1)
-
-/* ArrayModifierData->dist_mc */
-#define MOD_ARR_DIST_SEQ		(1<<0)
-#define MOD_ARR_DIST_HALF		(1<<1)
-#define MOD_ARR_DIST_CURVE		(1<<2)
+#define MOD_ARR_MERGE      (1<<0)
+#define MOD_ARR_MERGEFINAL (1<<1)
 
 typedef struct MirrorModifierData {
 	ModifierData modifier;
@@ -471,19 +328,19 @@ typedef struct DisplaceModifierData {
 
 /* DisplaceModifierData->direction */
 enum {
-	MOD_DISP_DIR_X,
-	MOD_DISP_DIR_Y,
-	MOD_DISP_DIR_Z,
-	MOD_DISP_DIR_NOR,
-	MOD_DISP_DIR_RGB_XYZ,
+	MOD_DISP_DIR_X = 0,
+	MOD_DISP_DIR_Y = 1,
+	MOD_DISP_DIR_Z = 2,
+	MOD_DISP_DIR_NOR = 3,
+	MOD_DISP_DIR_RGB_XYZ = 4,
 };
 
 /* DisplaceModifierData->texmapping */
 enum {
-	MOD_DISP_MAP_LOCAL,
-	MOD_DISP_MAP_GLOBAL,
-	MOD_DISP_MAP_OBJECT,
-	MOD_DISP_MAP_UV
+	MOD_DISP_MAP_LOCAL = 0,
+	MOD_DISP_MAP_GLOBAL = 1,
+	MOD_DISP_MAP_OBJECT = 2,
+	MOD_DISP_MAP_UV = 3
 };
 
 typedef struct UVProjectModifierData {
@@ -495,7 +352,7 @@ typedef struct UVProjectModifierData {
 	int flags;
 	int num_projectors;
 	float aspectx, aspecty;
-	float scalex, scaley;												
+	float scalex, scaley;
 	char uvlayer_name[64];	/* MAX_CUSTOMDATA_LAYER_NAME */
 	int uvlayer_tmp, pad;
 } UVProjectModifierData;
@@ -508,9 +365,30 @@ typedef struct UVProjectModifierData {
 typedef struct DecimateModifierData {
 	ModifierData modifier;
 
-	float percent;
-	int faceCount;
+	float percent;  /* (mode == MOD_DECIM_MODE_COLLAPSE) */
+	short   iter;   /* (mode == MOD_DECIM_MODE_UNSUBDIV) */
+	char delimit;   /* (mode == MOD_DECIM_MODE_DISSOLVE) */
+	char pad;
+	float   angle;  /* (mode == MOD_DECIM_MODE_DISSOLVE) */
+
+	char defgrp_name[64];	/* MAX_VGROUP_NAME */
+	short flag, mode;
+
+	/* runtime only */
+	int face_count, pad2;
 } DecimateModifierData;
+
+enum {
+	MOD_DECIM_FLAG_INVERT_VGROUP       = (1 << 0),
+	MOD_DECIM_FLAG_TRIANGULATE         = (1 << 1),  /* for collapse only. dont convert tri pairs back to quads */
+	MOD_DECIM_FLAG_ALL_BOUNDARY_VERTS  = (1 << 2)   /* for dissolve only. collapse all verts between 2 faces */
+};
+
+enum {
+	MOD_DECIM_MODE_COLLAPSE,
+	MOD_DECIM_MODE_UNSUBDIV,
+	MOD_DECIM_MODE_DISSOLVE   /* called planar in the UI */
+};
 
 /* Smooth modifier flags */
 #define MOD_SMOOTH_X (1<<1)
@@ -653,9 +531,9 @@ typedef struct SurfaceModifierData {
 } SurfaceModifierData;
 
 typedef enum {
-	eBooleanModifierOp_Intersect,
-	eBooleanModifierOp_Union,
-	eBooleanModifierOp_Difference,
+	eBooleanModifierOp_Intersect = 0,
+	eBooleanModifierOp_Union = 1,
+	eBooleanModifierOp_Difference = 2,
 } BooleanModifierOp;
 typedef struct BooleanModifierData {
 	ModifierData modifier;
@@ -711,7 +589,7 @@ typedef struct MeshDeformModifierData {
 	/* runtime */
 	void (*bindfunc)(struct Scene *scene,
 		struct MeshDeformModifierData *mmd,
-		float *vertexcos, int totvert, float cagemat[][4]);
+		float *vertexcos, int totvert, float cagemat[4][4]);
 } MeshDeformModifierData;
 
 typedef enum {
@@ -791,7 +669,8 @@ typedef struct ShrinkwrapModifierData {
 	float keepDist;			/* distance offset to keep from mesh/projection point */
 	short shrinkType;		/* shrink type projection */
 	short shrinkOpts;		/* shrink options */
-	char projAxis;			/* axis to project over */
+	float projLimit;		/* limit the projection ray cast */
+	char  projAxis;			/* axis to project over */
 
 	/*
 	 * if using projection over vertex normal this controls the
@@ -800,7 +679,7 @@ typedef struct ShrinkwrapModifierData {
 	 */
 	char subsurfLevels;
 
-	char pad[6];
+	char pad[2];
 
 } ShrinkwrapModifierData;
 
@@ -823,13 +702,14 @@ typedef struct ShrinkwrapModifierData {
 #define MOD_SHRINKWRAP_PROJECT_OVER_Z_AXIS		(1<<2)
 #define MOD_SHRINKWRAP_PROJECT_OVER_NORMAL			0	/* projection over normal is used if no axis is selected */
 
+
 typedef struct SimpleDeformModifierData {
 	ModifierData modifier;
 
 	struct Object *origin;	/* object to control the origin of modifier space coordinates */
 	char vgroup_name[64];	/* optional vertexgroup name, MAX_VGROUP_NAME */
 	float factor;			/* factors to control simple deforms */
-	float limit[2];			/* lower and upper limit */		
+	float limit[2];			/* lower and upper limit */
 
 	char mode;				/* deform function */
 	char axis;				/* lock axis (for taper and strech) */
@@ -848,6 +728,8 @@ typedef struct SimpleDeformModifierData {
 
 /* indicates whether simple deform should use the local
  * coordinates or global coordinates of origin */
+/* XXX, this should have never been an option, all other modifiers work relatively
+ * (so moving both objects makes no change!) - Campbell */
 #define MOD_SIMPLEDEFORM_ORIGIN_LOCAL			(1<<0)
 
 #define MOD_UVPROJECT_MAX				10
@@ -863,6 +745,8 @@ typedef struct SolidifyModifierData {
 	float offset;			/* new surface offset level*/
 	float offset_fac;		/* midpoint of the offset  */
 	float offset_fac_vg;	/* factor for the minimum weight to use when vgroups are used, avoids 0.0 weights giving duplicate geometry */
+	float offset_clamp;		/* clamp offset based on surrounding geometry */
+	float pad;
 	float crease_inner;
 	float crease_outer;
 	float crease_rim;
@@ -871,11 +755,12 @@ typedef struct SolidifyModifierData {
 	short mat_ofs_rim;
 } SolidifyModifierData;
 
-#define MOD_SOLIDIFY_RIM			(1<<0)
-#define MOD_SOLIDIFY_EVEN			(1<<1)
-#define MOD_SOLIDIFY_NORMAL_CALC	(1<<2)
-#define MOD_SOLIDIFY_VGROUP_INV		(1<<3)
-#define MOD_SOLIDIFY_RIM_MATERIAL	(1<<4) /* deprecated, used in do_versions */
+#define MOD_SOLIDIFY_RIM            (1 << 0)
+#define MOD_SOLIDIFY_EVEN           (1 << 1)
+#define MOD_SOLIDIFY_NORMAL_CALC    (1 << 2)
+#define MOD_SOLIDIFY_VGROUP_INV     (1 << 3)
+#define MOD_SOLIDIFY_RIM_MATERIAL   (1 << 4) /* deprecated, used in do_versions */
+#define MOD_SOLIDIFY_FLIP           (1 << 5)
 
 typedef struct ScrewModifierData {
 	ModifierData modifier;
@@ -889,10 +774,11 @@ typedef struct ScrewModifierData {
 	short	flag;
 } ScrewModifierData;
 
-#define MOD_SCREW_NORMAL_FLIP	(1<<0)
-#define MOD_SCREW_NORMAL_CALC	(1<<1)
-#define MOD_SCREW_OBJECT_OFFSET	(1<<2)
-// #define MOD_SCREW_OBJECT_ANGLE	(1<<4)
+#define MOD_SCREW_NORMAL_FLIP    (1 << 0)
+#define MOD_SCREW_NORMAL_CALC    (1 << 1)
+#define MOD_SCREW_OBJECT_OFFSET  (1 << 2)
+// #define MOD_SCREW_OBJECT_ANGLE	(1 << 4)
+#define MOD_SCREW_SMOOTH_SHADING (1 << 5)
 
 typedef struct OceanModifierData {
 	ModifierData modifier;
@@ -957,7 +843,6 @@ typedef struct OceanModifierData {
 
 typedef struct WarpModifierData {
 	ModifierData modifier;
-
 	/* keep in sync with MappingInfoModifierData */
 	struct Tex *texture;
 	struct Object *map_object;
@@ -1043,7 +928,7 @@ typedef struct WeightVGEditModifierData {
 typedef struct WeightVGMixModifierData {
 	ModifierData modifier;
 
-	/* XXX Note: I tried to keep everything logically ordered – provided the
+	/* XXX Note: I tried to keep everything logically ordered - provided the
 	 *           alignment constraints... */
 
 	char	defgrp_name_a[64];      /* Name of vertex group to modify/weight. MAX_VGROUP_NAME. */
@@ -1177,6 +1062,7 @@ typedef struct DynamicPaintModifierData {
 
 typedef enum RemeshModifierFlags {
 	MOD_REMESH_FLOOD_FILL = 1,
+	MOD_REMESH_SMOOTH_SHADING = 2,
 } RemeshModifierFlags;
 
 typedef enum RemeshModifierMode {
@@ -1192,7 +1078,7 @@ typedef struct RemeshModifierData {
 	ModifierData modifier;
 
 	/* floodfill option, controls how small components can be
-	   before they are removed */
+	 * before they are removed */
 	float threshold;
 
 	/* ratio between size of model and grid */
@@ -1208,4 +1094,132 @@ typedef struct RemeshModifierData {
 	char pad;
 } RemeshModifierData;
 
-#endif
+/* Skin modifier */
+
+typedef struct SkinModifierData {
+	ModifierData modifier;
+
+	float branch_smoothing;
+
+	char flag;
+	
+	char symmetry_axes;
+
+	char pad[2];
+} SkinModifierData;
+
+/* SkinModifierData.symmetry_axes */
+enum {
+	MOD_SKIN_SYMM_X = 1,
+	MOD_SKIN_SYMM_Y = 2,
+	MOD_SKIN_SYMM_Z = 4,
+};
+
+/* SkinModifierData.flag */
+enum {
+	MOD_SKIN_SMOOTH_SHADING = 1
+};
+
+/* Triangulate modifier */
+
+typedef struct TriangulateModifierData {
+	ModifierData modifier;
+	int flag;
+	int pad;
+} TriangulateModifierData;
+
+enum {
+	MOD_TRIANGULATE_BEAUTY = (1 << 0),
+};
+
+/* Smooth modifier flags */
+#define MOD_LAPLACIANSMOOTH_X (1<<1)
+#define MOD_LAPLACIANSMOOTH_Y (1<<2)
+#define MOD_LAPLACIANSMOOTH_Z (1<<3)
+#define MOD_LAPLACIANSMOOTH_PRESERVE_VOLUME (1 << 4)
+#define MOD_LAPLACIANSMOOTH_NORMALIZED (1 << 5)
+
+typedef struct LaplacianSmoothModifierData {
+	ModifierData modifier;
+	float lambda, lambda_border, pad1;
+	char defgrp_name[64]; /* MAX_VGROUP_NAME */
+	short flag, repeat;
+} LaplacianSmoothModifierData;
+
+typedef struct UVWarpModifierData {
+	ModifierData modifier;
+
+	char axis_u, axis_v;
+	char pad[6];
+	float center[2];       /* used for rotate/scale */
+
+	struct Object *object_src;  /* source */
+	char bone_src[64];     /* optional name of bone target, MAX_ID_NAME-2 */
+	struct Object *object_dst;  /* target */
+	char bone_dst[64];     /* optional name of bone target, MAX_ID_NAME-2 */
+
+	char vgroup_name[64];   /* optional vertexgroup name, MAX_VGROUP_NAME */
+	char uvlayer_name[64];  /* MAX_CUSTOMDATA_LAYER_NAME */
+} UVWarpModifierData;
+
+/* cache modifier */
+typedef struct MeshCacheModifierData {
+	ModifierData modifier;
+	char flag;
+	char type;  /* file format */
+	char time_mode;
+	char play_mode;
+
+	/* axis conversion */
+	char forward_axis;
+	char up_axis;
+	char flip_axis;
+
+	char interp;
+
+	float factor;
+	char deform_mode;
+	char pad[7];
+
+	/* play_mode == MOD_MESHCACHE_PLAY_CFEA */
+	float frame_start;
+	float frame_scale;
+
+	/* play_mode == MOD_MESHCACHE_PLAY_EVAL */
+	/* we could use one float for all these but their purpose is very different */
+	float eval_frame;
+	float eval_time;
+	float eval_factor;
+
+	char filepath[1024];	// FILE_MAX
+} MeshCacheModifierData;
+
+enum {
+	MOD_MESHCACHE_TYPE_MDD  = 1,
+	MOD_MESHCACHE_TYPE_PC2  = 2
+};
+
+enum {
+	MOD_MESHCACHE_DEFORM_OVERWRITE  = 0,
+	MOD_MESHCACHE_DEFORM_INTEGRATE  = 1
+};
+
+enum {
+	MOD_MESHCACHE_INTERP_NONE  = 0,
+	MOD_MESHCACHE_INTERP_LINEAR = 1,
+	// MOD_MESHCACHE_INTERP_CARDINAL  = 2
+};
+
+enum {
+	MOD_MESHCACHE_TIME_FRAME = 0,
+	MOD_MESHCACHE_TIME_SECONDS = 1,
+	MOD_MESHCACHE_TIME_FACTOR = 2,
+};
+
+enum {
+	MOD_MESHCACHE_PLAY_CFEA = 0,
+	MOD_MESHCACHE_PLAY_EVAL = 1,
+};
+
+
+#endif  /* __DNA_MODIFIER_TYPES_H__ */

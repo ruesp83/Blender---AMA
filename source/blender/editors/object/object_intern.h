@@ -28,8 +28,8 @@
  *  \ingroup edobj
  */
 
-#ifndef ED_OBJECT_INTERN_H
-#define ED_OBJECT_INTERN_H
+#ifndef __OBJECT_INTERN_H__
+#define __OBJECT_INTERN_H__
 
 struct wmOperatorType;
 struct KeyBlock;
@@ -40,10 +40,11 @@ struct Mesh;
 struct HookModifierData;
 
 /* add hook menu */
-enum {
+enum eObject_Hook_Add_Mode {
 	OBJECT_ADDHOOK_NEWOB = 1,
 	OBJECT_ADDHOOK_SELOB,
-} eObject_Hook_Add_Mode;
+	OBJECT_ADDHOOK_SELOB_BONE
+};
 
 /* internal exports only */
 
@@ -84,6 +85,7 @@ void OBJECT_OT_proxy_make(struct wmOperatorType *ot);
 void OBJECT_OT_shade_smooth(struct wmOperatorType *ot);
 void OBJECT_OT_shade_flat(struct wmOperatorType *ot);
 void OBJECT_OT_paths_calculate(struct wmOperatorType *ot);
+void OBJECT_OT_paths_update(struct wmOperatorType *ot);
 void OBJECT_OT_paths_clear(struct wmOperatorType *ot);
 void OBJECT_OT_forcefield_toggle(struct wmOperatorType *ot);
 
@@ -110,6 +112,8 @@ void OBJECT_OT_add_named(struct wmOperatorType *ot);
 void OBJECT_OT_metaball_add(struct wmOperatorType *ot);
 void OBJECT_OT_text_add(struct wmOperatorType *ot);
 void OBJECT_OT_armature_add(struct wmOperatorType *ot);
+void OBJECT_OT_empty_add(struct wmOperatorType *ot);
+void OBJECT_OT_drop_named_image(struct wmOperatorType *ot);
 void OBJECT_OT_lamp_add(struct wmOperatorType *ot);
 void OBJECT_OT_effector_add(struct wmOperatorType *ot);
 void OBJECT_OT_camera_add(struct wmOperatorType *ot);
@@ -124,8 +128,8 @@ void OBJECT_OT_join_shapes(struct wmOperatorType *ot);
 void OBJECT_OT_convert(struct wmOperatorType *ot);
 
 /* object_hook.c */
-void OBJECT_OT_hook_add_selobj(struct wmOperatorType *ot);
-void OBJECT_OT_hook_add_newobj(struct wmOperatorType *ot);
+void OBJECT_OT_hook_add_selob(struct wmOperatorType *ot);
+void OBJECT_OT_hook_add_newob(struct wmOperatorType *ot);
 void OBJECT_OT_hook_remove(struct wmOperatorType *ot);
 void OBJECT_OT_hook_select(struct wmOperatorType *ot);
 void OBJECT_OT_hook_assign(struct wmOperatorType *ot);
@@ -134,10 +138,13 @@ void OBJECT_OT_hook_recenter(struct wmOperatorType *ot);
 
 /* object_lattice.c */
 void LATTICE_OT_select_all(struct wmOperatorType *ot);
+void LATTICE_OT_select_ungrouped(struct wmOperatorType *ot);
 void LATTICE_OT_make_regular(struct wmOperatorType *ot);
+void LATTICE_OT_flip(struct wmOperatorType *ot);
 
 /* object_group.c */
 void GROUP_OT_create(struct wmOperatorType *ot);
+void GROUP_OT_objects_remove_all(struct wmOperatorType *ot);
 void GROUP_OT_objects_remove(struct wmOperatorType *ot);
 void GROUP_OT_objects_add_active(struct wmOperatorType *ot);
 void GROUP_OT_objects_remove_active(struct wmOperatorType *ot);
@@ -159,9 +166,10 @@ void OBJECT_OT_multires_external_pack(struct wmOperatorType *ot);
 void OBJECT_OT_meshdeform_bind(struct wmOperatorType *ot);
 void OBJECT_OT_explode_refresh(struct wmOperatorType *ot);
 void OBJECT_OT_ocean_bake(struct wmOperatorType *ot);
-void OBJECT_OT_array_rand_seed_t(struct wmOperatorType *ot);
-void OBJECT_OT_array_rand_seed_g(struct wmOperatorType *ot);
-void OBJECT_OT_array_rand_seed_m(struct wmOperatorType *ot);
+void OBJECT_OT_skin_root_mark(struct wmOperatorType *ot);
+void OBJECT_OT_skin_loose_mark_clear(struct wmOperatorType *ot);
+void OBJECT_OT_skin_radii_equalize(struct wmOperatorType *ot);
+void OBJECT_OT_skin_armature_create(struct wmOperatorType *ot);
 
 /* object_constraint.c */
 void OBJECT_OT_constraint_add(struct wmOperatorType *ot);
@@ -188,7 +196,8 @@ void CONSTRAINT_OT_limitdistance_reset(struct wmOperatorType *ot);
 void CONSTRAINT_OT_childof_set_inverse(struct wmOperatorType *ot);
 void CONSTRAINT_OT_childof_clear_inverse(struct wmOperatorType *ot);
 void CONSTRAINT_OT_objectsolver_set_inverse(struct wmOperatorType *ot);
-void CONSTRAINT_OT_objectsolver_clear_inverse (struct wmOperatorType *ot);
+void CONSTRAINT_OT_objectsolver_clear_inverse(struct wmOperatorType *ot);
+void CONSTRAINT_OT_followpath_path_animate(struct wmOperatorType *ot);
 
 /* object_vgroup.c */
 void OBJECT_OT_vertex_group_add(struct wmOperatorType *ot);
@@ -198,6 +207,7 @@ void OBJECT_OT_vertex_group_remove_from(struct wmOperatorType *ot);
 void OBJECT_OT_vertex_group_select(struct wmOperatorType *ot);
 void OBJECT_OT_vertex_group_deselect(struct wmOperatorType *ot);
 void OBJECT_OT_vertex_group_copy_to_linked(struct wmOperatorType *ot);
+void OBJECT_OT_vertex_group_transfer_weight(struct wmOperatorType *ot);
 void OBJECT_OT_vertex_group_copy_to_selected(struct wmOperatorType *ot);
 void OBJECT_OT_vertex_group_copy(struct wmOperatorType *ot);
 void OBJECT_OT_vertex_group_normalize(struct wmOperatorType *ot);
@@ -208,6 +218,7 @@ void OBJECT_OT_vertex_group_fix(struct wmOperatorType *ot);
 void OBJECT_OT_vertex_group_invert(struct wmOperatorType *ot);
 void OBJECT_OT_vertex_group_blend(struct wmOperatorType *ot);
 void OBJECT_OT_vertex_group_clean(struct wmOperatorType *ot);
+void OBJECT_OT_vertex_group_limit_total(struct wmOperatorType *ot);
 void OBJECT_OT_vertex_group_mirror(struct wmOperatorType *ot);
 void OBJECT_OT_vertex_group_set_active(struct wmOperatorType *ot);
 void OBJECT_OT_vertex_group_sort(struct wmOperatorType *ot);
@@ -217,6 +228,7 @@ void OBJECT_OT_vertex_group_move(struct wmOperatorType *ot);
 void OBJECT_OT_shape_key_add(struct wmOperatorType *ot);
 void OBJECT_OT_shape_key_remove(struct wmOperatorType *ot);
 void OBJECT_OT_shape_key_clear(struct wmOperatorType *ot);
+void OBJECT_OT_shape_key_retime(struct wmOperatorType *ot);
 void OBJECT_OT_shape_key_mirror(struct wmOperatorType *ot);
 void OBJECT_OT_shape_key_move(struct wmOperatorType *ot);
 
@@ -228,5 +240,5 @@ void OBJECT_OT_group_remove(struct wmOperatorType *ot);
 /* object_bake.c */
 void OBJECT_OT_bake_image(wmOperatorType *ot);
 
-#endif /* ED_OBJECT_INTERN_H */
+#endif /* __OBJECT_INTERN_H__ */
 

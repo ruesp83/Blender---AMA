@@ -1,7 +1,4 @@
 /*
- * blenlib/DNA_group_types.h (mar-2001 nzc)
- *	
- *
  * ***** BEGIN GPL LICENSE BLOCK *****
  *
  * This program is free software; you can redistribute it and/or
@@ -23,17 +20,19 @@
  *
  * The Original Code is: all of this file.
  *
- * Contributor(s): none yet.
+ * Contributor(s): mar-2001 nzc
  *
  * ***** END GPL LICENSE BLOCK *****
  */
 
 /** \file DNA_group_types.h
  *  \ingroup DNA
+ *
+ * \brief Object groups, one object can be in many groups at once.
  */
 
-#ifndef DNA_GROUP_TYPES_H
-#define DNA_GROUP_TYPES_H
+#ifndef __DNA_GROUP_TYPES_H__
+#define __DNA_GROUP_TYPES_H__
 
 #include "DNA_listBase.h"
 #include "DNA_ID.h"
@@ -43,11 +42,6 @@ struct Object;
 typedef struct GroupObject {
 	struct GroupObject *next, *prev;
 	struct Object *ob;
-	/* rot - scale - loc: It is the information obtained from the AMA */
-	/* float rot[3];
-	float scale[3];
-	float loc[3];
-	int rand_group_obj;*/
 	void *lampren;		/* used while render */
 	short recalc;			/* copy of ob->recalc, used to set animated groups OK */
 	char pad[6];
@@ -64,13 +58,6 @@ typedef struct Group {
 	 * on the last used scene */
 	unsigned int layer;
 	float dupli_ofs[3];
-	/* It is the information obtained from the AMA */
-	/*float delta[4][4];
-	int count;
-	int rays;
-	int rays_dir;*/
 } Group;
 
-
-#endif
-
+#endif  /* __DNA_GROUP_TYPES_H__ */
